@@ -3,6 +3,8 @@ name: Publish to GitHub Packages
 on:
     push:
         branches: [ main ]
+        tags:
+            - '*'
 
 jobs:
     publish-github:
@@ -43,20 +45,31 @@ jobs:
                     bump_each_commit_patch_pattern: "(BUMP)"
                     tag_prefix: ""
 
+            -   name: Get version
+                id: version
+                run: |
+                    if [[ ${GITHUB_REF} == refs/tags/* ]]; then
+                      echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+                      echo "is_tag=true" >> $GITHUB_OUTPUT
+                    else
+                      echo "version=${{ steps.tag.outputs.version }}" >> $GITHUB_OUTPUT
+                      echo "is_tag=false" >> $GITHUB_OUTPUT
+                    fi
+
             -   name: Publish
-                if: ${{ steps.tag.outputs.version_type != 'none' }}
-                run: gradle -Pversion=${{ steps.tag.outputs.version }} publish
+                if: ${{ steps.version.outputs.is_tag == 'true' || steps.tag.outputs.version_type != 'none' }}
+                run: gradle -Pversion=${{ steps.version.outputs.version }} publish
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
             -   uses: actions/create-release@v1.1.4
-                if: ${{ steps.tag.outputs.version_type != 'none' }}
+                if: ${{ steps.version.outputs.is_tag == 'false' && steps.tag.outputs.version_type != 'none' }}
                 id: create_release
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                 with:
-                    tag_name: ${{ steps.tag.outputs.version }}
-                    release_name: ${{ steps.tag.outputs.version }}
+                    tag_name: ${{ steps.version.outputs.version }}
+                    release_name: ${{ steps.version.outputs.version }}
                     body: |
                         Changes in this Release
                         ${{ steps.notes.outputs.CHANGELOG }}
