@@ -7,7 +7,7 @@ import com.papsign.ktor.openapigen.modules.ofType
 import com.papsign.ktor.openapigen.modules.openapi.OperationModule
 import com.papsign.ktor.openapigen.modules.providers.TagProviderModule
 
-object TagHandlerModule: OperationModule {
+object TagHandlerModule : OperationModule {
     override fun configure(apiGen: OpenAPIGen, provider: ModuleProvider<*>, operation: OperationModel) {
         val tags = provider.ofType<TagProviderModule>().flatMap { it.tags.map(apiGen::getOrRegisterTag) }
         val current = operation.tags
@@ -17,5 +17,4 @@ object TagHandlerModule: OperationModule {
             operation.tags = tags
         }
     }
-
 }

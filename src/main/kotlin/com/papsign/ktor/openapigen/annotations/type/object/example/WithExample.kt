@@ -9,5 +9,3 @@ import kotlin.reflect.KClass
 @Target(AnnotationTarget.CLASS, AnnotationTarget.TYPE, AnnotationTarget.PROPERTY)
 @SchemaProcessorAnnotation(ExampleProcessor::class)
 annotation class WithExample(val provider: KClass<out ExampleProvider<*>> = NoExampleProvider::class)
-
-

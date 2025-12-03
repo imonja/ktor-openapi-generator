@@ -57,18 +57,18 @@ class GeneralBehaviorTest {
     enum class TestEnum {
         A, B, C
     }
+
     @Test
     fun testEnumSubtypes() {
         val kType = getKType<TestEnum>()
         assert(kType.isSubtypeOf(getKType<Enum<*>>()))
     }
 
-
     lateinit var nothing: Nothing
     val nullableNothing: Nothing? = null
 
-    val nothingType =  ::nothing.returnType
-    val nullNothingType =  ::nullableNothing.returnType
+    val nothingType = ::nothing.returnType
+    val nullNothingType = ::nullableNothing.returnType
 
     @Test
     fun testNothingSubtypes() {

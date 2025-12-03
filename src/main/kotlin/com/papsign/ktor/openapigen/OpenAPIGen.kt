@@ -94,7 +94,6 @@ class OpenAPIGen(
         }
     }
 
-
     fun getOrRegisterTag(tag: APITag): String {
         val other = tags.getOrPut(tag.name) {
             api.tags.add(tag.toTag())
@@ -125,7 +124,7 @@ class OpenAPIGen(
                 val swaggerUiResources = "/${cfg.swaggerUiPath.trim('/')}/"
                 pipeline.intercept(ApplicationCallPipeline.Call) {
                     when {
-                        call.request.path() == swaggerRoot -> call.respondRedirect("${swaggerRoot}/index.html")
+                        call.request.path() == swaggerRoot -> call.respondRedirect("$swaggerRoot/index.html")
                         call.request.path().startsWith(swaggerUiResources) ->
                             ui.serve(call.request.path().removePrefix(swaggerUiResources), call)
                     }

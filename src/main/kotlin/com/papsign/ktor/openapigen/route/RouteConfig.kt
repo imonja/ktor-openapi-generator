@@ -36,4 +36,3 @@ fun Route.apiRouting(config: NormalOpenAPIRoute.() -> Unit) {
         application.plugin(OpenAPIGen).globalModuleProvider
     ).apply(config)
 }
-

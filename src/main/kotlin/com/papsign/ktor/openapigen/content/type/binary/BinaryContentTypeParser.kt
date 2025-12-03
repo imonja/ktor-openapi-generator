@@ -22,9 +22,9 @@ import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.jvm.jvmErasure
 
-object BinaryContentTypeParser: BodyParser, ResponseSerializer, OpenAPIGenModuleExtension {
+object BinaryContentTypeParser : BodyParser, ResponseSerializer, OpenAPIGenModuleExtension {
 
-    private fun <T: Any> KClass<T>.getAcceptableConstructor(): KFunction<T> {
+    private fun <T : Any> KClass<T>.getAcceptableConstructor(): KFunction<T> {
         return constructors.first { it.parameters.size == 1 && acceptedTypes.contains(it.parameters[0].type) }
     }
 
@@ -32,7 +32,7 @@ object BinaryContentTypeParser: BodyParser, ResponseSerializer, OpenAPIGenModule
         return type.jvmErasure.findAnnotation<BinaryRequest>()?.contentTypes?.map(ContentType.Companion::parse) ?: listOf()
     }
 
-    override fun <T: Any> getSerializableContentTypes(type: KType):  List<ContentType> {
+    override fun <T : Any> getSerializableContentTypes(type: KType): List<ContentType> {
         return type.jvmErasure.findAnnotation<BinaryResponse>()?.contentTypes?.map(ContentType.Companion::parse) ?: listOf()
     }
 
@@ -49,19 +49,25 @@ object BinaryContentTypeParser: BodyParser, ResponseSerializer, OpenAPIGenModule
 
         @Suppress("UNCHECKED_CAST")
         val prop =
-            response::class.declaredMemberProperties.firstOrNull() { it.visibility == KVisibility.PUBLIC } as KProperty1<T, *>
+            response::class.declaredMemberProperties.firstOrNull { it.visibility == KVisibility.PUBLIC } as KProperty1<T, *>
         val data = prop.get(response) as InputStream
         request.call.respondBytes(data.readBytes(), contentType, statusCode)
     }
 
     @Suppress("UNCHECKED_CAST")
     override suspend fun <T : Any> parseBody(clazz: KType, request: RoutingContext): T {
-        return (clazz.classifier as KClass<T>).getAcceptableConstructor().call( request.call.receiveStream())
+        return (clazz.classifier as KClass<T>).getAcceptableConstructor().call(request.call.receiveStream())
     }
 
-    override fun <T> getMediaType(type: KType, apiGen: OpenAPIGen, provider: ModuleProvider<*>, example: T?, usage: ContentTypeProvider.Usage): Map<ContentType, MediaTypeModel<T>>? {
+    override fun <T> getMediaType(
+        type: KType,
+        apiGen: OpenAPIGen,
+        provider: ModuleProvider<*>,
+        example: T?,
+        usage: ContentTypeProvider.Usage
+    ): Map<ContentType, MediaTypeModel<T>>? {
         if (type == unitKType) return null
-        val contentTypes = when(usage) {
+        val contentTypes = when (usage) {
             ContentTypeProvider.Usage.PARSE -> {
                 val binaryRequest = type.jvmErasure.findAnnotation<BinaryRequest>() ?: return null
                 binaryRequest.contentTypes
@@ -74,12 +80,12 @@ object BinaryContentTypeParser: BodyParser, ResponseSerializer, OpenAPIGenModule
             it.forEach { ContentType.parse(it) }
         }
         val subtypes = type.jvmErasure.getAcceptableConstructor().parameters.map { it.type }.toSet()
-        assertContent (acceptedTypes.containsAll(subtypes)) {
+        assertContent(acceptedTypes.containsAll(subtypes)) {
             "${this::class.simpleName} can only be used with type ${acceptedTypes.joinToString()}, you are using ${subtypes.minus(acceptedTypes)}"
         }
-        when(usage) {
+        when (usage) {
             ContentTypeProvider.Usage.PARSE -> {
-                assertContent (type.jvmErasure.constructors.find { it.parameters.size == 1 && acceptedTypes.contains(it.parameters[0].type) } != null) {
+                assertContent(type.jvmErasure.constructors.find { it.parameters.size == 1 && acceptedTypes.contains(it.parameters[0].type) } != null) {
                     "${this::class.simpleName} can only be used with types taking $acceptedTypes as constructor parameter"
                 }
             }

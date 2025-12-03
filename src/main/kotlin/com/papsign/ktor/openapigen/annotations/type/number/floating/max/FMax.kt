@@ -7,4 +7,3 @@ import com.papsign.ktor.openapigen.validation.ValidatorAnnotation
 @SchemaProcessorAnnotation(FMaxProcessor::class)
 @ValidatorAnnotation(FMaxProcessor::class)
 annotation class FMax(val value: Double, val errorMessage: String = "")
-

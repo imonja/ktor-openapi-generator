@@ -4,6 +4,6 @@ import com.papsign.ktor.openapigen.modules.providers.ParameterProvider
 import io.ktor.http.Headers
 import io.ktor.http.Parameters
 
-interface ParameterHandler<T>: ParameterProvider {
+interface ParameterHandler<T> : ParameterProvider {
     fun parse(parameters: Parameters, headers: Headers): T
 }

@@ -21,9 +21,9 @@ class ListToArray(arrayType: KType) {
             return arrayType.arguments.firstOrNull()?.type ?: arrayType.jvmErasure.java.componentType.kotlin.starProjectedType
         }
         fun arrayComponentClass(arrayType: KType): Class<*> {
-            return arrayType.arguments.firstOrNull()?.type?.jvmErasure?.javaObjectType ?:
-            arrayType.jvmErasure.java.componentType.kotlin.javaPrimitiveType ?:
-            Any::class.java
+            return arrayType.arguments.firstOrNull()?.type?.jvmErasure?.javaObjectType
+                ?: arrayType.jvmErasure.java.componentType.kotlin.javaPrimitiveType
+                ?: Any::class.java
         }
     }
 }

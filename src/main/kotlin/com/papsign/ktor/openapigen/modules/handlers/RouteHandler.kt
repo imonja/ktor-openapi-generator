@@ -10,11 +10,11 @@ import com.papsign.ktor.openapigen.modules.openapi.HandlerModule
 import com.papsign.ktor.openapigen.modules.openapi.OperationModule
 import com.papsign.ktor.openapigen.modules.providers.MethodProvider
 import com.papsign.ktor.openapigen.modules.providers.PathProvider
-import java.util.Locale
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.Locale
 
-object RouteHandler: HandlerModule {
+object RouteHandler : HandlerModule {
 
     private val log: Logger = LoggerFactory.getLogger(this::class.java)
 
@@ -24,16 +24,18 @@ object RouteHandler: HandlerModule {
         val paths = provider.ofType<PathProvider>()
         val path = "/${paths.flatMap { it.path.split('/').filter(String::isNotEmpty) }.joinToString("/")}"
         val operationModules = provider.ofType<OperationModule>()
-        apiGen.api.paths.getOrPut(path) { PathItemModel() }.also {pathItem ->
+        apiGen.api.paths.getOrPut(path) { PathItemModel() }.also { pathItem ->
             methods.forEach {
                 val name = it.method.value.lowercase(Locale.getDefault())
-                //if (pathItem.containsKey(name)) error("$path::$name already defined")
+                // if (pathItem.containsKey(name)) error("$path::$name already defined")
                 val op = pathItem.getOrPut(name) { OperationModel() } as OperationModel
                 operationModules.forEach {
                     it.configure(apiGen, provider, op)
                 }
             }
         }
-        log.trace("Registered $path::${methods.map { it.method.value }} with OpenAPI description with ${provider.ofType<SelectedModule>().map { it.module::class.simpleName }}")
+        log.trace(
+            "Registered $path::${methods.map { it.method.value }} with OpenAPI description with ${provider.ofType<SelectedModule>().map { it.module::class.simpleName }}"
+        )
     }
 }

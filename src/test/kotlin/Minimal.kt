@@ -26,7 +26,7 @@ object Minimal {
     @JvmStatic
     fun main(args: Array<String>) {
         embeddedServer(Netty, 8080, "localhost") {
-            //define basic OpenAPI info
+            // define basic OpenAPI info
             install(OpenAPIGen) {
                 // basic info
                 info {
@@ -42,13 +42,16 @@ object Minimal {
                 server("http://localhost:8080/") {
                     description = "Test server"
                 }
-                //optional
-                replaceModule(DefaultSchemaNamer, object: SchemaNamer {
-                    val regex = Regex("[A-Za-z0-9_.]+")
-                    override fun get(type: KType): String {
-                        return type.toString().replace(regex) { it.value.split(".").last() }.replace(Regex(">|<|, "), "_")
+                // optional
+                replaceModule(
+                    DefaultSchemaNamer,
+                    object : SchemaNamer {
+                        val regex = Regex("[A-Za-z0-9_.]+")
+                        override fun get(type: KType): String {
+                            return type.toString().replace(regex) { it.value.split(".").last() }.replace(Regex(">|<|, "), "_")
+                        }
                     }
-                })
+                )
             }
 
             install(ContentNegotiation) {
@@ -62,10 +65,9 @@ object Minimal {
                 }
             }
 
-            //Described routing
+            // Described routing
             apiRouting {
-
-                //bare minimum, just like Ktor but strongly typed
+                // bare minimum, just like Ktor but strongly typed
                 get<StringParam, StringResponse> { params ->
                     respond(StringResponse(params.a))
                 }
@@ -79,7 +81,7 @@ object Minimal {
 
                 route("block") {
                     // use Unit if there are no parameters / body / response
-                    post<Unit, StringUsable,  StringUsable>(
+                    post<Unit, StringUsable, StringUsable>(
                         info("String Post Endpoint", "This is a String Post Endpoint"),
                         exampleRequest = StringUsable("Ho"),
                         exampleResponse = StringUsable("Ho")
@@ -89,7 +91,6 @@ object Minimal {
                 }
             }
         }.start(true)
-
     }
 
     // Path works like the @Location from locations, but for transparency we recommend only using it to extract the parameters

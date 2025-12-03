@@ -22,20 +22,24 @@ import kotlin.test.assertEquals
 class MultipartFormDataContentProviderTest {
 
     @FormDataRequest
-    data class SimpleRequest(val str: String,
-                             val int: Int,
-                             val flt: Float,
-                             val bl: Boolean,
-                             val strn: String?,
-                             val intn: Int?,
-                             val fltn: Float?,
-                             val bln: Boolean?) {
+    data class SimpleRequest(
+        val str: String,
+        val int: Int,
+        val flt: Float,
+        val bl: Boolean,
+        val strn: String?,
+        val intn: Int?,
+        val fltn: Float?,
+        val bln: Boolean?
+    ) {
         fun toParts(): List<PartData> {
             return this::class.declaredMemberProperties.mapNotNull {
                 val prop = it as KProperty1<SimpleRequest, Any?>
                 val res = prop.get(this) ?: return@mapNotNull null
                 PartData.FormItem(
-                    res.toString(), { }, headersOf(
+                    res.toString(),
+                    { },
+                    headersOf(
                         HttpHeaders.ContentDisposition,
                         ContentDisposition.Inline
                             .withParameter(ContentDisposition.Parameters.Name, it.name)
@@ -46,16 +50,18 @@ class MultipartFormDataContentProviderTest {
         }
     }
 
-
     @Test
     fun testMultipartParsing() {
         val requests = mapOf(
             "/1" to SimpleRequest("Test", 300, 26.95f, true, null, null, null, null).let { Pair(it, it.toParts()) },
             "/2" to SimpleRequest("Test", 300, 26.95f, true, "Test", 300, 26.95f, true).let { Pair(it, it.toParts()) },
             "/3" to Pair(
-                SimpleRequest("", 0, 0f, false, null, null, null, null), listOf(
+                SimpleRequest("", 0, 0f, false, null, null, null, null),
+                listOf(
                     PartData.FormItem(
-                        "yolo", { }, headersOf(
+                        "yolo",
+                        { },
+                        headersOf(
                             HttpHeaders.ContentDisposition,
                             ContentDisposition.Inline
                                 .withParameter(ContentDisposition.Parameters.Name, "yolo")

@@ -7,6 +7,3 @@ import com.papsign.ktor.openapigen.validation.ValidatorAnnotation
 @SchemaProcessorAnnotation(FClampProcessor::class)
 @ValidatorAnnotation(FClampProcessor::class)
 annotation class FClamp(val min: Double, val max: Double, val errorMessage: String = "")
-
-
-

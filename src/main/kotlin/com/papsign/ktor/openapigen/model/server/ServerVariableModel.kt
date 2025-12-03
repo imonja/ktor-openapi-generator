@@ -6,4 +6,4 @@ data class ServerVariableModel(
     var default: String,
     var enum: MutableList<String> = mutableListOf(),
     var description: String? = null
-): DataModel
+) : DataModel

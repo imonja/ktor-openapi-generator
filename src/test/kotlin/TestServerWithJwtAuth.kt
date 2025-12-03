@@ -62,8 +62,8 @@ object TestServerWithJwtAuth {
     }
 
     public fun Application.testServerWithJwtAuth() {
-        //define basic OpenAPI info
-        val authProvider = JwtProvider();
+        // define basic OpenAPI info
+        val authProvider = JwtProvider()
         val api = install(OpenAPIGen) {
             info {
                 version = "0.1"
@@ -78,12 +78,15 @@ object TestServerWithJwtAuth {
                 description = "Main production server"
             }
             addModules(authProvider)
-            replaceModule(DefaultSchemaNamer, object : SchemaNamer {
-                val regex = Regex("[A-Za-z0-9_.]+")
-                override fun get(type: KType): String {
-                    return type.toString().replace(regex) { it.value.split(".").last() }.replace(Regex(">|<|, "), "_")
+            replaceModule(
+                DefaultSchemaNamer,
+                object : SchemaNamer {
+                    val regex = Regex("[A-Za-z0-9_.]+")
+                    override fun get(type: KType): String {
+                        return type.toString().replace(regex) { it.value.split(".").last() }.replace(Regex(">|<|, "), "_")
+                    }
                 }
-            })
+            )
         }
 
         install(ContentNegotiation) {
@@ -98,10 +101,12 @@ object TestServerWithJwtAuth {
 
                 setSerializationInclusion(JsonInclude.Include.NON_NULL)
 
-                setDefaultPrettyPrinter(DefaultPrettyPrinter().apply {
-                    indentArraysWith(DefaultPrettyPrinter.FixedSpaceIndenter.instance)
-                    indentObjectsWith(DefaultIndenter("  ", "\n"))
-                })
+                setDefaultPrettyPrinter(
+                    DefaultPrettyPrinter().apply {
+                        indentArraysWith(DefaultPrettyPrinter.FixedSpaceIndenter.instance)
+                        indentObjectsWith(DefaultIndenter("  ", "\n"))
+                    }
+                )
 
                 registerModule(JavaTimeModule())
             }
@@ -119,7 +124,11 @@ object TestServerWithJwtAuth {
                             80,
                             443
                         ).contains(call.request.port())
-                    ) "" else ":${call.request.port()}"
+                    ) {
+                        ""
+                    } else {
+                        ":${call.request.port()}"
+                    }
                 )
                 call.application.openAPIGen.api.servers.add(0, host)
                 call.respond(call.application.openAPIGen.api.serialize())
@@ -150,12 +159,12 @@ object TestServerWithJwtAuth {
     @Response("A String Response")
     data class StringResponse(@param:Description("The string value") val str: String)
 
-    val authProvider = JwtProvider();
+    val authProvider = JwtProvider()
 
     inline fun NormalOpenAPIRoute.auth(route: OpenAPIAuthenticatedRoute<UserPrincipal>.() -> Unit): OpenAPIAuthenticatedRoute<UserPrincipal> {
         val authenticatedKtorRoute = this.ktorRoute.authenticate { }
         val openAPIAuthenticatedRoute =
-            OpenAPIAuthenticatedRoute(authenticatedKtorRoute, this.provider.child(), authProvider = authProvider);
+            OpenAPIAuthenticatedRoute(authenticatedKtorRoute, this.provider.child(), authProvider = authProvider)
         return openAPIAuthenticatedRoute.apply {
             route()
         }
@@ -172,16 +181,18 @@ object TestServerWithJwtAuth {
                             SecuritySchemeType.http,
                             scheme = HttpSecurityScheme.bearer,
                             bearerFormat = "JWT",
-                            referenceName = "jwtAuth",
-                        ), emptyList()
+                            referenceName = "jwtAuth"
+                        ),
+                        emptyList()
                     ),
                     AuthProvider.Security(
                         SecuritySchemeModel(
                             SecuritySchemeType.apiKey,
                             `in` = APIKeyLocation.cookie,
                             name = "ThisIsCookieName",
-                            referenceName = "ThisIsSchemeName",
-                        ), emptyList<Scopes>()
+                            referenceName = "ThisIsSchemeName"
+                        ),
+                        emptyList<Scopes>()
                     )
                 )
             )
@@ -225,5 +236,4 @@ object TestServerWithJwtAuth {
             .rateLimited(10, 1, TimeUnit.MINUTES)
             .build()
     }
-
 }

@@ -19,7 +19,6 @@ class OptionalConverter(type: KType) : Converter {
         }
     }
 
-
     companion object : ConverterSelector {
         override fun canHandle(type: KType): Boolean {
             return type.jvmErasure.isSubclassOf(Optional::class)

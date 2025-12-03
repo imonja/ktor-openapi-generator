@@ -21,4 +21,4 @@ jobs:
                 with:
                     gradle-version: wrapper
             -   name: Bygg & test
-                run: gradle test --continue --configuration-cache --stacktrace --info
+                run: gradle ktlintCheck test --continue --configuration-cache --stacktrace --info

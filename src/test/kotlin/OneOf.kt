@@ -33,7 +33,6 @@ fun NormalOpenAPIRoute.SealedRoute() {
     }
 }
 
-
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
 @DiscriminatorAnnotation()
 sealed class Base {
@@ -43,7 +42,11 @@ sealed class Base {
 
     @JsonTypeName("B")
     @DiscriminatorAnnotation()
-    class B(@Min(0) @Max(2) val i: Int) : Base()
+    class B(
+        @Min(0)
+        @Max(2)
+        val i: Int
+    ) : Base()
 
     @WithExample
     @JsonTypeName("C")

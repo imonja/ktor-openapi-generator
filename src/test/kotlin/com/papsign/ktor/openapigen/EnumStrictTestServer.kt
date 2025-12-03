@@ -22,7 +22,7 @@ import kotlin.test.assertTrue
 @StrictEnumParsing
 enum class StrictTestEnum {
     VALID,
-    ALSO_VALID,
+    ALSO_VALID
 }
 
 @Path("/")
@@ -44,8 +44,9 @@ class EnumStrictTestServer {
             }
             apiRouting {
                 get<NullableStrictEnumParams, String> { params ->
-                    if (params.type != null)
+                    if (params.type != null) {
                         assertTrue { StrictTestEnum.entries.toTypedArray().contains(params.type) }
+                    }
                     respond(params.type?.toString() ?: "null")
                 }
             }

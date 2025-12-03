@@ -8,18 +8,18 @@ import com.papsign.ktor.openapigen.model.Described
 
 class SecurityModel : MutableMap<String, List<*>> by mutableMapOf(), DataModel {
 
-    operator fun <T> set(scheme: SecuritySchemeModel<T>, requirements: List<T>) where T: Enum<T>, T: Described {
+    operator fun <T> set(scheme: SecuritySchemeModel<T>, requirements: List<T>) where T : Enum<T>, T : Described {
         this[scheme.referenceName] = requirements
     }
 
-    fun <T> set(scheme: SecuritySchemeModel<T>) where T: Enum<T>, T: Described {
+    fun <T> set(scheme: SecuritySchemeModel<T>) where T : Enum<T>, T : Described {
         this[scheme] = listOf()
     }
 
     override fun serialize(): Map<String, Any?> {
         val serializationSettings = SerializationSettings(skipEmptyList = true)
         return this.mapValues { (_, prop) ->
-            convertToValue(prop,serializationSettings)
+            convertToValue(prop, serializationSettings)
         }.cleanEmptyValues(serializationSettings)
     }
 }

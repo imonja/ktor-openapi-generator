@@ -19,7 +19,7 @@ import kotlin.test.*
 
 enum class NonStrictTestEnum {
     VALID,
-    ALSO_VALID,
+    ALSO_VALID
 }
 
 @Path("/")
@@ -41,8 +41,9 @@ class NonStrictEnumTestServer {
             }
             apiRouting {
                 get<NullableNonStrictEnumParams, String> { params ->
-                    if (params.type != null)
+                    if (params.type != null) {
                         assertTrue { NonStrictTestEnum.values().contains(params.type) }
+                    }
                     respond(params.type?.toString() ?: "null")
                 }
             }

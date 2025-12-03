@@ -78,7 +78,6 @@ fun <TRoute : OpenAPIRoute<TRoute>> TRoute.tag(tag: APITag): TRoute {
     }
 }
 
-
 /**
  * This method assigns an OpenAPI [tag] too all child routes defined inside [fn].
  * Parameter [tag] should be an enum that inherits from [APITag], check [APITag] description for an

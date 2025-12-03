@@ -76,7 +76,6 @@ object TestServer {
         setupBaseTestServer()
         routing { }
         apiRouting {
-
             get<StringParam, StringResponse>(
                 info("String Param Endpoint", "This is a String Param Endpoint"),
                 example = StringResponse("Hi")
@@ -183,7 +182,6 @@ object TestServer {
 
             route("again") {
                 tag(Tags.EXAMPLE) {
-
                     route("exception").throws(HttpStatusCode.ExpectationFailed, "example", CustomException::class) {
                         get<StringParam, StringResponse>(
                             info("String Param Endpoint", "This is a String Param Endpoint"),
@@ -208,7 +206,6 @@ object TestServer {
                     }
                 }
             }
-
 
             route("datetime") {
                 route("date") {
@@ -264,9 +261,8 @@ object TestServer {
         }
     }
 
-
     fun Application.setupBaseTestServer() {
-        //define basic OpenAPI info
+        // define basic OpenAPI info
         val api = install(OpenAPIGen) {
             info {
                 version = "0.1"
@@ -280,13 +276,16 @@ object TestServer {
             server("https://api.test.com/") {
                 description = "Main production server"
             }
-            replaceModule(DefaultSchemaNamer, object : SchemaNamer {
-                val regex = Regex("[A-Za-z0-9_.]+")
-                override fun get(type: KType): String {
-                    return type.toString().replace(regex) { it.value.split(".").last() }
-                        .replace(Regex(">|<|, "), "_")
+            replaceModule(
+                DefaultSchemaNamer,
+                object : SchemaNamer {
+                    val regex = Regex("[A-Za-z0-9_.]+")
+                    override fun get(type: KType): String {
+                        return type.toString().replace(regex) { it.value.split(".").last() }
+                            .replace(Regex(">|<|, "), "_")
+                    }
                 }
-            })
+            )
         }
 
         install(ContentNegotiation) {
@@ -304,10 +303,12 @@ object TestServer {
 
                 setSerializationInclusion(JsonInclude.Include.NON_NULL)
 
-                setDefaultPrettyPrinter(DefaultPrettyPrinter().apply {
-                    indentArraysWith(DefaultPrettyPrinter.FixedSpaceIndenter.instance)
-                    indentObjectsWith(DefaultIndenter("  ", "\n"))
-                })
+                setDefaultPrettyPrinter(
+                    DefaultPrettyPrinter().apply {
+                        indentArraysWith(DefaultPrettyPrinter.FixedSpaceIndenter.instance)
+                        indentObjectsWith(DefaultIndenter("  ", "\n"))
+                    }
+                )
 
                 registerModule(JavaTimeModule())
             }
@@ -340,7 +341,11 @@ object TestServer {
                             80,
                             443
                         ).contains(call.request.port())
-                    ) "" else ":${call.request.port()}"
+                    ) {
+                        ""
+                    } else {
+                        ":${call.request.port()}"
+                    }
                 )
                 this.call.application.openAPIGen.api.servers.add(0, host)
                 call.respond(call.application.openAPIGen.api.serialize())
@@ -366,7 +371,11 @@ object TestServer {
     @Response("A String Response")
     data class StringResponse(@param:Description("The string value") val str: String)
 
-    data class NameParam(@param:HeaderParam("A simple Header Param") @OpenAPIName("X-NAME") val name: String)
+    data class NameParam(
+        @param:HeaderParam("A simple Header Param")
+        @OpenAPIName("X-NAME")
+        val name: String
+    )
 
     @Response("A Response for header param example")
     data class NameGreetingResponse(@StringExample("Hi, John!") val str: String)
@@ -410,7 +419,6 @@ object TestServer {
 
     data class APIPrincipal(val a: String, val b: String)
 
-
     @Request("A LocalDate Request")
     data class LocalDateQuery(@param:QueryParam("LocalDate") val date: LocalDate)
     data class LocalDateOptionalQuery(@param:QueryParam("LocalDate") val date: LocalDate?)
@@ -451,13 +459,17 @@ object TestServer {
         val onlyNew: Boolean? = null,
         @param:QueryParam("name") @Trim
         val name: String? = null,
-        @param:QueryParam("minQuantity") @Min(0)
+        @param:QueryParam("minQuantity")
+        @Min(0)
         val minQuantity: Int? = null,
-        @param:QueryParam("maxQuantity") @Min(0)
+        @param:QueryParam("maxQuantity")
+        @Min(0)
         val maxQuantity: Int? = null,
-        @param:QueryParam("minCost") @Min(0)
+        @param:QueryParam("minCost")
+        @Min(0)
         val minCost: Int? = null,
-        @param:QueryParam("maxCost") @Min(0)
+        @param:QueryParam("maxCost")
+        @Min(0)
         val maxCost: Int? = null,
         @param:QueryParam("inStock")
         val inStock: Boolean? = null,
@@ -468,7 +480,8 @@ object TestServer {
         val employeeName: String? = null,
 
         @param:QueryParam("sortToken")
-        @StringExample("fullName") @Trim
+        @StringExample("fullName")
+        @Trim
         val sortToken: String? = null,
         @param:QueryParam("pageSize")
         @Min(1)

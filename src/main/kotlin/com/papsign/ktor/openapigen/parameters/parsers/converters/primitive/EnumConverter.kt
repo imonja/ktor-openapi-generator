@@ -16,15 +16,16 @@ class EnumConverter(val type: KType) : Converter {
     private val enumMap = type.jvmErasure.java.enumConstants.associateBy { value -> (value as Enum<*>).name }
 
     override fun convert(value: String): Any? {
-        if (!isStrictParsing)
+        if (!isStrictParsing) {
             return enumMap[value]
+        }
 
         if (enumMap.containsKey(value)) {
             return enumMap[value]
         } else {
             throw OpenAPIBadContentException(
                 "Invalid value [$value] for enum parameter of type ${type.jvmErasure.simpleName}. Expected: [${
-                    enumMap.values.joinToString(",")
+                enumMap.values.joinToString(",")
                 }]"
             )
         }

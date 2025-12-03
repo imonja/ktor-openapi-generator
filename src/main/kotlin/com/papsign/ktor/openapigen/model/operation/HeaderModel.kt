@@ -13,4 +13,4 @@ data class HeaderModel<T>(
     var example: T? = null,
     var examples: MutableMap<String, ExampleModel<T>>? = null
     // incomplete
-): DataModel
+) : DataModel

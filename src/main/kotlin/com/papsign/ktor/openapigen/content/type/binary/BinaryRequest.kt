@@ -6,4 +6,3 @@ import com.papsign.ktor.openapigen.annotations.encodings.APIRequestFormat
 @Retention(AnnotationRetention.RUNTIME)
 @APIRequestFormat
 annotation class BinaryRequest(val contentTypes: Array<String>)
-

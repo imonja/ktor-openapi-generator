@@ -132,7 +132,6 @@ object PrimitiveConverter : ConverterSelector {
             }
         },
 
-
         primitive<UUID> {
             UUID.fromString(it)
         },

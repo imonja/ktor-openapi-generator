@@ -1,8 +1,8 @@
 package com.papsign.ktor.openapigen.model.base
 
 import com.papsign.ktor.openapigen.model.DataModel
-import com.papsign.ktor.openapigen.model.operation.*
 import com.papsign.ktor.openapigen.model.info.ExampleModel
+import com.papsign.ktor.openapigen.model.operation.*
 import com.papsign.ktor.openapigen.model.schema.SchemaModel
 import com.papsign.ktor.openapigen.model.security.SecuritySchemeModel
 
@@ -14,6 +14,6 @@ data class ComponentsModel(
     var requestBodies: MutableMap<String, RequestBodyModel> = sortedMapOf(),
     var headers: MutableMap<String, HeaderModel<*>> = sortedMapOf(),
     var securitySchemes: MutableMap<String, SecuritySchemeModel<*>> = sortedMapOf()
-    //links
-    //callbacks
-): DataModel
+    // links
+    // callbacks
+) : DataModel

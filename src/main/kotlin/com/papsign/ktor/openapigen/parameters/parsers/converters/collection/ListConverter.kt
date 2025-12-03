@@ -20,5 +20,4 @@ class ListConverter(type: KType) : CollectionConverter(type) {
             return ListConverter(type)
         }
     }
-
 }

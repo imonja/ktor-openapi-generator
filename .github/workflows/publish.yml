@@ -34,7 +34,7 @@ jobs:
                 run: gradle assemble
 
             -   name: Run tests
-                run: gradle test --info
+                run: gradle ktlintCheck test --info
 
             -   uses: paulhatch/semantic-version@v5.4.0
                 id: tag

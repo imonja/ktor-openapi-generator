@@ -7,4 +7,3 @@ import com.papsign.ktor.openapigen.validation.ValidatorAnnotation
 @SchemaProcessorAnnotation(RegularExpressionProcessor::class)
 @ValidatorAnnotation(RegularExpressionProcessor::class)
 annotation class RegularExpression(@org.intellij.lang.annotations.Language("RegExp") val pattern: String, val errorMessage: String = "")
-

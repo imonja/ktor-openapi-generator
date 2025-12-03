@@ -35,4 +35,3 @@ fun convertToValue(value: Any?, serializationSettings: SerializationSettings = S
         else -> value
     }
 }
-

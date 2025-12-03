@@ -18,8 +18,8 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.jvm.jvmErasure
 
 class RequestHandlerModule<T : Any>(
-        val requestType: KType,
-        val requestExample: T? = null
+    val requestType: KType,
+    val requestExample: T? = null
 ) : OperationModule {
 
     private val log = classLogger()
@@ -27,7 +27,7 @@ class RequestHandlerModule<T : Any>(
     override fun configure(apiGen: OpenAPIGen, provider: ModuleProvider<*>, operation: OperationModel) {
         val map = provider.ofType<BodyParser>().mapNotNull {
             val mediaType = it.getMediaType(requestType, apiGen, provider, requestExample, ContentTypeProvider.Usage.PARSE)
-                    ?: return@mapNotNull null
+                ?: return@mapNotNull null
             provider.registerModule(SelectedParser(it))
             mediaType.map { Pair(it.key.toString(), it.value) }
         }.flatten().associate { it }
@@ -38,7 +38,13 @@ class RequestHandlerModule<T : Any>(
         operation.parameters = operation.parameters?.let { (it + parameters).distinct() } ?: parameters
         operation.requestBody = operation.requestBody?.apply {
             map.forEach { (key, value) ->
-                content.putIfAbsent(key, value)?.let { if (value != it) log.warn("ContentType of $requestType request $key already registered, ignoring $value") }
+                content.putIfAbsent(key, value)?.let {
+                    if (value != it) {
+                        log.warn(
+                            "ContentType of $requestType request $key already registered, ignoring $value"
+                        )
+                    }
+                }
             }
             if (description != null) {
                 if (requestMeta?.description != null) log.warn("ContentType description of $requestType request already registered, ignoring")

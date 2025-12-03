@@ -82,7 +82,7 @@ enum class SomeSimpleEnum {
 
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
 enum class SomeComplexEnum(
-    @param:JsonProperty("proppen") val variable: String,
+    @param:JsonProperty("proppen") val variable: String
 ) {
     A("a"), B("b"), C("c")
 }

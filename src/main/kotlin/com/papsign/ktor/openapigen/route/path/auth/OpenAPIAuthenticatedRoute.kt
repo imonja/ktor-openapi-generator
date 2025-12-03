@@ -7,8 +7,6 @@ import com.papsign.ktor.openapigen.route.OpenAPIRoute
 import com.papsign.ktor.openapigen.route.response.AuthResponseContextImpl
 import com.papsign.ktor.openapigen.route.response.OpenAPIPipelineAuthContext
 import io.ktor.server.routing.Route
-import io.ktor.util.reflect.TypeInfo
-import io.ktor.util.reflect.typeInfo
 import kotlin.reflect.KType
 import kotlin.reflect.typeOf
 
@@ -29,7 +27,7 @@ class OpenAPIAuthenticatedRoute<TAuth>(
         requestType: KType,
         body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams, TRequest) -> Unit
     ) {
-        child().apply {// child in case path is branch to prevent propagation of the mutable nature of the provider
+        child().apply { // child in case path is branch to prevent propagation of the mutable nature of the provider
             provider.registerModule(authProvider as AuthProvider<*>)
             handle<TParams, TResponse, TRequest>(
                 paramsType,
@@ -42,12 +40,8 @@ class OpenAPIAuthenticatedRoute<TAuth>(
     }
 
     @PublishedApi
-    internal fun <TParams : Any, TResponse : Any> handle(
-        paramsType: KType,
-        responseType: KType,
-        body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams) -> Unit
-    ) {
-        child().apply {// child in case path is branch to prevent propagation of the mutable nature of the provider
+    internal fun <TParams : Any, TResponse : Any> handle(paramsType: KType, responseType: KType, body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams) -> Unit) {
+        child().apply { // child in case path is branch to prevent propagation of the mutable nature of the provider
             provider.registerModule(authProvider as AuthProvider<*>)
             handle<TParams, TResponse, Unit>(
                 paramsType,

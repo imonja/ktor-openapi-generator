@@ -4,7 +4,7 @@ import com.papsign.ktor.openapigen.model.schema.SchemaModel
 import com.papsign.ktor.openapigen.schema.processor.SchemaProcessor
 import kotlin.reflect.KType
 
-object StringExampleProcessor: SchemaProcessor<StringExample> {
+object StringExampleProcessor : SchemaProcessor<StringExample> {
     override fun process(model: SchemaModel<*>, type: KType, annotation: StringExample): SchemaModel<*> {
         (model as SchemaModel<String?>).apply {
             if (annotation.examples.size > 1) {
@@ -19,5 +19,4 @@ object StringExampleProcessor: SchemaProcessor<StringExample> {
         }
         return model
     }
-
 }

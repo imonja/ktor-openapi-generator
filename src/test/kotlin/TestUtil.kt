@@ -23,13 +23,16 @@ fun Application.installOpenAPI(): OpenAPIGen {
         server("http://localhost:8080/") {
             description = "Test server"
         }
-        //optional
-        replaceModule(DefaultSchemaNamer, object: SchemaNamer {
-            val regex = Regex("[A-Za-z0-9_.]+")
-            override fun get(type: KType): String {
-                return type.toString().replace(regex) { it.value.split(".").last() }.replace(Regex(">|<|, "), "_")
+        // optional
+        replaceModule(
+            DefaultSchemaNamer,
+            object : SchemaNamer {
+                val regex = Regex("[A-Za-z0-9_.]+")
+                override fun get(type: KType): String {
+                    return type.toString().replace(regex) { it.value.split(".").last() }.replace(Regex(">|<|, "), "_")
+                }
             }
-        })
+        )
     }
 }
 
@@ -38,4 +41,3 @@ fun Application.installJackson() {
         jackson()
     }
 }
-

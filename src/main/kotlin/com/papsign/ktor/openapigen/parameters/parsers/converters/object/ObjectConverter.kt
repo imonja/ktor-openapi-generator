@@ -11,7 +11,7 @@ import kotlin.reflect.KType
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.jvm.jvmErasure
 
-class ObjectConverter(type: KType): MappedConverter {
+class ObjectConverter(type: KType) : MappedConverter {
 
     private val builderMap: Map<KParameter, Converter>
     private val constructor: KFunction<Any>
@@ -20,7 +20,11 @@ class ObjectConverter(type: KType): MappedConverter {
         val kclass = type.jvmErasure
         if (kclass.isData) {
             constructor = kclass.primaryConstructor ?: error("Parameter objects must have primary constructors")
-            builderMap = constructor.parameters.associateWith { parameter -> PrimitiveConverterFactory.buildConverter(parameter.type) ?: error("Invalid type ${parameter.type} in object $type, only enums and primitives are allowed") }
+            builderMap = constructor.parameters.associateWith { parameter ->
+                PrimitiveConverterFactory.buildConverter(parameter.type) ?: error(
+                    "Invalid type ${parameter.type} in object $type, only enums and primitives are allowed"
+                )
+            }
         } else {
             error("Only data classes are currently supported for Parameter objects")
         }
@@ -31,10 +35,12 @@ class ObjectConverter(type: KType): MappedConverter {
     }
 
     override fun convert(map: Map<String, String>): Any? {
-        return try { constructor.callBy(builderMap.mapValues { (key, value) -> map[key.openAPIName]?.let { value.convert(it) }  }) } catch (e: InvocationTargetException) { null }
+        return try { constructor.callBy(builderMap.mapValues { (key, value) -> map[key.openAPIName]?.let { value.convert(it) } }) } catch (
+            e: InvocationTargetException
+        ) { null }
     }
 
-    companion object: ConverterSelector {
+    companion object : ConverterSelector {
 
         override fun canHandle(type: KType): Boolean {
             return true

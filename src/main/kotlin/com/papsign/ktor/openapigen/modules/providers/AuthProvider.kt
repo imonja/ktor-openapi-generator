@@ -11,12 +11,12 @@ import com.papsign.ktor.openapigen.route.path.normal.NormalOpenAPIRoute
 import io.ktor.server.routing.RoutingContext
 import kotlin.reflect.KType
 
-interface AuthProvider<TAuth>: OpenAPIModule, DependentModule {
+interface AuthProvider<TAuth> : OpenAPIModule, DependentModule {
     suspend fun getAuth(pipeline: RoutingContext): TAuth
     fun apply(route: NormalOpenAPIRoute): OpenAPIAuthenticatedRoute<TAuth>
     val security: Iterable<Iterable<Security<*>>>
     override val handlers: Collection<Pair<KType, OpenAPIModule>>
         get() = listOf(handler(AuthHandler))
 
-    data class  Security<TScope>(val scheme: SecuritySchemeModel<TScope>, val requirements: List<TScope>) where TScope: Enum<TScope>, TScope: Described
+    data class Security<TScope>(val scheme: SecuritySchemeModel<TScope>, val requirements: List<TScope>) where TScope : Enum<TScope>, TScope : Described
 }

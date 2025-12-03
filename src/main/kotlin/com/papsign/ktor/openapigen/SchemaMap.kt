@@ -5,7 +5,6 @@ package com.papsign.ktor.openapigen
 import com.papsign.ktor.openapigen.model.schema.SchemaModel
 import kotlin.reflect.KType
 
-
 typealias SchemaMap = Map<KType, SchemaModel<*>>
 
 typealias MutableSchemaMap = MutableMap<KType, SchemaModel<*>>
@@ -28,4 +27,3 @@ inline fun <reified T> MutableSchemaMap.put(value: SchemaModel<T>): SchemaModel<
 inline fun <reified T> MutableSchemaMap.remove(): SchemaModel<T>? {
     return remove(getKType<T>()) as SchemaModel<T>?
 }
-

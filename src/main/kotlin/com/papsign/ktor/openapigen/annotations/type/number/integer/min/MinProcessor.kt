@@ -1,15 +1,12 @@
 package com.papsign.ktor.openapigen.annotations.type.number.integer.min
 
-import com.papsign.ktor.openapigen.model.schema.SchemaModel
 import com.papsign.ktor.openapigen.annotations.type.number.NumberConstraint
 import com.papsign.ktor.openapigen.annotations.type.number.integer.IntegerNumberConstraintProcessor
+import com.papsign.ktor.openapigen.model.schema.SchemaModel
 import java.math.BigDecimal
 
-object MinProcessor: IntegerNumberConstraintProcessor<Min>() {
-    override fun process(
-        modelLitteral: SchemaModel.SchemaModelLitteral<*>,
-        annotation: Min
-    ): SchemaModel.SchemaModelLitteral<*> {
+object MinProcessor : IntegerNumberConstraintProcessor<Min>() {
+    override fun process(modelLitteral: SchemaModel.SchemaModelLitteral<*>, annotation: Min): SchemaModel.SchemaModelLitteral<*> {
         @Suppress("UNCHECKED_CAST")
         return (modelLitteral as SchemaModel.SchemaModelLitteral<Any?>).apply {
             minimum = annotation.value

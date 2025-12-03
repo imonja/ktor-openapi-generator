@@ -20,26 +20,36 @@ data class ThrowsInfo(override val exceptions: List<APIException<*, *>>) : Throw
 /**
  * exists for simpler syntax
  */
-inline fun <T: OpenAPIRoute<T>, reified EX : Throwable> T.throws(status: HttpStatusCode, exClass: KClass<EX>, crossinline fn: T.() -> Unit = {}): T {
+inline fun <T : OpenAPIRoute<T>, reified EX : Throwable> T.throws(status: HttpStatusCode, exClass: KClass<EX>, crossinline fn: T.() -> Unit = {}): T {
     return throws<T, EX>(status, fn)
 }
 
-inline fun <T: OpenAPIRoute<T>, reified EX : Throwable> T.throws(status: HttpStatusCode, crossinline fn: T.() -> Unit = {}): T {
+inline fun <T : OpenAPIRoute<T>, reified EX : Throwable> T.throws(status: HttpStatusCode, crossinline fn: T.() -> Unit = {}): T {
     return throws<T, EX, Unit>(status, fn = fn)
 }
 
 /**
  * exists for simpler syntax
  */
-inline fun <T: OpenAPIRoute<T>, reified EX : Throwable, reified B> T.throws(status: HttpStatusCode, example: B? = null, exClass: KClass<EX>, crossinline fn: T.() -> Unit = {}): T {
+inline fun <T : OpenAPIRoute<T>, reified EX : Throwable, reified B> T.throws(
+    status: HttpStatusCode,
+    example: B? = null,
+    exClass: KClass<EX>,
+    crossinline fn: T.() -> Unit = {}
+): T {
     return throws<T, EX, B>(status, example, null, fn)
 }
 
-inline fun <T: OpenAPIRoute<T>, reified EX : Throwable, reified B> T.throws(status: HttpStatusCode, example: B? = null, noinline gen: ((EX) -> B)? = null, crossinline fn: T.() -> Unit = {}): T {
+inline fun <T : OpenAPIRoute<T>, reified EX : Throwable, reified B> T.throws(
+    status: HttpStatusCode,
+    example: B? = null,
+    noinline gen: ((EX) -> B)? = null,
+    crossinline fn: T.() -> Unit = {}
+): T {
     return throws(APIException.apiException(status, example, gen), fn = fn)
 }
 
-inline fun <T: OpenAPIRoute<T>> T.throws(vararg responses: APIException<*, *>, crossinline fn: T.() -> Unit = {}): T {
+inline fun <T : OpenAPIRoute<T>> T.throws(vararg responses: APIException<*, *>, crossinline fn: T.() -> Unit = {}): T {
     return child(ktorRoute.createConstantChild()).apply {
         provider.registerModule(ThrowsInfo(responses.asList()))
         val handler = makeExceptionHandler(responses)
@@ -54,7 +64,9 @@ inline fun <T: OpenAPIRoute<T>> T.throws(vararg responses: APIException<*, *>, c
                     if (call.response.status() != null) {
                         finish()
                     }
-                } else throw exception
+                } else {
+                    throw exception
+                }
             }
         }
         fn()

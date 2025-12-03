@@ -9,4 +9,4 @@ data class InfoModel(
     var termsOfService: String? = null,
     var contact: ContactModel? = null,
     var license: LicenseModel? = null
-): DataModel
+) : DataModel

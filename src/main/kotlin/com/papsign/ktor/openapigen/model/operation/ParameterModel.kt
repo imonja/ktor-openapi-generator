@@ -18,4 +18,4 @@ data class ParameterModel<T>(
     var style: ParameterStyle<*>? = null,
     var explode: Boolean = false
     // incomplete
-): DataModel
+) : DataModel

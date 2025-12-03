@@ -20,11 +20,9 @@ const val contentType = "image/png"
 
 class BinaryContentTypeParserTest {
 
-
     @BinaryRequest([contentType])
     @BinaryResponse([contentType])
     data class Stream(val stream: InputStream)
-
 
     @Test
     fun `Missing accept`() = testApplication {
@@ -58,7 +56,6 @@ class BinaryContentTypeParserTest {
             Assertions.assertEquals(HttpStatusCode.UnsupportedMediaType, it.status)
         }
     }
-
 
     @Test
     fun `Bad Accept`() = testApplication {
@@ -112,14 +109,10 @@ class BinaryContentTypeParserTest {
         }
     }
 
-
-
-    private fun setupTestApplication(
-        expectedOutput: ByteArray
-    ): Application.() -> Unit = {
+    private fun setupTestApplication(expectedOutput: ByteArray): Application.() -> Unit = {
         installOpenAPI()
         apiRouting {
-            //(this.ktorRoute as Routing).trace { println(it.buildText()) }
+            // (this.ktorRoute as Routing).trace { println(it.buildText()) }
             route("test") {
                 post<Unit, Stream, Stream> { _, body ->
                     val actual = body.stream.readBytes()

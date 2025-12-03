@@ -115,7 +115,6 @@ class GenericRoutesTest {
         }
     }
 
-
     data class ObjectNewDto(override val name: String, override val parentId: Long?) : TreeNodeNew
 
     data class ObjectDto(override val name: String, override val parentId: Long?, override val id: Long) : TreeNodeBase
@@ -149,7 +148,6 @@ class GenericRoutesTest {
         override fun removeNode(nodeId: Long) {
             println("delete $nodeId")
         }
-
     }
 
     interface TreeNodeNew {
@@ -174,9 +172,7 @@ class GenericRoutesTest {
 
     data class PathId(@PathParam("Id") val id: Long)
 
-    private inline fun <reified TNodeNew : TreeNodeNew, reified TNode : TreeNodeBase> NormalOpenAPIRoute.treeNodeRoute(
-        service: TreeNodeService<TNodeNew, TNode>
-    ) {
+    private inline fun <reified TNodeNew : TreeNodeNew, reified TNode : TreeNodeBase> NormalOpenAPIRoute.treeNodeRoute(service: TreeNodeService<TNodeNew, TNode>) {
         route("{id}").get<PathId, List<TNode>> { params ->
             respond(service.listNodes(params.id))
         }
@@ -247,7 +243,8 @@ class GenericRoutesTest {
                             referenceName = "basicAuth",
                             type = SecuritySchemeType.http,
                             scheme = HttpSecurityScheme.basic
-                        ), emptyList<Scopes>()
+                        ),
+                        emptyList<Scopes>()
                     )
                 )
             )
@@ -277,5 +274,3 @@ class GenericRoutesTest {
         }
     }
 }
-
-

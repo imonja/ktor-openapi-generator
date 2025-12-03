@@ -10,7 +10,7 @@ trim_trailing_whitespace = true
 # Optional but recommended
 indent_style = space
 indent_size = 4
-max_line_length = 130
+max_line_length = 180
 
 [*.{kt,kts}]
 ktlint_code_style = intellij
@@ -19,7 +19,7 @@ ktlint_standard_no-wildcard-imports = disabled
 ktlint_standard_newline-after-class-header = true
 
 # Disable some rules
-ktlint_disabled_rules = package-name,no-wildcard-imports
+ktlint_disabled_rules = package-name,no-wildcard-imports,enum-entry-name-case,filename
 
 [*.proto]
 max_line_length = 80

@@ -5,7 +5,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.routing.RoutingContext
 
-data class ContentTypeResponder(val responseSerializer: ResponseSerializer, val contentType: ContentType): Responder {
+data class ContentTypeResponder(val responseSerializer: ResponseSerializer, val contentType: ContentType) : Responder {
     override suspend fun <T : Any> respond(response: T, request: RoutingContext) {
         responseSerializer.respond(response, request, contentType)
     }

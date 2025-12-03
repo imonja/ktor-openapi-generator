@@ -57,7 +57,14 @@ abstract class OpenAPIRoute<T : OpenAPIRoute<T>>(val ktorRoute: Route, val provi
                     if (bodyType.classifier == Unit::class) {
                         handle {
                             @Suppress("UNCHECKED_CAST")
-                            val params: P = if (paramsType.classifier == Unit::class) Unit as P else parameterHandler.parse(call.parameters, call.request.headers)
+                            val params: P = if (paramsType.classifier == Unit::class) {
+                                Unit as P
+                            } else {
+                                parameterHandler.parse(
+                                    call.parameters,
+                                    call.request.headers
+                                )
+                            }
                             @Suppress("UNCHECKED_CAST")
                             pass(this, responder, PHandler.handle(params), Unit as B)
                         }
@@ -66,8 +73,16 @@ abstract class OpenAPIRoute<T : OpenAPIRoute<T>>(val ktorRoute: Route, val provi
                             contentType(contentType) {
                                 handle {
                                     val receive: B = parsers.getBodyParser(call.request.contentType()).parseBody(bodyType, this)
+
                                     @Suppress("UNCHECKED_CAST")
-                                    val params: P = if (paramsType.classifier == Unit::class) Unit as P else parameterHandler.parse(call.parameters, call.request.headers)
+                                    val params: P = if (paramsType.classifier == Unit::class) {
+                                        Unit as P
+                                    } else {
+                                        parameterHandler.parse(
+                                            call.parameters,
+                                            call.request.headers
+                                        )
+                                    }
                                     pass(this, responder, PHandler.handle(params), BHandler.handle(receive))
                                 }
                             }
@@ -79,12 +94,20 @@ abstract class OpenAPIRoute<T : OpenAPIRoute<T>>(val ktorRoute: Route, val provi
     }
 
     fun List<SelectedSerializer>.getResponseSerializer(contentType: ContentType): ResponseSerializer {
-        if (size > 1) log.warn("Multiple equal serializers for Accept $contentType: ${map { it.module::class.simpleName }}, selecting first ${first().module::class.simpleName}")
+        if (size > 1) {
+            log.warn(
+                "Multiple equal serializers for Accept $contentType: ${map { it.module::class.simpleName }}, selecting first ${first().module::class.simpleName}"
+            )
+        }
         return firstOrNull()?.module ?: throw OpenAPINoSerializerException(contentType)
     }
 
     fun List<SelectedParser>.getBodyParser(contentType: ContentType): BodyParser {
-        if (size > 1) log.warn("Multiple equal parsers for Content-Type $contentType: ${map { it.module::class.simpleName }}, selecting first ${first().module::class.simpleName}")
+        if (size > 1) {
+            log.warn(
+                "Multiple equal parsers for Content-Type $contentType: ${map { it.module::class.simpleName }}, selecting first ${first().module::class.simpleName}"
+            )
+        }
         return firstOrNull()?.module ?: throw OpenAPINoParserException(contentType)
     }
 

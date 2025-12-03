@@ -11,7 +11,7 @@ import com.papsign.ktor.openapigen.validation.ValidatorBuilder
 import kotlin.reflect.KType
 import kotlin.reflect.full.withNullability
 
-abstract class RegularExpressionConstraintProcessor<A: Annotation>(): SchemaProcessor<A>, ValidatorBuilder<A> {
+abstract class RegularExpressionConstraintProcessor<A : Annotation>() : SchemaProcessor<A>, ValidatorBuilder<A> {
 
     private val log = classLogger()
 
@@ -21,7 +21,7 @@ abstract class RegularExpressionConstraintProcessor<A: Annotation>(): SchemaProc
 
     abstract fun getConstraint(annotation: A): RegularExpressionConstraint
 
-    private class RegularExpressionConstraintValidator(private val constraint: RegularExpressionConstraint): Validator {
+    private class RegularExpressionConstraintValidator(private val constraint: RegularExpressionConstraint) : Validator {
         override fun <T> validate(subject: T?): T? {
             if (subject is String?) {
                 if (subject == null || !constraint.pattern.toRegex().containsMatchIn(subject)) {
@@ -54,5 +54,8 @@ abstract class RegularExpressionConstraintProcessor<A: Annotation>(): SchemaProc
 
 data class RegularExpressionConstraint(val pattern: String, val errorMessage: String)
 
-class RegularExpressionConstraintViolation(val actual: String?, val constraint: RegularExpressionConstraint): ConstraintViolation("Constraint violation: the string " +
-"'$actual' does not match the regular expression ${constraint.pattern}", constraint.errorMessage)
+class RegularExpressionConstraintViolation(val actual: String?, val constraint: RegularExpressionConstraint) : ConstraintViolation(
+    "Constraint violation: the string " +
+        "'$actual' does not match the regular expression ${constraint.pattern}",
+    constraint.errorMessage
+)

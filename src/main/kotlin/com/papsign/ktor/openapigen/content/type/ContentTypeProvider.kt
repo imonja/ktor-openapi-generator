@@ -7,7 +7,7 @@ import com.papsign.ktor.openapigen.modules.OpenAPIModule
 import io.ktor.http.ContentType
 import kotlin.reflect.KType
 
-interface ContentTypeProvider: OpenAPIModule {
+interface ContentTypeProvider : OpenAPIModule {
 
     enum class Usage {
         SERIALIZE, PARSE

@@ -4,7 +4,7 @@ import com.papsign.ktor.openapigen.parameters.parsers.converters.ConverterSelect
 import com.papsign.ktor.openapigen.parameters.parsers.converters.primitive.EnumConverter
 import com.papsign.ktor.openapigen.parameters.parsers.converters.primitive.PrimitiveConverter
 
-object CollectionConverterFactory: ConverterSelectorFactory(
+object CollectionConverterFactory : ConverterSelectorFactory(
     PrimitiveConverter,
     EnumConverter,
     ListConverter,

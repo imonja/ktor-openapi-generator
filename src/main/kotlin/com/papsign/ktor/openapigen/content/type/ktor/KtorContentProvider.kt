@@ -65,11 +65,10 @@ object KtorContentProvider : ContentTypeProvider, BodyParser, ResponseSerializer
     }
 
     @Suppress("UNCHECKED_CAST")
-    private inline fun <reified T : Any, R> T.getPrivateProperty(name: String): R? =
-        T::class.memberProperties
-            .firstOrNull { it.name == name }
-            ?.apply { isAccessible = true }
-            ?.get(this) as? R
+    private inline fun <reified T : Any, R> T.getPrivateProperty(name: String): R? = T::class.memberProperties
+        .firstOrNull { it.name == name }
+        ?.apply { isAccessible = true }
+        ?.get(this) as? R
 
     override fun <T> getMediaType(
         type: KType,
@@ -120,20 +119,11 @@ object KtorContentProvider : ContentTypeProvider, BodyParser, ResponseSerializer
         return contentTypes!!.toList()
     }
 
-    override suspend fun <T : Any> respond(
-        response: T,
-        request: RoutingContext,
-        contentType: ContentType
-    ) {
+    override suspend fun <T : Any> respond(response: T, request: RoutingContext, contentType: ContentType) {
         request.call.respond(response as Any)
     }
 
-    override suspend fun <T : Any> respond(
-        statusCode: HttpStatusCode,
-        response: T,
-        request: RoutingContext,
-        contentType: ContentType
-    ) {
+    override suspend fun <T : Any> respond(statusCode: HttpStatusCode, response: T, request: RoutingContext, contentType: ContentType) {
         request.call.respond(statusCode, response as Any)
     }
 }

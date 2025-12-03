@@ -27,21 +27,21 @@ fun responseAnnotationStatus() = ResponseAnnotationStatusCode
 /**
  *  Sets the success response status code of the endpoints defined in the block
  */
-inline fun <T: OpenAPIRoute<T>> T.status(code: HttpStatusCode, crossinline fn: T.() -> Unit) {
+inline fun <T : OpenAPIRoute<T>> T.status(code: HttpStatusCode, crossinline fn: T.() -> Unit) {
     child().apply { provider.registerModule(status(code)) }.fn()
 }
 
 /**
  *  Sets the success response status code of the endpoints defined in the block
  */
-inline fun <T: OpenAPIRoute<T>> T.status(code: Int, crossinline fn: T.() -> Unit) {
+inline fun <T : OpenAPIRoute<T>> T.status(code: Int, crossinline fn: T.() -> Unit) {
     child().apply { provider.registerModule(status(code)) }.fn()
 }
 
 /**
  * Success response status code of the endpoints defined in the block will be derived from the @Response annotation
  */
-inline fun <T: OpenAPIRoute<T>> T.responseAnnotationStatus(crossinline fn: T.() -> Unit) {
+inline fun <T : OpenAPIRoute<T>> T.responseAnnotationStatus(crossinline fn: T.() -> Unit) {
     child().apply { provider.registerModule(responseAnnotationStatus()) }.fn()
 }
 

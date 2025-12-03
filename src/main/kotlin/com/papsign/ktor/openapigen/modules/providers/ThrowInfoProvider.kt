@@ -7,7 +7,7 @@ import com.papsign.ktor.openapigen.modules.OpenAPIModule
 import com.papsign.ktor.openapigen.modules.handlers.ThrowOperationHandler
 import kotlin.reflect.KType
 
-interface ThrowInfoProvider: OpenAPIModule, DependentModule {
+interface ThrowInfoProvider : OpenAPIModule, DependentModule {
     val exceptions: List<APIException<*, *>>
     override val handlers: Collection<Pair<KType, OpenAPIModule>>
         get() = listOf(handler(ThrowOperationHandler))

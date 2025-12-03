@@ -17,7 +17,7 @@ import java.net.URL
 class SwaggerUi(
     private val basePath: String,
     private val version: String,
-    private val openApiJsonUrl: String?,
+    private val openApiJsonUrl: String?
 ) {
     private val notFound = mutableListOf<String>()
     private val content = mutableMapOf<String, ResourceContent>()
@@ -44,7 +44,6 @@ class SwaggerUi(
     }
 }
 
-
 private val contentTypes = mapOf(
     "html" to Html,
     "css" to CSS,
@@ -56,7 +55,7 @@ private val contentTypes = mapOf(
 private class ResourceContent(
     val resource: URL,
     val address: String,
-    val openApiJsonUrl: String?,
+    val openApiJsonUrl: String?
 ) : OutgoingContent.ByteArrayContent() {
     private val bytes by lazy {
         if (contentType == JavaScript) {
@@ -70,7 +69,9 @@ private class ResourceContent(
                     }
                 }
                 .toByteArray()
-        } else resource.readBytes()
+        } else {
+            resource.readBytes()
+        }
     }
 
     override val contentType: ContentType? by lazy {

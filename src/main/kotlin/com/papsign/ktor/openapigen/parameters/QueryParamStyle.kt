@@ -7,6 +7,6 @@ import com.papsign.ktor.openapigen.parameters.parsers.builders.query.delimited.P
 import com.papsign.ktor.openapigen.parameters.parsers.builders.query.delimited.SpaceDelimitedBuilderFactory
 import com.papsign.ktor.openapigen.parameters.parsers.builders.query.form.FormBuilderFactory
 
-enum class QueryParamStyle(override val factory: BuilderFactory<Builder<QueryParamStyle>, QueryParamStyle>): ParameterStyle<QueryParamStyle> {
+enum class QueryParamStyle(override val factory: BuilderFactory<Builder<QueryParamStyle>, QueryParamStyle>) : ParameterStyle<QueryParamStyle> {
     form(FormBuilderFactory), spaceDelimited(SpaceDelimitedBuilderFactory), pipeDelimited(PipeDelimitedBuilderFactory), deepObject(DeepBuilderFactory)
 }

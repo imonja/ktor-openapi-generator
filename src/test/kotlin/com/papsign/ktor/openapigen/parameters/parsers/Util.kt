@@ -28,7 +28,6 @@ inline fun <reified T> BuilderSelector<*>.testSelector(
     assert(equals(expect, actual as T)) { "Expected $expect, Actual: $actual" }
 }
 
-
 fun toStr(any: Any?): String {
     return if (any != null && any.javaClass.isArray) {
         (0 until Array.getLength(any)).map {
@@ -39,31 +38,27 @@ fun toStr(any: Any?): String {
     }
 }
 
-inline fun <reified T, B: Builder<S>, S> BuilderFactory<B, S>.testSelector(
+inline fun <reified T, B : Builder<S>, S> BuilderFactory<B, S>.testSelector(
     expect: T,
     key: String,
     parseData: Map<String, List<String>>,
     explode: Boolean,
     equals: (expected: T, actual: T) -> Boolean = { a, b -> a == b }
-) where S: ParameterStyle<S>, S: Enum<S> {
-
+) where S : ParameterStyle<S>, S : Enum<S> {
     val type = getKType<T>()
     val builder = buildBuilder(type, explode)
     assertNotNull(builder, "BuilderSelector ${javaClass.simpleName} could not be generated for type $type")
     val actual = builder.build(key, parseData)
     println("$expect = $actual")
     if (actual != null) {
-        assert(T::class.isSuperclassOf(actual::class)) { "Actual class ${actual.javaClass.simpleName} from builder ${builder.javaClass.simpleName} must be subclass of ${T::class.java.simpleName}" }
+        assert(T::class.isSuperclassOf(actual::class)) {
+            "Actual class ${actual.javaClass.simpleName} from builder ${builder.javaClass.simpleName} must be subclass of ${T::class.java.simpleName}"
+        }
     }
     assert(equals(expect, actual as T)) { "Expected ${toStr(expect)}, Actual: ${toStr(actual)}" }
 }
 
-
-inline fun <reified T> BuilderFactory<*, *>.testSelectorFails(
-    key: String,
-    parseData: Map<String, List<String>>,
-    explode: Boolean
-) {
+inline fun <reified T> BuilderFactory<*, *>.testSelectorFails(key: String, parseData: Map<String, List<String>>, explode: Boolean) {
     val type = getKType<T>()
     val builder = buildBuilder(type, explode)
     assertNotNull(builder, "BuilderSelector ${javaClass.simpleName} could not be generated for type $type")
@@ -71,4 +66,3 @@ inline fun <reified T> BuilderFactory<*, *>.testSelectorFails(
         builder.build(key, parseData)
     }
 }
-

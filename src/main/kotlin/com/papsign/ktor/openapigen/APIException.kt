@@ -27,15 +27,13 @@ interface APIException<EX : Throwable, B> {
             return apiException(status, null as Unit?)
         }
 
-        inline fun <reified EX : Throwable, reified B> apiException(
-            status: HttpStatusCode,
-            example: B? = null,
-            noinline gen: ((EX) -> B)? = null
-        ): APIException<EX, B> {
+        inline fun <reified EX : Throwable, reified B> apiException(status: HttpStatusCode, example: B? = null, noinline gen: ((EX) -> B)? = null): APIException<EX, B> {
             return APIExceptionProxy(
-                status, EX::class,
+                status,
+                EX::class,
                 example,
-                getKType<B>(), gen
+                getKType<B>(),
+                gen
             )
         }
     }

@@ -6,7 +6,6 @@ import kotlin.reflect.*
 import kotlin.reflect.full.*
 import kotlin.reflect.jvm.*
 
-
 /**
  * don't mind the evil leak, it's that or a two-step builder structure to be able to handle recursive types
  */
@@ -102,11 +101,13 @@ class ValidationHandler private constructor(
 
                             type.isSubtypeOf(listType) -> {
                                 transformFun = { t: Any? ->
-                                    transform(if (t != null) {
-                                        (t as Iterable<Any?>).map { handler.handle(it) }
-                                    } else {
-                                        t
-                                    })
+                                    transform(
+                                        if (t != null) {
+                                            (t as Iterable<Any?>).map { handler.handle(it) }
+                                        } else {
+                                            t
+                                        }
+                                    )
                                 }
                             }
 
@@ -121,7 +122,6 @@ class ValidationHandler private constructor(
                                     } else {
                                         t
                                     }
-
                                 }
                             }
 
@@ -279,8 +279,12 @@ class ValidationHandler private constructor(
                                     }
                                     if (copy != null && copyParams != null) {
                                         copy.callBy(copyParams)
-                                    } else t
-                                } else t
+                                    } else {
+                                        t
+                                    }
+                                } else {
+                                    t
+                                }
                             }
                         }
 
@@ -325,8 +329,7 @@ class ValidationHandler private constructor(
                 get() = classAnnotation + typeAnnotation + additionalAnnotations
 
             companion object {
-                operator fun <T : Any> invoke(tClass: KClass<T>,
-                                              annotations: List<Annotation> = listOf()): AnnotatedKType {
+                operator fun <T : Any> invoke(tClass: KClass<T>, annotations: List<Annotation> = listOf()): AnnotatedKType {
                     val type = tClass.starProjectedType
                     return AnnotatedKType(
                         type,
@@ -391,4 +394,3 @@ class ValidationHandler private constructor(
         private val mapType = getKType<Map<*, *>?>()
     }
 }
-

@@ -7,7 +7,7 @@ import kotlin.reflect.full.starProjectedType
  * implement this to automatically register an object as [OpenAPIModule] in the global context
  * only works if the object is in a package declared in [OpenAPIGen.Configuration.scanPackagesForModules]
  */
-interface OpenAPIGenModuleExtension: OpenAPIModule, OpenAPIGenExtension {
+interface OpenAPIGenModuleExtension : OpenAPIModule, OpenAPIGenExtension {
     override fun onInit(gen: OpenAPIGen) {
         gen.globalModuleProvider.registerModule(this, this::class.starProjectedType)
     }

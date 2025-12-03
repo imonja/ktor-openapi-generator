@@ -7,6 +7,7 @@ plugins {
     signing
     id("net.nemerosa.versioning") version "3.1.0"
     id("org.jetbrains.dokka") version "2.1.0"
+    id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
 }
 
 group = "io.github.imonja"
@@ -164,4 +165,13 @@ val toolchainLauncher = javaToolchains.launcherFor {
 }
 tasks.withType<Test>().configureEach { javaLauncher.set(toolchainLauncher) }
 tasks.withType<JavaExec>().configureEach { javaLauncher.set(toolchainLauncher) }
+
+ktlint {
+    verbose.set(true)
+    outputToConsole.set(true)
+    enableExperimentalRules.set(true)
+    filter {
+        exclude { it.file.toString().contains("build") }
+    }
+}
 

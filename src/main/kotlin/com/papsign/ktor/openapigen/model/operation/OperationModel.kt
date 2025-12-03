@@ -18,4 +18,4 @@ data class OperationModel(
     var deprecated: Boolean? = null,
     var security: List<SecurityModel>? = null,
     var servers: List<ServerModel>? = null
-): DataModel
+) : DataModel

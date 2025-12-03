@@ -16,5 +16,4 @@ data class OpenAPIModel(
     var security: LinkedHashSet<SecurityModel> = LinkedHashSet(),
     var tags: LinkedHashSet<TagModel> = LinkedHashSet(),
     var externalDocs: ExternalDocumentationModel? = null
-): DataModel
-
+) : DataModel

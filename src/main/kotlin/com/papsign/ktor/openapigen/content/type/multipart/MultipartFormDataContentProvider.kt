@@ -14,7 +14,6 @@ import com.papsign.ktor.openapigen.schema.builder.provider.FinalSchemaBuilderPro
 import io.ktor.http.ContentType
 import io.ktor.http.content.PartData
 import io.ktor.http.content.forEachPart
-import io.ktor.http.content.streamProvider
 import io.ktor.server.request.receiveMultipart
 import io.ktor.server.routing.RoutingContext
 import io.ktor.util.asStream
@@ -37,8 +36,13 @@ object MultipartFormDataContentProvider : BodyParser, OpenAPIGenModuleExtension 
 
     data class MultipartCVT<T>(val default: T?, val type: KType, val clazz: KClass<*>, val serializer: (T) -> String, val parser: (String) -> T)
 
-    inline fun <reified T> cvt(noinline serializer: (T) -> String, noinline parser: (String) -> T, default: T? = null) = MultipartCVT(default,
-        getKType<T>(), T::class, serializer, parser)
+    inline fun <reified T> cvt(noinline serializer: (T) -> String, noinline parser: (String) -> T, default: T? = null) = MultipartCVT(
+        default,
+        getKType<T>(),
+        T::class,
+        serializer,
+        parser
+    )
 
     private val streamTypes = setOf(
         getKType<InputStream>(),
@@ -50,23 +54,26 @@ object MultipartFormDataContentProvider : BodyParser, OpenAPIGenModuleExtension 
     )
 
     private val conversions = setOf(
-            cvt({ it }, { it }, ""),
-            cvt(Int::toString, String::toInt, 0),
-            cvt(Long::toString, String::toLong, 0),
-            cvt(Float::toString, String::toFloat, .0f),
-            cvt(Double::toString, String::toDouble, .0),
-            cvt(Instant::toString, Instant::parse),
-            cvt(Boolean::toString, String::toBoolean, false)
+        cvt({ it }, { it }, ""),
+        cvt(Int::toString, String::toInt, 0),
+        cvt(Long::toString, String::toLong, 0),
+        cvt(Float::toString, String::toFloat, .0f),
+        cvt(Double::toString, String::toDouble, .0),
+        cvt(Instant::toString, Instant::parse),
+        cvt(Boolean::toString, String::toBoolean, false)
     )
 
-    private val conversionsByType = conversions.associateBy { it.type.withNullability(false) } + conversions.associateBy { it.type.withNullability(true) }
+    private val conversionsByType = conversions.associateBy { it.type.withNullability(false) } + conversions.associateBy {
+        it.type.withNullability(
+            true
+        )
+    }
 
     private val nonNullTypes = streamTypes + conversionsByType.keys
 
     private val allowedTypes = nonNullTypes
 
     private val typeContentTypes = HashMap<KType, Map<String, MediaTypeEncodingModel>>()
-
 
     override suspend fun <T : Any> parseBody(clazz: KType, request: RoutingContext): T {
         val objectMap = HashMap<String, Any>()
@@ -89,31 +96,38 @@ object MultipartFormDataContentProvider : BodyParser, OpenAPIGenModuleExtension 
         }
         @Suppress("UNCHECKED_CAST")
         val ctor = (clazz.classifier as KClass<T>).primaryConstructor!!
-        return ctor.callBy(ctor.parameters.associateWith {
-            val raw = objectMap[it.openAPIName]
-            if ((raw == null || (raw !is InputStream && streamTypes.contains(it.type))) && it.type.isMarkedNullable) {
-                null
-            } else {
-                if (raw is InputStream) {
-                    raw
+        return ctor.callBy(
+            ctor.parameters.associateWith {
+                val raw = objectMap[it.openAPIName]
+                if ((raw == null || (raw !is InputStream && streamTypes.contains(it.type))) && it.type.isMarkedNullable) {
+                    null
                 } else {
-                    val cvt = conversionsByType[it.type] ?: error("Unhandled Type ${it.type}")
-                    when (raw) {
-                        null -> {
-                            cvt.default ?: error("No provided value for field ${it.openAPIName}")
+                    if (raw is InputStream) {
+                        raw
+                    } else {
+                        val cvt = conversionsByType[it.type] ?: error("Unhandled Type ${it.type}")
+                        when (raw) {
+                            null -> {
+                                cvt.default ?: error("No provided value for field ${it.openAPIName}")
+                            }
+                            is String -> {
+                                cvt.parser(raw)
+                            }
+                            else -> error("Unhandled Type ${it.type}")
                         }
-                        is String -> {
-                            cvt.parser(raw)
-                        }
-                        else -> error("Unhandled Type ${it.type}")
                     }
                 }
             }
-        })
+        )
     }
 
-
-    override fun <T> getMediaType(type: KType, apiGen: OpenAPIGen, provider: ModuleProvider<*>, example: T?, usage: ContentTypeProvider.Usage): Map<ContentType, MediaTypeModel<T>>? {
+    override fun <T> getMediaType(
+        type: KType,
+        apiGen: OpenAPIGen,
+        provider: ModuleProvider<*>,
+        example: T?,
+        usage: ContentTypeProvider.Usage
+    ): Map<ContentType, MediaTypeModel<T>>? {
         if (type == unitKType) return null
         val formContentType = type.jvmErasure.findAnnotation<FormDataRequest>()?.type?.contentType ?: return null
         val ctor = type.jvmErasure.primaryConstructor
@@ -136,10 +150,10 @@ object MultipartFormDataContentProvider : BodyParser, OpenAPIGenModuleExtension 
         val contentTypes = synchronized(typeContentTypes) {
             typeContentTypes.getOrPut(type) {
                 type.jvmErasure.memberProperties
-                        .associateBy { it.name }
-                        .mapValues { it.value.findAnnotation<PartEncoding>() }
-                        .filterValues { it != null }
-                        .mapValues { MediaTypeEncodingModel(it.value!!.contentType) }
+                    .associateBy { it.name }
+                    .mapValues { it.value.findAnnotation<PartEncoding>() }
+                    .filterValues { it != null }
+                    .mapValues { MediaTypeEncodingModel(it.value!!.contentType) }
             }.toMap()
         }
         val schemaBuilder = provider.ofType<FinalSchemaBuilderProviderModule>().last().provide(apiGen, provider)

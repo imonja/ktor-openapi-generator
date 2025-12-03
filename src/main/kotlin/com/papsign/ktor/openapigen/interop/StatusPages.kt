@@ -59,11 +59,7 @@ class OpenAPIGenStatusPagesInterop(val api: OpenAPIGen, val statusCfg: StatusPag
      * @param example An example of the response body
      * @param gen handler for [TThrowable] that should return an instance of [TResponse]
      */
-    inline fun <reified TThrowable : Throwable, reified TResponse> exception(
-        status: HttpStatusCode,
-        example: TResponse? = null,
-        noinline gen: (TThrowable) -> TResponse
-    ) {
+    inline fun <reified TThrowable : Throwable, reified TResponse> exception(status: HttpStatusCode, example: TResponse? = null, noinline gen: (TThrowable) -> TResponse) {
         val ex = apiException(status, example, gen)
         api.globalModuleProvider.registerModule(ThrowsInfo(listOf(ex)))
         statusCfg.exception<TThrowable> { call, cause ->

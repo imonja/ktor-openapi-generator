@@ -6,4 +6,4 @@ data class ContactModel(
     var name: String? = null,
     var url: String? = null,
     var email: String? = null
-): DataModel
+) : DataModel

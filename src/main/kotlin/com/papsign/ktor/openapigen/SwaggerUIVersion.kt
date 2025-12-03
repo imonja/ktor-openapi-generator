@@ -11,7 +11,7 @@ object SwaggerUIVersion {
 
     init {
         val file = this::class.java.getResourceAsStream("/META-INF/maven/org.webjars/swagger-ui/pom.properties")
-        if(file != null) {
+        if (file != null) {
 
             val properties = Properties()
             properties.load(file)

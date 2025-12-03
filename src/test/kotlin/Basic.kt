@@ -28,7 +28,7 @@ object Basic {
     @JvmStatic
     fun main(args: Array<String>) {
         embeddedServer(Netty, 8080, "localhost") {
-            //define basic OpenAPI info
+            // define basic OpenAPI info
             install(OpenAPIGen) {
                 // basic info
                 info {
@@ -44,13 +44,16 @@ object Basic {
                 server("http://localhost:8080/") {
                     description = "Test server"
                 }
-                //optional
-                replaceModule(DefaultSchemaNamer, object : SchemaNamer {
-                    val regex = Regex("[A-Za-z0-9_.]+")
-                    override fun get(type: KType): String {
-                        return type.toString().replace(regex) { it.value.split(".").last() }.replace(Regex(">|<|, "), "_")
+                // optional
+                replaceModule(
+                    DefaultSchemaNamer,
+                    object : SchemaNamer {
+                        val regex = Regex("[A-Za-z0-9_.]+")
+                        override fun get(type: KType): String {
+                            return type.toString().replace(regex) { it.value.split(".").last() }.replace(Regex(">|<|, "), "_")
+                        }
                     }
-                })
+                )
             }
 
             install(ContentNegotiation) {
@@ -64,10 +67,9 @@ object Basic {
                 }
             }
 
-            //Described routing
+            // Described routing
             apiRouting {
-
-                //bare minimum, just like Ktor but strongly typed
+                // bare minimum, just like Ktor but strongly typed
                 get<StringParam, StringParam> { params ->
                     respond(params)
                 }
@@ -100,7 +102,6 @@ object Basic {
                 }
             }
         }.start(true)
-
     }
 
     // Path works like the @Location from locations, but for transparency we recommend only using it to extract the parameters
@@ -118,7 +119,6 @@ object Basic {
     // A response can be any class, but a description will be generated from the annotation
     @Response("A String Response")
     data class StringResponse(val str: String)
-
 
     // DTOs can be requests and responses, annotations are optional
     @Response("A String Response")

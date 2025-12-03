@@ -16,7 +16,7 @@ data class SecuritySchemeModel<TScope> constructor(
     val bearerFormat: String? = null,
     val flows: FlowsModel<TScope>? = null,
     val openIdConnectUrl: String? = null
-): DataModel where TScope : Enum<TScope>, TScope : Described{
+) : DataModel where TScope : Enum<TScope>, TScope : Described {
 
     override fun serialize(): Map<String, Any?> {
         return this::class.memberProperties.associateBy { it.name }.mapValues<String, KProperty1<out SecuritySchemeModel<TScope>, Any?>, Any?> { (_, prop) ->
