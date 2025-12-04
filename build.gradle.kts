@@ -102,11 +102,8 @@ dokka {
     }
 }
 
-// Maven Central and GitHub publishing configuration
-mavenPublishing {
-    publishToMavenCentral()
-    
-    // GitHub Packages
+// GitHub Packages publishing configuration
+publishing {
     repositories {
         maven {
             name = "GitHubPackages"
@@ -117,7 +114,11 @@ mavenPublishing {
             }
         }
     }
-    
+}
+
+// Maven Central publishing configuration
+mavenPublishing {
+    publishToMavenCentral()
     signAllPublications()
 
     coordinates(
@@ -161,7 +162,6 @@ mavenPublishing {
         }
     }
 }
-
 
 val compileTestKotlin: KotlinCompile by tasks
 compileTestKotlin.compilerOptions {
