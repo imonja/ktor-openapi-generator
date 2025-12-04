@@ -61,6 +61,7 @@ jobs:
                 run: gradle -Pversion=${{ steps.version.outputs.version }} publish publishToMavenCentral
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    GITHUB_USERNAME: ${{ github.actor }}
                     ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
                     ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
                     ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}

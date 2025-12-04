@@ -102,50 +102,22 @@ dokka {
     }
 }
 
-// ------------------------------------ Deployment Configuration  ------------------------------------
-// name the publication as it is referenced
-val publication = "mavenJava"
-publishing {
+// Maven Central and GitHub publishing configuration
+mavenPublishing {
+    publishToMavenCentral()
+    
+    // GitHub Packages
     repositories {
         maven {
             name = "GitHubPackages"
             url = uri("https://maven.pkg.github.com/imonja/ktor-openapi-generator")
             credentials {
-                username = "x-access-token"
-                password = System.getenv("GITHUB_TOKEN")
+                username = findProperty("github.name") as String? ?: System.getenv("GITHUB_USERNAME") ?: "x-access-token"
+                password = findProperty("github.token") as String? ?: System.getenv("GITHUB_TOKEN")
             }
         }
     }
-    // create jar with sources and with javadoc
-    publications {
-        create<MavenPublication>(publication) {
-            from(components["java"])
-
-            pom {
-                name.set("Ktor OpenAPI/Swagger 3 Generator")
-                description.set("The Ktor OpenAPI Generator is a library to automatically generate the descriptor as you route your ktor application.")
-                url.set("https://github.com/imonja/ktor-openapi-generator")
-                packaging = "jar"
-                licenses {
-                    license {
-                        name.set("Apache-2.0 License")
-                        url.set("https://github.com/imonja/ktor-openapi-generator/blob/master/LICENSE")
-                    }
-                }
-
-                scm {
-                    connection.set("scm:git:git://github.com/imonja/ktor-openapi-generator.git")
-                    url.set("https://github.com/imonja/ktor-openapi-generator")
-                }
-            }
-        }
-    }
-}
-
-
-// Maven Central publishing configuration
-mavenPublishing {
-    publishToMavenCentral()
+    
     signAllPublications()
 
     coordinates(
