@@ -32,9 +32,6 @@ jobs:
                 with:
                     gradle-version: wrapper
 
-            -   name: Build lib
-                run: gradle assemble
-
             -   name: Run tests
                 run: gradle ktlintCheck test --info
 
