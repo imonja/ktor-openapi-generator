@@ -105,17 +105,6 @@ dokka {
 }
 
 // ------------------------------------ Deployment Configuration  ------------------------------------
-// deployment configuration - deploy with sources and documentation
-val sourcesJar by tasks.registering(Jar::class, fun Jar.() {
-    archiveClassifier.set("sources")
-    from(sourceSets.main.get().allSource)
-})
-
-val javadocJar by tasks.registering(Jar::class, fun Jar.() {
-    archiveClassifier.set("javadoc")
-    from(tasks.javadoc)
-})
-
 // name the publication as it is referenced
 val publication = "mavenJava"
 publishing {
@@ -133,8 +122,6 @@ publishing {
     publications {
         create<MavenPublication>(publication) {
             from(components["java"])
-            artifact(sourcesJar)
-            artifact(javadocJar)
 
             pom {
                 name.set("Ktor OpenAPI/Swagger 3 Generator")
