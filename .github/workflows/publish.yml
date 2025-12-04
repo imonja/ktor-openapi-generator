@@ -55,7 +55,7 @@ jobs:
 
             -   name: Publish
                 if: ${{ steps.version.outputs.is_tag == 'true' || steps.tag.outputs.version_type != 'none' }}
-                run: gradle -Pversion=${{ steps.version.outputs.version }} publish
+                run: gradle -Pversion=${{ steps.version.outputs.version }} publish -x check
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                     GITHUB_USERNAME: ${{ github.actor }}
