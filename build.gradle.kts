@@ -147,24 +147,24 @@ publishing {
 mavenPublishing {
     publishToMavenCentral()
     signAllPublications()
-    
+
     coordinates(
         groupId = project.group.toString(),
-        artifactId = "ktor-open-api", 
+        artifactId = "ktor-openapi-generator",
         version = project.version.toString()
     )
-    
+
     configure(KotlinJvm(
         javadocJar = JavadocJar.Dokka("dokkaGenerateHtml"),
         sourcesJar = true
     ))
-    
+
     pom {
         name.set("Ktor OpenAPI/Swagger 3 Generator")
         description.set("The Ktor OpenAPI Generator is a library to automatically generate the descriptor as you route your ktor application.")
         url.set("https://github.com/imonja/ktor-openapi-generator")
         inceptionYear.set("2025")
-        
+
         licenses {
             license {
                 name.set("The Apache License, Version 2.0")
@@ -172,7 +172,7 @@ mavenPublishing {
                 distribution.set("repo")
             }
         }
-        
+
         developers {
             developer {
                 id.set("imonja")
@@ -181,7 +181,7 @@ mavenPublishing {
                 organization.set("imonja")
             }
         }
-        
+
         scm {
             connection.set("scm:git:git://github.com/imonja/ktor-openapi-generator.git")
             developerConnection.set("scm:git:ssh://github.com:imonja/ktor-openapi-generator.git")
