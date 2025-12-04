@@ -1,4 +1,3 @@
-import org.gradle.jvm.tasks.Jar
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -8,11 +7,21 @@ plugins {
     id("net.nemerosa.versioning") version "3.1.0"
     id("org.jetbrains.dokka") version "2.1.0"
     id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
+    id("com.vanniktech.maven.publish") version "0.29.0"
+}
+
+repositories {
+    mavenCentral()
 }
 
 group = "io.github.imonja"
 base.archivesName.set("ktor-open-api")
-version = project.findProperty("version")?.toString() ?: ("1.0.0-" + getCheckedOutGitCommitHash())
+// Version handling for tag-based releases
+if (project.hasProperty("releaseVersion")) {
+    version = project.property("releaseVersion") as String
+} else {
+    version = project.findProperty("version")?.toString() ?: ("1.0.0-" + getCheckedOutGitCommitHash())
+}
 
 fun runCommand(command: String): String {
     val execResult = providers.exec {
@@ -145,6 +154,57 @@ publishing {
         }
     }
 }
+
+
+// Maven Central publishing configuration
+configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
+    coordinates(
+        groupId = project.group.toString(),
+        artifactId = "ktor-open-api",
+        version = project.version.toString()
+    )
+
+    pom {
+        name.set("Ktor OpenAPI/Swagger 3 Generator")
+        description.set("The Ktor OpenAPI Generator is a library to automatically generate the descriptor as you route your ktor application.")
+        url.set("https://github.com/imonja/ktor-openapi-generator")
+        inceptionYear.set("2025")
+
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                distribution.set("repo")
+            }
+        }
+
+        developers {
+            developer {
+                id.set("imonja")
+                name.set("imonja")
+                url.set("https://github.com/imonja")
+                organization.set("imonja")
+            }
+        }
+
+        scm {
+            connection.set("scm:git:git://github.com/imonja/ktor-openapi-generator.git")
+            developerConnection.set("scm:git:ssh://github.com:imonja/ktor-openapi-generator.git")
+            url.set("https://github.com/imonja/ktor-openapi-generator")
+        }
+    }
+
+    // Only publish to Maven Central for non-SNAPSHOT versions
+    if (!version.toString().contains("SNAPSHOT")) {
+        publishToMavenCentral(
+            host = com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL,
+            automaticRelease = true
+        )
+        signAllPublications()
+    }
+}
+
+
 val compileTestKotlin: KotlinCompile by tasks
 compileTestKotlin.compilerOptions {
     freeCompilerArgs.set(listOf("-Xannotation-default-target=param-property"))
