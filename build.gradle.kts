@@ -88,19 +88,19 @@ tasks {
     }
 }
 
-//dokka {
-//    moduleName.set("Ktor OpenAPI/Swagger 3 Generator")
-//    dokkaPublications.html {
-//        outputDirectory.set(layout.buildDirectory.dir("docs"))
-//    }
-//    dokkaSourceSets.main {
-//        sourceLink {
-//            localDirectory.set(file("src/main/kotlin"))
-//            remoteUrl("https://github.com/navikt/ktor-openapi-generator/tree/master/src/main/kotlin")
-//            remoteLineSuffix.set("#L")
-//        }
-//    }
-//}
+dokka {
+    moduleName.set("Ktor OpenAPI/Swagger 3 Generator")
+    dokkaPublications.html {
+        outputDirectory.set(layout.buildDirectory.dir("docs"))
+    }
+    dokkaSourceSets.main {
+        sourceLink {
+            localDirectory.set(file("src/main/kotlin"))
+            remoteUrl("https://github.com/imonja/ktor-openapi-generator/tree/main/src/main/kotlin")
+            remoteLineSuffix.set("#L")
+        }
+    }
+}
 
 // ------------------------------------ Deployment Configuration  ------------------------------------
 // deployment configuration - deploy with sources and documentation
