@@ -1,3 +1,6 @@
+[![License](https://img.shields.io/github/license/imonja/ktor-openapi-generator)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/imonja/ktor-openapi-generator)](https://github.com/imonja/ktor-openapi-generator/releases)
+
 # Ktor OpenAPI Generator
 
 The Ktor OpenAPI Generator is a library to automatically generate the descriptor as you route your ktor application.
