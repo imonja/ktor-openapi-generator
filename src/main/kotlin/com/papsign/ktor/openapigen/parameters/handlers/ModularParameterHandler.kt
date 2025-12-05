@@ -29,25 +29,37 @@ class ModularParameterHandler<T>(val parsers: Map<KParameter, Builder<*>>, val c
     ParameterHandler<T> {
 
     override fun parse(parameters: Parameters, headers: Headers): T {
-        return constructor.callBy(
-            parsers.mapValues {
-                val value = it.value.build(
-                    it.key.name.toString(),
-                    it.key.remapOpenAPINames(
-                        parameters.toMap() + headers.toMap().entries.groupBy {
-                            it.key.lowercase(
-                                Locale.getDefault()
-                            )
-                        }.mapValues { it.value.flatMap { it.value } }
-                    )
-                )
-                if (value != null || it.key.type.isMarkedNullable) {
-                    value
+        val allParams = parameters.toMap() + headers.toMap().entries.groupBy {
+            it.key.lowercase(Locale.getDefault())
+        }.mapValues { it.value.flatMap { it.value } }
+
+        val parsedValues = mutableMapOf<KParameter, Any?>()
+
+        for ((param, parser) in parsers) {
+            val value = parser.build(
+                param.name.toString(),
+                param.remapOpenAPINames(allParams)
+            )
+
+            if (value != null) {
+                // Parameter has a value from the request
+                parsedValues[param] = value
+            } else if (param.type.isMarkedNullable) {
+                // Parameter is nullable but no value provided
+                if (param.isOptional) {
+                    // Parameter has a default value, skip it so callBy uses the default
+                    // Don't add to parsedValues map
                 } else {
-                    throw OpenAPIRequiredFieldException("""The field ${it.key.openAPIName ?: "unknow field"} is required""")
+                    // Parameter is nullable but has no default, use null
+                    parsedValues[param] = null
                 }
+            } else {
+                // Required non-nullable parameter with no value
+                throw OpenAPIRequiredFieldException("""The field ${param.openAPIName ?: "unknown field"} is required""")
             }
-        )
+        }
+
+        return constructor.callBy(parsedValues)
     }
 
     override fun getParameters(apiGen: OpenAPIGen, provider: ModuleProvider<*>): List<ParameterModel<*>> {
@@ -58,7 +70,7 @@ class ModularParameterHandler<T>(val parsers: Map<KParameter, Builder<*>>, val c
             return ParameterModel<Any>(
                 param.openAPIName.toString(),
                 `in`,
-                !param.type.isMarkedNullable
+                !param.type.isMarkedNullable && !param.isOptional
             ).also {
                 @Suppress("UNCHECKED_CAST")
                 it.schema = schemaBuilder.build(
