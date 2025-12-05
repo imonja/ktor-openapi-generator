@@ -23,6 +23,7 @@ import java.util.Locale
 import kotlin.reflect.KFunction
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.withNullability
 
 class ModularParameterHandler<T>(val parsers: Map<KParameter, Builder<*>>, val constructor: KFunction<T>) :
@@ -62,6 +63,43 @@ class ModularParameterHandler<T>(val parsers: Map<KParameter, Builder<*>>, val c
         return constructor.callBy(parsedValues)
     }
 
+    private fun extractDefaultValue(param: KParameter): Any? {
+        return try {
+            if (!param.isOptional) return null
+
+            // Create a minimal parameter map with only required non-nullable parameters
+            val minimalParams = constructor.parameters.mapNotNull { p ->
+                if (!p.type.isMarkedNullable && !p.isOptional && p != param) {
+                    // For required parameters, we need to provide dummy values
+                    p to when (p.type.classifier) {
+                        String::class -> ""
+                        Int::class -> 0
+                        Long::class -> 0L
+                        Boolean::class -> false
+                        Double::class -> 0.0
+                        Float::class -> 0.0f
+                        else -> null // This might cause issues, but we'll handle what we can
+                    }
+                } else {
+                    null
+                }
+            }.toMap()
+
+            // Try to create an instance with minimal parameters to get the default value
+            val instance = constructor.callBy(minimalParams)
+
+            // Use reflection to get the property value
+            val property = constructor.returnType.classifier?.let { clazz ->
+                (clazz as? kotlin.reflect.KClass<*>)?.memberProperties?.find { it.name == param.name }
+            }
+            @Suppress("UNCHECKED_CAST")
+            (property as? kotlin.reflect.KProperty1<Any, *>)?.get(instance as Any)
+        } catch (e: Exception) {
+            // If we can't extract the default value, return null
+            null
+        }
+    }
+
     override fun getParameters(apiGen: OpenAPIGen, provider: ModuleProvider<*>): List<ParameterModel<*>> {
         val schemaBuilder = provider.ofType<FinalSchemaBuilderProviderModule>().last().provide(apiGen, provider)
         val ktype = constructor.returnType
@@ -89,6 +127,13 @@ class ModularParameterHandler<T>(val parsers: Map<KParameter, Builder<*>>, val c
                 it.deprecated = deprecated
                 it.style = parser.style
                 it.explode = parser.explode
+
+                // Set default value if parameter has one
+                if (param.isOptional) {
+                    val defaultValue = extractDefaultValue(param)
+                    @Suppress("UNCHECKED_CAST")
+                    (it as ParameterModel<Any?>).default = defaultValue
+                }
             }
         }
 
@@ -100,6 +145,13 @@ class ModularParameterHandler<T>(val parsers: Map<KParameter, Builder<*>>, val c
                 it.deprecated = deprecated
                 it.style = parser.style
                 it.explode = parser.explode
+
+                // Set default value if parameter has one
+                if (param.isOptional) {
+                    val defaultValue = extractDefaultValue(param)
+                    @Suppress("UNCHECKED_CAST")
+                    (it as ParameterModel<Any?>).default = defaultValue
+                }
             }
         }
 
