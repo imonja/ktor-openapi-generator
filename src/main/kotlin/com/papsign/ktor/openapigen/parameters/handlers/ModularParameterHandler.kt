@@ -65,21 +65,39 @@ class ModularParameterHandler<T>(val parsers: Map<KParameter, Builder<*>>, val c
 
     private fun extractDefaultValue(param: KParameter): Any? {
         return try {
-            if (!param.isOptional) return null
+            // Check if parameter has a default value (both optional nullable and non-nullable with defaults)
+            if (!param.isOptional && !param.type.isMarkedNullable) return null
 
-            // Create a minimal parameter map with only required non-nullable parameters
+            // Create a minimal parameter map with all required parameters (except the one we're extracting)
             val minimalParams = constructor.parameters.mapNotNull { p ->
-                if (!p.type.isMarkedNullable && !p.isOptional && p != param) {
+                if (!p.isOptional && p != param) {
                     // For required parameters, we need to provide dummy values
-                    p to when (p.type.classifier) {
-                        String::class -> ""
-                        Int::class -> 0
-                        Long::class -> 0L
-                        Boolean::class -> false
-                        Double::class -> 0.0
-                        Float::class -> 0.0f
-                        else -> null // This might cause issues, but we'll handle what we can
+                    val dummyValue = if (p.type.isMarkedNullable) {
+                        // For nullable required parameters, use null
+                        null
+                    } else {
+                        // For non-nullable required parameters, create dummy values
+                        when (p.type.classifier) {
+                            String::class -> ""
+                            Int::class -> 0
+                            Long::class -> 0L
+                            Boolean::class -> false
+                            Double::class -> 0.0
+                            Float::class -> 0.0f
+                            java.util.UUID::class -> java.util.UUID.fromString("00000000-0000-0000-0000-000000000000")
+                            else -> {
+                                // Try to create a default instance for other types
+                                try {
+                                    val kclass = p.type.classifier as? kotlin.reflect.KClass<*>
+                                    kclass?.objectInstance ?: kclass?.constructors?.firstOrNull { it.parameters.isEmpty() }?.call()
+                                } catch (e: Exception) {
+                                    // If we can't create a dummy value, skip this parameter approach
+                                    return@extractDefaultValue null
+                                }
+                            }
+                        }
                     }
+                    p to dummyValue
                 } else {
                     null
                 }
