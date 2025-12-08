@@ -118,7 +118,7 @@ publishing {
 
 // Maven Central publishing configuration
 mavenPublishing {
-    publishToMavenCentral(automaticRelease = true)
+    publishToMavenCentral()
     signAllPublications()
 
     coordinates(
