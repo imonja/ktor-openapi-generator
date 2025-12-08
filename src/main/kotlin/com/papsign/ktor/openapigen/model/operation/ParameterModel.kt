@@ -16,6 +16,7 @@ data class ParameterModel<T>(
     var example: T? = null,
     var examples: MutableMap<String, ExampleModel<T>>? = null,
     var style: ParameterStyle<*>? = null,
-    var explode: Boolean = false
+    var explode: Boolean = false,
+    var default: T? = null
     // incomplete
 ) : DataModel
