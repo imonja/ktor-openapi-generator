@@ -2,6 +2,7 @@ package com.papsign.ktor.openapigen.route
 
 import com.papsign.ktor.openapigen.APITag
 import com.papsign.ktor.openapigen.annotations.Path
+import com.papsign.ktor.openapigen.annotations.Paths
 import com.papsign.ktor.openapigen.content.type.ContentTypeProvider
 import com.papsign.ktor.openapigen.modules.handlers.RequestHandlerModule
 import com.papsign.ktor.openapigen.modules.handlers.ResponseHandlerModule
@@ -32,6 +33,19 @@ fun <T : OpenAPIRoute<T>> T.route(path: String): T {
 @KtorDsl
 inline fun <TRoute : OpenAPIRoute<TRoute>> TRoute.route(path: String, crossinline fn: TRoute.() -> Unit) {
     route(path).fn()
+}
+
+/**
+ * Creates multiple routes matching the specified [paths] with aliases
+ * Each path will be registered as a separate route with the same handler
+ */
+@KtorDsl
+inline fun <TRoute : OpenAPIRoute<TRoute>> TRoute.routes(vararg paths: String, crossinline fn: TRoute.() -> Unit) {
+    paths.forEach { path ->
+        route(path) {
+            fn()
+        }
+    }
 }
 
 fun <TRoute : OpenAPIRoute<TRoute>> TRoute.method(method: HttpMethod): TRoute {
@@ -137,25 +151,75 @@ internal fun <TParams : Any, TResponse : Any, TRequest : Any, TRoute : OpenAPIRo
     handle: TRoute.() -> Unit
 ) {
     val path = pType.jvmErasure.findAnnotation<Path>()
-    val new = if (path != null) child(ktorRoute.createRouteFromPath(path.path)) else child()
-    new.apply {
-        provider.registerModule(
-            RequestHandlerModule.create(
-                bType,
-                exampleRequest
-            ),
-            RequestHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, bType)))
-        )
-        provider.registerModule(
-            ResponseHandlerModule.create(
-                rType,
-                exampleResponse
-            ),
-            ResponseHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, rType)))
-        )
-        if (path != null) {
-            provider.registerModule(PathProviderModule(path.path))
+    val paths = pType.jvmErasure.findAnnotation<Paths>()
+
+    when {
+        paths != null -> {
+            // Handle multiple paths (aliases)
+            paths.paths.forEach { pathStr ->
+                val new = child(ktorRoute.createRouteFromPath(pathStr))
+                new.apply {
+                    provider.registerModule(
+                        RequestHandlerModule.create(
+                            bType,
+                            exampleRequest
+                        ),
+                        RequestHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, bType)))
+                    )
+                    provider.registerModule(
+                        ResponseHandlerModule.create(
+                            rType,
+                            exampleResponse
+                        ),
+                        ResponseHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, rType)))
+                    )
+                    provider.registerModule(PathProviderModule(pathStr))
+                    handle()
+                }
+            }
         }
-        handle()
+        path != null -> {
+            // Handle single path (existing behavior)
+            val new = child(ktorRoute.createRouteFromPath(path.path))
+            new.apply {
+                provider.registerModule(
+                    RequestHandlerModule.create(
+                        bType,
+                        exampleRequest
+                    ),
+                    RequestHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, bType)))
+                )
+                provider.registerModule(
+                    ResponseHandlerModule.create(
+                        rType,
+                        exampleResponse
+                    ),
+                    ResponseHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, rType)))
+                )
+                provider.registerModule(PathProviderModule(path.path))
+                handle()
+            }
+        }
+        else -> {
+            // No path annotation (existing behavior)
+            val new = child()
+            new.apply {
+                provider.registerModule(
+                    RequestHandlerModule.create(
+                        bType,
+                        exampleRequest
+                    ),
+                    RequestHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, bType)))
+                )
+                provider.registerModule(
+                    ResponseHandlerModule.create(
+                        rType,
+                        exampleResponse
+                    ),
+                    ResponseHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, rType)))
+                )
+                handle()
+            }
+        }
     }
 }

@@ -303,8 +303,7 @@ class ComprehensiveDefaultValuesTest {
         val openAPIJson = response.body<Map<String, Any>>()
         val openAPIJsonString = response.bodyAsText()
 
-        // Save for inspection
-        java.io.File("comprehensive_default_values.json").writeText(openAPIJsonString)
+        // OpenAPI JSON generated successfully
 
         // Navigate to paths
         @Suppress("UNCHECKED_CAST")
