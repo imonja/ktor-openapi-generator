@@ -51,7 +51,27 @@ class RequestHandlerModule<T : Any>(
             } else {
                 description = requestMeta?.description
             }
-        } ?: if (map.isNotEmpty()) RequestBodyModel(map.toMutableMap(), description = requestMeta?.description) else null
+            // Update required field if not already set
+            if (required == null) {
+                required = when {
+                    requestMeta != null -> requestMeta.required
+                    requestType.jvmErasure != Unit::class -> true
+                    else -> null
+                }
+            }
+        } ?: if (map.isNotEmpty()) {
+            RequestBodyModel(
+                content = map.toMutableMap(),
+                description = requestMeta?.description,
+                required = when {
+                    requestMeta != null -> requestMeta.required
+                    requestType.jvmErasure != Unit::class -> true
+                    else -> null
+                }
+            )
+        } else {
+            null
+        }
     }
 
     companion object {

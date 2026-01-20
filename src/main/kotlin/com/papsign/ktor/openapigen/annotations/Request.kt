@@ -2,4 +2,7 @@ package com.papsign.ktor.openapigen.annotations
 
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class Request(val description: String = "")
+annotation class Request(
+    val description: String = "",
+    val required: Boolean = true
+)

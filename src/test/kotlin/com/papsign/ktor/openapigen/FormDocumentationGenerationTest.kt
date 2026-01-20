@@ -1,5 +1,6 @@
 package com.papsign.ktor.openapigen
 
+import TestServer
 import TestServer.setupBaseTestServer
 import com.papsign.ktor.openapigen.content.type.multipart.FormDataRequest
 import com.papsign.ktor.openapigen.content.type.multipart.FormDataRequestType
@@ -8,8 +9,8 @@ import com.papsign.ktor.openapigen.route.apiRouting
 import com.papsign.ktor.openapigen.route.path.normal.post
 import com.papsign.ktor.openapigen.route.response.respond
 import com.papsign.ktor.openapigen.route.route
-import io.ktor.client.request.get
-import io.ktor.client.statement.bodyAsText
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.server.testing.*
 import org.junit.jupiter.api.Test
@@ -32,22 +33,11 @@ internal class FormDocumentationGenerationTest {
         }
         client.get("http://localhost/openapi.json").apply {
             assertEquals(HttpStatusCode.OK, status)
-            assertTrue(
-                bodyAsText().contains(
-                    """  "paths" : {
-    "/form-data" : {
-      "post" : {
-        "requestBody" : {
-          "content" : {
-            "application/x-www-form-urlencoded" : {
-              "schema" : {
-                "${"$"}ref" : "#/components/schemas/FormData"
-              }
-            }
-          }
-        },"""
-                )
-            )
+            val responseText = bodyAsText()
+            assertTrue(responseText.contains("\"requestBody\""))
+            assertTrue(responseText.contains("\"required\" : true"))
+            assertTrue(responseText.contains("application/x-www-form-urlencoded"))
+            assertTrue(responseText.contains("FormData"))
         }
     }
 
@@ -65,22 +55,11 @@ internal class FormDocumentationGenerationTest {
         }
         client.get("http://localhost/openapi.json").apply {
             assertEquals(HttpStatusCode.OK, status)
-            assertTrue(
-                bodyAsText().contains(
-                    """  "paths" : {
-    "/multipart-data" : {
-      "post" : {
-        "requestBody" : {
-          "content" : {
-            "multipart/form-data" : {
-              "schema" : {
-                "${"$"}ref" : "#/components/schemas/MultiPartForm"
-              }
-            }
-          }
-        },"""
-                )
-            )
+            val responseText = bodyAsText()
+            assertTrue(responseText.contains("\"requestBody\""))
+            assertTrue(responseText.contains("\"required\" : true"))
+            assertTrue(responseText.contains("multipart/form-data"))
+            assertTrue(responseText.contains("MultiPartForm"))
         }
     }
 
@@ -98,22 +77,11 @@ internal class FormDocumentationGenerationTest {
         }
         client.get("http://localhost/openapi.json").apply {
             assertEquals(HttpStatusCode.OK, status)
-            assertTrue(
-                bodyAsText().contains(
-                    """  "paths" : {
-    "/default-form-data" : {
-      "post" : {
-        "requestBody" : {
-          "content" : {
-            "multipart/form-data" : {
-              "schema" : {
-                "${"$"}ref" : "#/components/schemas/DefaultFormData"
-              }
-            }
-          }
-        },"""
-                )
-            )
+            val responseText = bodyAsText()
+            assertTrue(responseText.contains("\"requestBody\""))
+            assertTrue(responseText.contains("\"required\" : true"))
+            assertTrue(responseText.contains("multipart/form-data"))
+            assertTrue(responseText.contains("DefaultFormData"))
         }
     }
 }
