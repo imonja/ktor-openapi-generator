@@ -26,14 +26,14 @@ jobs:
                 uses: actions/setup-java@v5.0.0
                 with:
                     distribution: 'temurin'
-                    java-version: 25
+                    java-version: 21
             -   name: Setup Gradle for a non-wrapper project
                 uses: gradle/actions/setup-gradle@v5
                 with:
                     gradle-version: wrapper
 
             -   name: Run tests
-                run: gradle ktlintCheck test --info
+                run: ./gradlew ktlintCheck test --info
 
             -   uses: paulhatch/semantic-version@v5.4.0
                 id: tag
@@ -55,7 +55,7 @@ jobs:
 
             -   name: Publish
                 if: ${{ steps.version.outputs.is_tag == 'true' || steps.tag.outputs.version_type != 'none' }}
-                run: gradle -Pversion=${{ steps.version.outputs.version }} publish -x check
+                run: ./gradlew -Pversion=${{ steps.version.outputs.version }} publish -x check
                 env:
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
                     GITHUB_USERNAME: ${{ github.actor }}
@@ -63,6 +63,25 @@ jobs:
                     ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
                     ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
                     ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+
+            -   name: Generate release notes
+                if: ${{ steps.version.outputs.is_tag == 'false' && steps.tag.outputs.version_type != 'none' }}
+                id: notes
+                run: |
+                    previous_tag=$(git tag --sort=-creatordate | sed -n '2p')
+                    if [ -n "$previous_tag" ]; then
+                      notes=$(git log --pretty=format:'- %s (%h)' "$previous_tag"..HEAD)
+                    else
+                      notes=$(git log --pretty=format:'- %s (%h)' -n 20)
+                    fi
+                    if [ -z "$notes" ]; then
+                      notes="- Maintenance release"
+                    fi
+                    {
+                      echo "CHANGELOG<<EOF"
+                      echo "$notes"
+                      echo "EOF"
+                    } >> "$GITHUB_OUTPUT"
 
             -   uses: actions/create-release@v1.1.4
                 if: ${{ steps.version.outputs.is_tag == 'false' && steps.tag.outputs.version_type != 'none' }}
