@@ -3,7 +3,7 @@ import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.JavadocJar
 
 plugins {
-    kotlin("jvm") version "2.3.10"
+    kotlin("jvm") version "2.3.0"
     id("net.nemerosa.versioning") version "3.1.0"
     id("org.jetbrains.dokka") version "2.1.0"
     id("org.jlleitschuh.gradle.ktlint") version "11.3.1"

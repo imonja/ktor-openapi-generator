@@ -18,8 +18,10 @@ dependencies {
 ## Requirements
 
 - JDK 21+
-- Kotlin 2.3+
-- Ktor 3.4+
+- Kotlin 2.3.0+
+- Ktor 3.4.0+
+
+Current baseline used in this project: Kotlin 2.3.0 and Ktor 3.4.0.
 
 ## Quick Start
 
