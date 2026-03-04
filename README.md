@@ -3,86 +3,131 @@
 
 # Ktor OpenAPI Generator
 
-The Ktor OpenAPI Generator is a library to automatically generate the descriptor as you route your ktor application.
+Library for building Ktor routes and OpenAPI 3 documentation together.
+
+As you define typed routes, request/response models, parameters, auth, and tags, the plugin keeps the OpenAPI schema in sync and can serve Swagger UI.
+
+## Installation
 
 ```kotlin
 dependencies {
-    implementation("io.github.imonja:ktor-openapi-generator:X.X.X")
+    implementation("io.github.imonja:ktor-openapi-generator:<version>")
 }
 ```
 
-## Minimal Example
+## Requirements
 
-See [MinimalExample.kt](src/test/kotlin/MinimalExample.kt) for minimal example app and
-then [MinimalExampleTest.kt](src/test/kotlin/MinimalExampleTest.kt) that it actually works.
+- JDK 21+
+- Kotlin 2.2+
+- Ktor 3.3+
+
+## Quick Start
 
 ```kotlin
-/**
- * Minimal example of OpenAPI plugin for Ktor.
- */
 fun Application.minimalExample() {
-    // install OpenAPI plugin
     install(OpenAPIGen) {
-        // this servers OpenAPI definition on /openapi.json
-        serveOpenApiJson = true
-        // this servers Swagger UI on /swagger-ui/index.html
-        serveSwaggerUi = true
+        serveOpenApiJson = true       // /openapi.json
+        serveSwaggerUi = true         // /swagger-ui/index.html
         info {
             title = "Minimal Example API"
+            version = "1.0.0"
         }
     }
-    // install JSON support
+
     install(ContentNegotiation) {
         jackson()
     }
-    // and now example routing
+
     apiRouting {
         route("/example/{name}") {
-            // SomeParams are parameters (query or path), SomeResponse is what the backend returns and SomeRequest
-            // is what was passed in the body of the request
-            post<SomeParams, SomeResponse, SomeRequest> { params, someRequest ->
-                respond(SomeResponse(bar = "Hello ${params.name}! From body: ${someRequest.foo}."))
+            post<SomeParams, SomeResponse, SomeRequest> { params, body ->
+                respond(SomeResponse("Hello ${params.name}! From body: ${body.foo}."))
             }
         }
     }
 }
 
-data class SomeParams(@PathParam("who to say hello") val name: String)
+data class SomeParams(@param:PathParam("who to say hello") val name: String)
 data class SomeRequest(val foo: String)
 data class SomeResponse(val bar: String)
 ```
 
-To serve the Swagger UI, put this in `version.properties` (in `resources`):
+Full minimal example: [`src/test/kotlin/MinimalExample.kt`](src/test/kotlin/MinimalExample.kt)
 
+## What You Get
+
+- OpenAPI 3 schema generation from typed Ktor routes
+- Swagger UI serving from the plugin
+- Typed request/response support with Ktor content negotiation
+- Parameter parsing strategies (path/query/header)
+- Auth integration with strongly typed principals
+- Route tags, explicit statuses, and documented exceptions
+- Multipart and binary payload support
+- Validation and schema annotations
+
+## Runtime Endpoints
+
+Default plugin endpoints:
+
+- OpenAPI JSON: `/openapi.json`
+- Swagger UI: `/swagger-ui/index.html`
+
+Both are configurable via `install(OpenAPIGen) { ... }`:
+
+- `openApiJsonPath`
+- `swaggerUiPath`
+- `serveOpenApiJson`
+- `serveSwaggerUi`
+- `swaggerUiVersion`
+
+## Swagger UI Version
+
+Default Swagger UI version is loaded from:
+
+- [`src/main/resources/version.properties`](src/main/resources/version.properties)
+
+Current value:
+
+```properties
+swagger.ui.version=5.30.3
 ```
-swagger-ui.version=5.17.14
+
+## Development
+
+Useful local commands:
+
+```bash
+./gradlew setupHooks
+./gradlew ktlintCheck
+./gradlew ktlintFormat
+./gradlew test
+./gradlew build
+./gradlew dokkaGenerateHtml
 ```
 
-## About
+Tag helper commands:
 
-Ktor OpenAPI Generator is:
+```bash
+make last-tag
+make add-tag-and-push
+make delete-tag
+```
 
-- Modular
-- Strongly typed
-- Explicit
+## CI and Publishing
 
-Currently Supported:
+GitHub Actions workflows:
 
-- Authentication interoperability with strongly typed Principal (OAuth only, see TestServer in tests)
-- Content Negotiation interoperability (see TestServer in tests)
-- Custom response codes (as parameter in `@Response`)
-- Automatic and custom content Type routing and parsing (see `com.papsign.ktor.openapigen.content.type`, Binary Parser
-  and default JSON parser (that uses the ktor implicit parsing/serializing))
-- Exception handling (use `.throws(ex) {}` in the routes with an APIException object) with Status pages interop (with
-  .withAPI in the StatusPages configuration)
-- tags (`.tag(tag) {}` in route with a tag object, currently must be an enum, but may be subject to change)
-- Spec compliant Parameter Parsing (see basic example)
-- Legacy Polymorphism with use of `@DiscriminatorAnnotation()` attribute and sealed classes
+- Pull requests: lint + tests
+- `main`/tags: lint + tests + publish pipeline
 
-Extra Features:
+Local publication:
 
-- Includes Swagger-UI (enabled by default, can be managed in the `install(OpenAPIGen) { ... }` section)
+```bash
+./gradlew publishToMavenLocal
+```
 
-## Examples
+For Maven Central/GPG publishing credentials, see comments in [`gradle.properties`](gradle.properties).
 
-Take a look at [a few examples](https://github.com/papsign/Ktor-OpenAPI-Generator/wiki/A-few-examples)
+## License
+
+Apache License 2.0. See [`LICENSE`](LICENSE).
