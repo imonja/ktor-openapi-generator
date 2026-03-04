@@ -18,8 +18,8 @@ dependencies {
 ## Requirements
 
 - JDK 21+
-- Kotlin 2.2+
-- Ktor 3.3+
+- Kotlin 2.3+
+- Ktor 3.4+
 
 ## Quick Start
 
