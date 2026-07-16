@@ -39,7 +39,7 @@ object FinalSchemaBuilderProvider : FinalSchemaBuilderProviderModule, OpenAPIGen
     private fun SchemaModel<*>.applyAnnotations(type: KType, annotations: List<Annotation>): SchemaModel<*> {
         return annotations.fold(this) { model, annot ->
             if (annot is Deprecated) {
-                model.withDeprecated()
+                model.withDeprecated(annot)
             } else {
                 annot.annotationClass
                     .findAnnotation<SchemaProcessorAnnotation>()
@@ -67,13 +67,17 @@ object FinalSchemaBuilderProvider : FinalSchemaBuilderProviderModule, OpenAPIGen
         }
     }
 
-    private fun SchemaModel<*>.withDeprecated(): SchemaModel<*> {
-        return if (this is SchemaModel.SchemaModelRef<*>) {
+    private fun SchemaModel<*>.withDeprecated(annotation: Deprecated): SchemaModel<*> {
+        val model = if (this is SchemaModel.SchemaModelRef<*>) {
             asAllOf().also { it.deprecated = true }
         } else {
             deprecated = true
             this
         }
+        if (model.description == null) {
+            model.description = annotation.message
+        }
+        return model
     }
 
     private fun SchemaModel.SchemaModelRef<*>.asAllOf(): SchemaModel.AllOfSchemaModel<Any?> {

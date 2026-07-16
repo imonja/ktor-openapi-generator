@@ -25,6 +25,9 @@ class DeprecatedSchemaPropertyTest {
     data class RenameRequest(
         @Deprecated("Use currentName")
         val oldName: String,
+        @Description("Legacy display name returned for old clients")
+        @Deprecated("Use currentName")
+        val legacyName: String,
         val currentName: String
     )
 
@@ -80,13 +83,24 @@ class DeprecatedSchemaPropertyTest {
             .filterIsInstance<Map<String, Any>>()
             .firstOrNull { schema ->
                 val properties = schema["properties"] as? Map<*, *>
-                properties?.containsKey("oldName") == true && properties.containsKey("currentName")
+                properties?.containsKey("oldName") == true &&
+                    properties.containsKey("legacyName") &&
+                    properties.containsKey("currentName")
             }
 
         assertNotNull(renameRequestSchema, "OpenAPI should contain a schema for RenameRequest")
 
         val oldNameProperty = renameRequestSchema.mapAt("properties").mapAt("oldName")
         assertEquals(true, oldNameProperty["deprecated"], "oldName should be marked deprecated")
+        assertEquals("Use currentName", oldNameProperty["description"], "oldName should use the deprecation message as fallback description")
+
+        val legacyNameProperty = renameRequestSchema.mapAt("properties").mapAt("legacyName")
+        assertEquals(true, legacyNameProperty["deprecated"], "legacyName should be marked deprecated")
+        assertEquals(
+            "Legacy display name returned for old clients",
+            legacyNameProperty["description"],
+            "legacyName should keep its explicit description"
+        )
     }
 
     @Test
