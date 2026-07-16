@@ -39,8 +39,7 @@ object FinalSchemaBuilderProvider : FinalSchemaBuilderProviderModule, OpenAPIGen
     private fun SchemaModel<*>.applyAnnotations(type: KType, annotations: List<Annotation>): SchemaModel<*> {
         return annotations.fold(this) { model, annot ->
             if (annot is Deprecated) {
-                model.deprecated = true
-                model
+                model.withDeprecated()
             } else {
                 annot.annotationClass
                     .findAnnotation<SchemaProcessorAnnotation>()
@@ -51,6 +50,36 @@ object FinalSchemaBuilderProvider : FinalSchemaBuilderProviderModule, OpenAPIGen
                     } ?: model
             }
         }
+    }
+
+    private fun SchemaModel<*>.applyPropertyAnnotations(type: KType, annotations: List<Annotation>): SchemaModel<*> {
+        val target = if (this is SchemaModel.SchemaModelRef<*> && annotations.hasSchemaAnnotations()) {
+            asAllOf()
+        } else {
+            this
+        }
+        return target.applyAnnotations(type, annotations)
+    }
+
+    private fun List<Annotation>.hasSchemaAnnotations(): Boolean {
+        return any { annot ->
+            annot is Deprecated || annot.annotationClass.findAnnotation<SchemaProcessorAnnotation>() != null
+        }
+    }
+
+    private fun SchemaModel<*>.withDeprecated(): SchemaModel<*> {
+        return if (this is SchemaModel.SchemaModelRef<*>) {
+            asAllOf().also { it.deprecated = true }
+        } else {
+            deprecated = true
+            this
+        }
+    }
+
+    private fun SchemaModel.SchemaModelRef<*>.asAllOf(): SchemaModel.AllOfSchemaModel<Any?> {
+        return SchemaModel.AllOfSchemaModel(
+            listOf(SchemaModel.SchemaModelRef<Any?>(`$ref`))
+        )
     }
 
     private class Builder(builders: List<SchemaBuilder>) : FinalSchemaBuilder {
@@ -78,13 +107,14 @@ object FinalSchemaBuilderProvider : FinalSchemaBuilderProviderModule, OpenAPIGen
                 }
             }.let { kType ->
                 val extractedType = extractedType(kType)
-                return map.getOrPut(extractedType) {
+                val schema = map.getOrPut(extractedType) {
                     map.entries.firstOrNull { extractedType.isSubtypeOf(it.key) }?.value
                         ?: error("Schema builder could not find declared builder for kType $kType, make sure it has a provider registered on the route")
                 }.build(kType, this) {
                     it.applyAnnotations(kType, kType.jvmErasure.annotations)
-                        .applyAnnotations(kType, kType.annotations).applyAnnotations(kType, annotations)
+                        .applyAnnotations(kType, kType.annotations)
                 }
+                return schema.applyPropertyAnnotations(kType, annotations)
             }
         }
 

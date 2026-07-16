@@ -77,6 +77,15 @@ sealed class SchemaModel<T> : DataModel {
         override var deprecated: Boolean? = null
     }
 
+    data class AllOfSchemaModel<T>(
+        val allOf: List<SchemaModel<out T>>
+    ) : SchemaModel<T>() {
+        override var example: T? = null
+        override var examples: List<T>? = null
+        override var description: String? = null
+        override var deprecated: Boolean? = null
+    }
+
     data class OneSchemaModelOf<T>(
         val oneOf: List<SchemaModel<out T>>,
         var properties: Map<String, SchemaModel<*>>? = null,
