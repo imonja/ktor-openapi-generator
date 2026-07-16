@@ -37,14 +37,19 @@ object FinalSchemaBuilderProvider : FinalSchemaBuilderProviderModule, OpenAPIGen
     }
 
     private fun SchemaModel<*>.applyAnnotations(type: KType, annotations: List<Annotation>): SchemaModel<*> {
-        return annotations.mapNotNull { annot ->
-            annot.annotationClass
-                .findAnnotation<SchemaProcessorAnnotation>()
-                ?.getHandlerInstance()
-                ?.let { Pair(it, annot) }
-        }.fold(this) { model, (handler, annot) ->
-            @Suppress("UNCHECKED_CAST")
-            (handler as SchemaProcessor<Annotation>).process(model, type, annot)
+        return annotations.fold(this) { model, annot ->
+            if (annot is Deprecated) {
+                model.deprecated = true
+                model
+            } else {
+                annot.annotationClass
+                    .findAnnotation<SchemaProcessorAnnotation>()
+                    ?.getHandlerInstance()
+                    ?.let { handler ->
+                        @Suppress("UNCHECKED_CAST")
+                        (handler as SchemaProcessor<Annotation>).process(model, type, annot)
+                    } ?: model
+            }
         }
     }
 
