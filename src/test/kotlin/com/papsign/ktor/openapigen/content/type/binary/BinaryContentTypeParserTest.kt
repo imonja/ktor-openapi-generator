@@ -5,7 +5,7 @@ import com.papsign.ktor.openapigen.route.path.normal.post
 import com.papsign.ktor.openapigen.route.response.respond
 import com.papsign.ktor.openapigen.route.response.respondWithStatus
 import com.papsign.ktor.openapigen.route.route
-import installOpenAPI
+import com.papsign.ktor.openapigen.support.installOpenAPI
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*

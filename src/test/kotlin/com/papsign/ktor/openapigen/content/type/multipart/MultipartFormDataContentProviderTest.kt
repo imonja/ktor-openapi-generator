@@ -4,8 +4,8 @@ import com.papsign.ktor.openapigen.route.apiRouting
 import com.papsign.ktor.openapigen.route.path.normal.post
 import com.papsign.ktor.openapigen.route.response.respond
 import com.papsign.ktor.openapigen.route.route
-import installJackson
-import installOpenAPI
+import com.papsign.ktor.openapigen.support.installJackson
+import com.papsign.ktor.openapigen.support.installOpenAPI
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.header
 import io.ktor.client.request.post

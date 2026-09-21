@@ -54,7 +54,7 @@ data class SomeRequest(val foo: String)
 data class SomeResponse(val bar: String)
 ```
 
-Full minimal example: [`src/test/kotlin/MinimalExample.kt`](src/test/kotlin/MinimalExample.kt)
+Full minimal example: [`src/test/kotlin/com/papsign/ktor/openapigen/examples/MinimalExample.kt`](src/test/kotlin/com/papsign/ktor/openapigen/examples/MinimalExample.kt)
 
 ## What You Get
 
@@ -95,6 +95,8 @@ swagger.ui.version=5.30.3
 ```
 
 ## Development
+
+See [the test guide](src/test/README.md) for the package layout, fixture conventions, and focused test commands.
 
 Useful local commands:
 
