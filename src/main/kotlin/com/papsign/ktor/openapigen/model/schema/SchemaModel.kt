@@ -70,7 +70,7 @@ sealed class SchemaModel<T> : DataModel {
         override var deprecated: Boolean? = null
     ) : SchemaModel<T>()
 
-    data class SchemaModelRef<T>(override val `$ref`: String) : SchemaModel<T>(), RefModel<SchemaModel<T>> {
+    data class SchemaModelRef<T>(override val `$ref`: String, val nullable: Boolean? = null) : SchemaModel<T>(), RefModel<SchemaModel<T>> {
         override var example: T? = null
         override var examples: List<T>? = null
         override var description: String? = null

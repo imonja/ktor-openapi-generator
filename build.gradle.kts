@@ -39,7 +39,7 @@ fun getCheckedOutGitCommitHash(): String {
 }
 
 val ktorVersion = "3.4.0"
-val swaggerUiVersion = "5.30.3"
+val swaggerUiVersion = "5.33.2"
 val junitVersjon = "6.0.1"
 
 dependencies {
@@ -55,7 +55,7 @@ dependencies {
     implementation("org.slf4j:slf4j-api:2.0.17")
 
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1") // needed for multipart parsing
-    // when updating the version here, don't forge to update version in OpenAPIGen.kt line 68
+    // Keep src/main/resources/version.properties and SwaggerUIVersion's fallback in sync.
     api("org.webjars:swagger-ui:$swaggerUiVersion")
 
     implementation("org.reflections:reflections:0.10.2") // only used while initializing
@@ -71,6 +71,7 @@ dependencies {
     testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
 
     testImplementation(kotlin("test"))
+    testImplementation("com.networknt:json-schema-validator:1.5.9")
     testImplementation(kotlin("stdlib-jdk8"))
 
     testImplementation("ch.qos.logback:logback-classic:1.5.21") // logging framework for the tests

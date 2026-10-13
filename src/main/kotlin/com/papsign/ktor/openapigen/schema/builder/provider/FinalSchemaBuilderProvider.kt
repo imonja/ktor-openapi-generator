@@ -82,7 +82,7 @@ object FinalSchemaBuilderProvider : FinalSchemaBuilderProviderModule, OpenAPIGen
 
     private fun SchemaModel.SchemaModelRef<*>.asAllOf(): SchemaModel.AllOfSchemaModel<Any?> {
         return SchemaModel.AllOfSchemaModel(
-            listOf(SchemaModel.SchemaModelRef<Any?>(`$ref`))
+            listOf(SchemaModel.SchemaModelRef<Any?>(`$ref`, nullable))
         )
     }
 

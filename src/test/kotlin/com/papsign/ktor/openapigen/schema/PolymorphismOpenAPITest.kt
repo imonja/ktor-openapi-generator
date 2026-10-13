@@ -41,7 +41,6 @@ internal class PolymorphismOpenAPITest {
         "properties" : {
           "type" : {
             "format" : "string",
-            "nullable" : false,
             "type" : "string"
           }
         }"""
@@ -53,15 +52,12 @@ internal class PolymorphismOpenAPITest {
         "discriminator" : {
           "propertyName" : "type"
         },
-        "nullable" : false,
         "properties" : {
           "str" : {
-            "nullable" : false,
             "type" : "string"
           },
           "type" : {
             "format" : "string",
-            "nullable" : false,
             "type" : "string"
           }
         },

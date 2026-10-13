@@ -1,5 +1,6 @@
 package com.papsign.ktor.openapigen.model.base
 
+import com.papsign.ktor.openapigen.OpenAPIVersion
 import com.papsign.ktor.openapigen.model.DataModel
 import com.papsign.ktor.openapigen.model.info.ExternalDocumentationModel
 import com.papsign.ktor.openapigen.model.info.InfoModel
@@ -9,11 +10,16 @@ import com.papsign.ktor.openapigen.model.server.ServerModel
 
 data class OpenAPIModel(
     var info: InfoModel = InfoModel(),
-    var openapi: String = "3.0.0",
+    var openapi: String = OpenAPIVersion.V3_2.value,
     var servers: MutableList<ServerModel> = mutableListOf(),
     var paths: MutableMap<String, PathItemModel> = mutableMapOf(),
     var components: ComponentsModel = ComponentsModel(),
     var security: LinkedHashSet<SecurityModel> = LinkedHashSet(),
     var tags: LinkedHashSet<TagModel> = LinkedHashSet(),
     var externalDocs: ExternalDocumentationModel? = null
-) : DataModel
+) : DataModel {
+    override fun serialize(): Map<String, Any?> {
+        val version = OpenAPIVersion.fromValue(openapi)
+        return OpenAPIDocumentSerializer(version).serialize(super.serialize())
+    }
+}

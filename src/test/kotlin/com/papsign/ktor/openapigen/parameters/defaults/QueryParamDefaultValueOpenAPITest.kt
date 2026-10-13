@@ -92,27 +92,27 @@ class QueryParamDefaultValueOpenAPITest {
         // Find parameters and check their default values
         val intParam = parameters.find { it["name"] == "intParam" }
         assertNotNull(intParam, "Should have intParam parameter")
-        assertEquals(42, intParam["default"], "intParam should have default value 42")
+        assertEquals(42, (intParam["schema"] as Map<*, *>)["default"], "intParam should have default value 42")
         assertEquals(false, intParam["required"], "intParam should not be required")
 
         val boolParam = parameters.find { it["name"] == "boolParam" }
         assertNotNull(boolParam, "Should have boolParam parameter")
-        assertEquals(true, boolParam["default"], "boolParam should have default value true")
+        assertEquals(true, (boolParam["schema"] as Map<*, *>)["default"], "boolParam should have default value true")
         assertEquals(false, boolParam["required"], "boolParam should not be required")
 
         val longParam = parameters.find { it["name"] == "longParam" }
         assertNotNull(longParam, "Should have longParam parameter")
-        assertEquals(0, longParam["default"], "longParam should have default value 0")
+        assertEquals(0, (longParam["schema"] as Map<*, *>)["default"], "longParam should have default value 0")
         assertEquals(false, longParam["required"], "longParam should not be required")
 
         val stringParam = parameters.find { it["name"] == "stringParam" }
         assertNotNull(stringParam, "Should have stringParam parameter")
-        assertEquals(null, stringParam["default"], "stringParam should have default value null")
+        assertEquals(null, (stringParam["schema"] as Map<*, *>)["default"], "stringParam should have default value null")
         assertEquals(false, stringParam["required"], "stringParam should not be required")
 
         val requiredParam = parameters.find { it["name"] == "requiredParam" }
         assertNotNull(requiredParam, "Should have requiredParam parameter")
         assertEquals(true, requiredParam["required"], "requiredParam should be required")
-        assertTrue(!requiredParam.containsKey("default"), "requiredParam should not have default value")
+        assertTrue(!(requiredParam["schema"] as Map<*, *>).containsKey("default"), "requiredParam should not have default value")
     }
 }

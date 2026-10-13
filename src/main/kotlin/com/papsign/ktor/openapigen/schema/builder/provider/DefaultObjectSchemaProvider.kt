@@ -57,7 +57,7 @@ object DefaultObjectSchemaProvider : SchemaBuilderProviderModule, OpenAPIGenModu
                            finalize: (SchemaModel<*>) -> SchemaModel<*>): SchemaModel<*> {
             checkType(type)
             val nonNullType = type.withNullability(false)
-            return refs[nonNullType] ?: {
+            val reference = refs[nonNullType] ?: {
                 val erasure = nonNullType.jvmErasure
                 val name = namer[nonNullType]
                 val ref = SchemaModel.SchemaModelRef<Any?>("#/components/schemas/$name")
@@ -82,6 +82,7 @@ object DefaultObjectSchemaProvider : SchemaBuilderProviderModule, OpenAPIGenModu
                 apiGen.api.components.schemas[name] = final
                 ref
             }()
+            return reference.copy(nullable = if (type.isMarkedNullable) true else null)
         }
     }
 }

@@ -82,17 +82,52 @@ Both are configurable via `install(OpenAPIGen) { ... }`:
 - `serveSwaggerUi`
 - `swaggerUiVersion`
 
+## OpenAPI Version
+
+The default document format is **OpenAPI 3.2.1**. To use the compatibility format:
+
+```kotlin
+install(OpenAPIGen) {
+    openApiVersion = "3.0.1"
+}
+```
+
+Supported values: `3.0.0`, `3.0.1`, `3.0.2`, `3.0.3`, `3.0.4`, `3.2.0` and
+`3.2.1`. The exact string is preserved in the document's `openapi` field;
+versions in the same family share the corresponding serialization rules.
+Unsupported values fail immediately when assigned to `openApiVersion`.
+`info.version` is the version of your own API and is independent of this setting.
+
+In 3.2 documents, nullable types use JSON Schema type unions, nullable DTO
+references use `anyOf`, and nullable enums include `null`. Schema examples use
+`examples`; base64 strings use `contentEncoding: base64`. Raw binary schemas
+have no JSON string type and use `contentMediaType` to identify file uploads in
+Swagger UI. For an inline binary body this matches the declared media type;
+for a DTO file property it defaults to `application/octet-stream`.
+Parameter, media type and named examples retain their original representation.
+Parameter defaults are emitted at `schema.default`, as required by OpenAPI,
+instead of as a top-level parameter property.
+
+This changes the default document format for existing applications. Select
+`openApiVersion = "3.0.4"` (or another supported 3.0 version) if a consumer
+requires OpenAPI 3.0. Existing direct assignments such as
+`api.openapi = "3.0.0"` still select the 3.0 serialization rules. Unsupported
+versions fail explicitly; assigning an arbitrary version string does not add
+support for its dialect. The same rules apply to `api.serialize()` for standalone
+document generation. HTTP request parsing and response handling are unchanged.
+
+This release migrates the existing feature set. Future features and priorities
+are described in [the OpenAPI development proposals](docs/design/openapi-evolution.md).
+
 ## Swagger UI Version
 
-Default Swagger UI version is loaded from:
+The bundled Swagger UI version is **5.33.2**, which includes OpenAPI 3.2 support.
+At runtime, the version is read from the WebJar's Maven metadata, with a matching
+fallback in `SwaggerUIVersion`. The dependency is declared in `build.gradle.kts`;
+`src/main/resources/version.properties` records the same version.
 
-- [`src/main/resources/version.properties`](src/main/resources/version.properties)
-
-Current value:
-
-```properties
-swagger.ui.version=5.30.3
-```
+Overriding `swaggerUiVersion` requires the corresponding WebJar resources on the
+classpath. For 3.2 documents, use a Swagger UI release with 3.2 support.
 
 ## Development
 
