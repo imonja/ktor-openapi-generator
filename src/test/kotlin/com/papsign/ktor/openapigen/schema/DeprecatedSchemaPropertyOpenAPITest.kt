@@ -1,6 +1,7 @@
 package com.papsign.ktor.openapigen.schema
 
 import com.papsign.ktor.openapigen.OpenAPIGen
+import com.papsign.ktor.openapigen.OpenAPIVersion
 import com.papsign.ktor.openapigen.annotations.properties.description.Description
 import com.papsign.ktor.openapigen.route.apiRouting
 import com.papsign.ktor.openapigen.route.path.normal.post
@@ -16,13 +17,15 @@ import io.ktor.serialization.jackson.jackson
 import io.ktor.server.application.install
 import io.ktor.server.testing.testApplication
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import kotlin.reflect.KType
 import kotlin.reflect.jvm.jvmErasure
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation as ServerContentNegotiation
 
-class DeprecatedSchemaPropertyOpenAPITest {
+internal class DeprecatedSchemaPropertyOpenAPITest {
 
     data class RenameRequest(
         @Deprecated("Use currentName")
@@ -105,8 +108,9 @@ class DeprecatedSchemaPropertyOpenAPITest {
         )
     }
 
-    @Test
-    fun `OpenAPI JSON wraps deprecated referenced DTO properties in allOf`(): Unit = testApplication {
+    @ParameterizedTest
+    @EnumSource(OpenAPIVersion::class)
+    fun `OpenAPI JSON keeps annotations of deprecated referenced DTO properties`(format: OpenAPIVersion): Unit = testApplication {
         application {
             install(ServerContentNegotiation) {
                 jackson()
@@ -118,6 +122,7 @@ class DeprecatedSchemaPropertyOpenAPITest {
                     version = "1.0"
                     title = "Deprecated Referenced Schema Property Test API"
                 }
+                openApiVersion = format.value
             }
 
             apiRouting {
@@ -148,8 +153,7 @@ class DeprecatedSchemaPropertyOpenAPITest {
         assertNotNull(conversationSchema, "OpenAPI should contain a schema for ConversationResponse")
 
         val accountProperty = conversationSchema.mapAt("properties").mapAt("account")
-        assertEquals(null, accountProperty["\$ref"], "account should not have a top-level ref")
-        assertEquals("#/components/schemas/Account", accountProperty.listAt("allOf")[0].mapAt().getValue("\$ref"))
+        assertEquals("#/components/schemas/Account", accountProperty.referencedSchema(format))
         assertEquals(true, accountProperty["deprecated"], "account should be marked deprecated")
 
         val authorProperty = conversationSchema.mapAt("properties").mapAt("author")
@@ -158,8 +162,9 @@ class DeprecatedSchemaPropertyOpenAPITest {
         assertEquals(null, authorProperty["deprecated"], "author should not be marked deprecated")
     }
 
-    @Test
-    fun `OpenAPI JSON wraps described referenced DTO properties in allOf`(): Unit = testApplication {
+    @ParameterizedTest
+    @EnumSource(OpenAPIVersion::class)
+    fun `OpenAPI JSON keeps annotations of described referenced DTO properties`(format: OpenAPIVersion): Unit = testApplication {
         application {
             install(ServerContentNegotiation) {
                 jackson()
@@ -171,6 +176,7 @@ class DeprecatedSchemaPropertyOpenAPITest {
                     version = "1.0"
                     title = "Described Referenced Schema Property Test API"
                 }
+                openApiVersion = format.value
             }
 
             apiRouting {
@@ -201,9 +207,19 @@ class DeprecatedSchemaPropertyOpenAPITest {
         assertNotNull(conversationSchema, "OpenAPI should contain a schema for DescribedConversationResponse")
 
         val accountProperty = conversationSchema.mapAt("properties").mapAt("account")
-        assertEquals(null, accountProperty["\$ref"], "account should not have a top-level ref")
-        assertEquals("#/components/schemas/Account", accountProperty.listAt("allOf")[0].mapAt().getValue("\$ref"))
+        assertEquals("#/components/schemas/Account", accountProperty.referencedSchema(format))
         assertEquals("Account that started the conversation", accountProperty["description"])
+    }
+
+    /** 3.0 ignores keywords next to `$ref` and needs the allOf wrapper; 2020-12 keeps them beside the reference. */
+    private fun Map<String, Any>.referencedSchema(format: OpenAPIVersion): Any? {
+        return if (format == OpenAPIVersion.V3_0) {
+            assertEquals(null, this["\$ref"], "3.0 property should not have a top-level ref")
+            listAt("allOf").single().mapAt()["\$ref"]
+        } else {
+            assertEquals(null, this["allOf"], "3.2 property should not be wrapped in allOf")
+            this["\$ref"]
+        }
     }
 
     private fun Map<String, Any>.mapAt(key: String): Map<String, Any> {

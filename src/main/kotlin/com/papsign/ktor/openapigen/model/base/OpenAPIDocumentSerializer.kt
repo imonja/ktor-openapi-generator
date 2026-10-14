@@ -7,7 +7,21 @@ internal class OpenAPIDocumentSerializer(private val version: OpenAPIVersion) {
     fun serialize(document: Map<String, Any?>): Map<String, Any?> = document.toMutableMap().apply {
         transform("components") { components ->
             components.mapObject {
-                transformEntries("schemas", ::schema)
+                transform("schemas") { schemas ->
+                    // Swagger UI labels dereferenced 3.1+ schemas only by title, so name each component.
+                    schemas.mapObject {
+                        keys.toList().forEach { name ->
+                            this[name] = schema(this[name]).mapObject {
+                                if (!containsKey("title")) {
+                                    val keywords = toMap()
+                                    clear()
+                                    put("title", name)
+                                    putAll(keywords)
+                                }
+                            }
+                        }
+                    }
+                }
                 transformEntries("parameters", ::parameter)
                 transformEntries("headers", ::parameter)
                 transformEntries("requestBodies", ::body)
@@ -110,7 +124,17 @@ internal class OpenAPIDocumentSerializer(private val version: OpenAPIVersion) {
                     this["contentMediaType"] = mediaType ?: "application/octet-stream"
                 }
             }
+            inlineSingleAllOf()
         }
+    }
+
+    /** JSON Schema 2020-12 allows keywords next to `$ref`, so the 3.0 `allOf` wrapper for annotated references is unnecessary. */
+    private fun MutableMap<String, Any?>.inlineSingleAllOf() {
+        val inner = (this["allOf"] as? List<*>)?.singleOrNull() as? Map<*, *> ?: return
+        if (inner.keys.any { it in keys }) return
+        remove("allOf")
+        @Suppress("UNCHECKED_CAST")
+        putAll(inner as Map<String, Any?>)
     }
 
     private fun Any?.mapObject(transform: MutableMap<String, Any?>.() -> Unit): Any? {

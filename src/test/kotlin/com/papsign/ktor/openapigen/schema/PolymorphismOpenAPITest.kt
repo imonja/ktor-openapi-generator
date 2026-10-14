@@ -28,6 +28,7 @@ internal class PolymorphismOpenAPITest {
             assertTrue(
                 bodyAsText.contains(
                     """"Base" : {
+        "title" : "Base",
         "discriminator" : {
           "propertyName" : "type"
         },
@@ -40,7 +41,6 @@ internal class PolymorphismOpenAPITest {
         } ],
         "properties" : {
           "type" : {
-            "format" : "string",
             "type" : "string"
           }
         }"""
@@ -49,19 +49,16 @@ internal class PolymorphismOpenAPITest {
             assertTrue(
                 bodyAsText.contains(
                     """"A" : {
-        "discriminator" : {
-          "propertyName" : "type"
-        },
+        "title" : "A",
         "properties" : {
           "str" : {
             "type" : "string"
           },
           "type" : {
-            "format" : "string",
             "type" : "string"
           }
         },
-        "required" : [ "str" ],
+        "required" : [ "str", "type" ],
         "type" : "object"
       }"""
                 )

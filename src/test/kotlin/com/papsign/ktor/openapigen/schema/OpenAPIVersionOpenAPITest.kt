@@ -108,7 +108,15 @@ internal class OpenAPIVersionOpenAPITest {
         assertEquals("#/components/schemas/Child", properties["requiredChild"]["\$ref"].asText())
         assertEquals("#/components/schemas/Child", properties["child"]["anyOf"][0]["\$ref"].asText())
         assertEquals(true, properties["legacyChild"]["deprecated"].asBoolean())
-        assertTrue(properties["legacyChild"]["allOf"][0].has("anyOf"))
+        if (format == OpenAPIVersion.V3_2) {
+            // 2020-12 allows keywords next to the reference, so the 3.0 allOf wrapper is inlined.
+            assertTrue(properties["legacyChild"].has("anyOf"))
+            assertFalse(properties["legacyChild"].has("allOf"))
+        } else {
+            assertTrue(properties["legacyChild"]["allOf"][0].has("anyOf"))
+        }
+        assertEquals("Payload", schemas["Payload"]["title"].asText())
+        assertEquals("Child", schemas["Child"]["title"].asText())
         assertTrue(schemas["Child"]["properties"]["parent"].has("anyOf"))
 
         val operation = document["paths"]["/models/{id}"]["get"]
@@ -167,7 +175,10 @@ internal class OpenAPIVersionOpenAPITest {
 
         val document = mapper.valueToTree<JsonNode>(api.serialize())
         assertValidDocument(document, version)
-        val serialized = document["components"]["schemas"]["Example"]
+        val component = document["components"]["schemas"]["Example"]
+        assertEquals("Example", component["title"].asText())
+        // Only component schemas are titled; the same model used inline is otherwise identical.
+        val serialized = (component as ObjectNode).deepCopy().apply { remove("title") }
         val serializedExample = if (version == OpenAPIVersion.V3_2) serialized["examples"][0] else serialized["example"]
         assertEquals(mapper.valueToTree(example), serializedExample)
         assertEquals(mapper.valueToTree(example), document["components"]["requestBodies"]["Body"]["content"]["application/json"]["example"])
@@ -183,6 +194,61 @@ internal class OpenAPIVersionOpenAPITest {
         // Serializing another version must not mutate the shared source models.
         assertEquals(example, schema.example)
         assertEquals(true, schema.nullable)
+    }
+
+    @ParameterizedTest
+    @EnumSource(OpenAPIVersion::class)
+    fun `component schemas are titled with their component name`(version: OpenAPIVersion) {
+        val api = OpenAPIModel(openapi = version.value)
+        api.components.schemas["Color"] = SchemaModel.SchemaModelEnum<String>(listOf("RED", "GREEN"))
+        api.components.schemas["Named"] = SchemaModel.SchemaModelObj<Any?>(
+            mapOf("color" to SchemaModel.SchemaModelRef<Any?>("#/components/schemas/Color")),
+            listOf("color")
+        )
+        api.components.schemas["Custom"] = SchemaModel.SchemaModelLitteral<Map<String, Any>>(
+            type = DataType.`object`,
+            example = mapOf("title" to "Explicit")
+        )
+
+        val document = mapper.valueToTree<JsonNode>(api.serialize())
+        assertValidDocument(document, version)
+        val schemas = document["components"]["schemas"]
+        assertEquals("Color", schemas["Color"]["title"].asText())
+        assertEquals("Named", schemas["Named"]["title"].asText())
+        assertEquals("title", schemas["Named"].fieldNames().next(), "title should lead the component schema")
+        assertFalse(schemas["Named"]["properties"]["color"].has("title"), "inline schemas stay untitled")
+        assertEquals("Custom", schemas["Custom"]["title"].asText(), "example payloads are not schema titles")
+    }
+
+    @ParameterizedTest
+    @EnumSource(OpenAPIVersion::class)
+    fun `single allOf wrapper is inlined only in 2020-12 documents and only without conflicts`(version: OpenAPIVersion) {
+        val ref = "#/components/schemas/Target"
+        val api = OpenAPIModel(openapi = version.value)
+        api.components.schemas["Target"] = SchemaModel.SchemaModelObj<Any?>(emptyMap(), emptyList())
+        api.components.schemas["Holder"] = SchemaModel.SchemaModelObj<Any?>(
+            mapOf(
+                "plain" to SchemaModel.AllOfSchemaModel(listOf(SchemaModel.SchemaModelRef<Any?>(ref, nullable = true)))
+                    .apply { deprecated = true },
+                "conflicting" to SchemaModel.AllOfSchemaModel(
+                    listOf(SchemaModel.SchemaModelRef<Any?>(ref).apply { description = "Inner" })
+                ).apply { description = "Outer" }
+            ),
+            emptyList()
+        )
+
+        val document = mapper.valueToTree<JsonNode>(api.serialize())
+        assertValidDocument(document, version)
+        val properties = document["components"]["schemas"]["Holder"]["properties"]
+        if (version == OpenAPIVersion.V3_2) {
+            assertEquals(mapper.readTree("""{"anyOf":[{"${'$'}ref":"$ref"},{"type":"null"}],"deprecated":true}"""), properties["plain"])
+        } else {
+            assertEquals(1, properties["plain"]["allOf"].size())
+            assertEquals(true, properties["plain"]["deprecated"].asBoolean())
+        }
+        // Inlining would overwrite one of the descriptions, so the wrapper stays.
+        assertEquals("Outer", properties["conflicting"]["description"].asText())
+        assertEquals("Inner", properties["conflicting"]["allOf"][0]["description"].asText())
     }
 
     @Test
