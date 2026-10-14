@@ -1,0 +1,69 @@
+name: Publish SNAPSHOT
+
+# Manual run on the selected branch: publishes <next version>-<branch>-SNAPSHOT of the library and the Gradle plugin
+# to Maven Central snapshots (https://central.sonatype.com/repository/maven-snapshots/) and GitHub Packages.
+on:
+    workflow_dispatch:
+
+jobs:
+    publish-snapshot:
+        runs-on: ubuntu-latest
+        concurrency: publish-snapshot-${{ github.ref_name }}
+        permissions:
+            packages: write
+            contents: read
+        name: Build & Test & Publish SNAPSHOT
+
+        steps:
+            -   uses: actions/checkout@v6
+                with:
+                    fetch-depth: 0
+            -   name: Setup JDK
+                uses: actions/setup-java@v5.0.0
+                with:
+                    distribution: 'temurin'
+                    java-version: 21
+            -   name: Setup Gradle for a non-wrapper project
+                uses: gradle/actions/setup-gradle@v5
+                with:
+                    gradle-version: wrapper
+
+            -   name: Run tests
+                run: ./gradlew ktlintCheck test
+
+            -   name: Run Gradle plugin tests
+                run: |
+                    ./gradlew :gradle-plugin:ktlintCheck :gradle-plugin:test :gradle-plugin:validatePlugins
+                    ./gradlew publishAllPublicationsToFunctionalTestRepository -Pversion=0.0.0-SNAPSHOT
+                    ./gradlew :gradle-plugin:functionalTest -Pversion=0.0.0-SNAPSHOT
+
+            -   uses: paulhatch/semantic-version@v5.4.0
+                id: tag
+                with:
+                    bump_each_commit: true
+                    bump_each_commit_patch_pattern: "(BUMP)"
+                    tag_prefix: ""
+
+            -   name: Get version
+                id: version
+                run: |
+                    branch=$(echo "${GITHUB_REF_NAME}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9.]+/-/g; s/^-+|-+$//g')
+                    version="${{ steps.tag.outputs.version }}-${branch}-SNAPSHOT"
+                    echo "version=${version}" >> $GITHUB_OUTPUT
+                    echo "### Published \`${version}\`" >> $GITHUB_STEP_SUMMARY
+
+            -   name: Publish library
+                run: ./gradlew -Pversion=${{ steps.version.outputs.version }} publish -x check
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    GITHUB_USERNAME: ${{ github.actor }}
+                    ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+                    ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+
+            -   name: Publish Gradle plugin
+                run: ./gradlew :gradle-plugin:publish -Pversion=${{ steps.version.outputs.version }} -x check
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    GITHUB_USERNAME: ${{ github.actor }}
+                    ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+                    ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
