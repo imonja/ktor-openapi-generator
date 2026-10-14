@@ -226,6 +226,17 @@ The library and the Gradle plugin share one version. The plugin is published to 
 Packages, Maven Central and the Gradle Plugin Portal (release versions only; requires the
 `GRADLE_PUBLISH_KEY` and `GRADLE_PUBLISH_SECRET` secrets).
 
+To try a branch before releasing, run the **Publish SNAPSHOT** workflow manually on it. It
+runs the checks and publishes `<next version>-<branch>-SNAPSHOT` of the library and the
+plugin to Maven Central snapshots (and GitHub Packages). Consumers add the repository to
+both `pluginManagement` and `repositories`:
+
+```kotlin
+maven("https://central.sonatype.com/repository/maven-snapshots/")
+```
+
+Gradle caches snapshots for 24 hours; use `--refresh-dependencies` after republishing.
+
 Local publication:
 
 ```bash
