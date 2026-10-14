@@ -5,7 +5,7 @@ import com.papsign.ktor.openapigen.model.Described
 import java.util.*
 import kotlin.reflect.KProperty
 
-class FlowsModel<TScope> : MutableMap<String, FlowsModel.FlowModel<TScope>> by HashMap<String, FlowModel<TScope>>()
+class FlowsModel<TScope> : MutableMap<String, FlowsModel.FlowModel<TScope>> by LinkedHashMap<String, FlowModel<TScope>>()
         where TScope : Enum<TScope>, TScope : Described {
 
     private var implicit: FlowModel<TScope>? by this

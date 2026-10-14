@@ -5,7 +5,7 @@ import com.papsign.ktor.openapigen.model.operation.ParameterModel
 import com.papsign.ktor.openapigen.model.server.ServerModel
 
 @Suppress("UNCHECKED_CAST")
-class PathItemModel : MutableMap<String, Any> by HashMap() {
+class PathItemModel : MutableMap<String, Any> by LinkedHashMap() {
     var summary: String? by (this as MutableMap<String, String?>)
     var description: String? by (this as MutableMap<String, String?>)
     var get: OperationModel? by (this as MutableMap<String, OperationModel?>)

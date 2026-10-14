@@ -114,6 +114,11 @@ publishing {
                 password = findProperty("github.token") as String? ?: System.getenv("GITHUB_TOKEN")
             }
         }
+        // Local repository consumed by the gradle-plugin functional tests
+        maven {
+            name = "FunctionalTest"
+            url = uri(layout.buildDirectory.dir("functional-test-repo"))
+        }
     }
 }
 
