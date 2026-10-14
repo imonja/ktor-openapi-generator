@@ -59,9 +59,10 @@ object DefaultPrimitiveSchemaProvider : SchemaBuilderProviderModule, OpenAPIGenM
         }
     }
 
+    // Examples are fixed in UTC so the generated document does not depend on the machine producing it.
     val førsteApril = ZonedDateTime.of(
         LocalDateTime.of(2025, 4, 1, 12, 30, 0),
-        ZoneId.systemDefault()
+        ZoneOffset.UTC
     )
     private val builders = listOf(
         Builder<Boolean>(
@@ -109,7 +110,7 @@ object DefaultPrimitiveSchemaProvider : SchemaBuilderProviderModule, OpenAPIGenM
         Builder<OffsetTime>(
             DataType.string,
             pattern = "HH:mm:ss+XXX",
-            example = OffsetTime.now()
+            example = OffsetTime.of(11, 30, 0, 0, ZoneOffset.UTC)
         ),
         Builder<LocalDateTime>(
             DataType.string,

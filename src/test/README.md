@@ -10,7 +10,7 @@ All tests use the existing `test` source set and live under
 | `parameters/enums` | Strict and non-strict enum parsing through HTTP |
 | `parameters/parsers` | Focused parser tests, organized by builder and query style, plus parser assertion helpers |
 | `parameters/validation` | Query, path, header, and optional parameter validation |
-| `schema` | Schema properties, polymorphism, and Kotlin type reflection |
+| `schema` | Schema properties, polymorphism, Kotlin type reflection, and date-time examples |
 | `content` | Request body requirements, form documentation, binary content, and multipart parsing |
 | `content/validation` | String, number, nested, optional, and phone request body validation |
 | `auth` | Authentication documentation and its JWT application fixture |
@@ -25,6 +25,21 @@ All tests use the existing `test` source set and live under
 - Keep models and routes used by one class in that file. Use a nearby `*Fixtures.kt` for setup shared by several tests in the same area.
 - Put configuration shared across areas in `support`. `installOpenAPI()` and `installJackson()` provide minimal plugin setup; `setupBaseTestServer()` additionally configures JSON formatting, error handling, and the OpenAPI endpoint.
 - Start a fresh `testApplication` for each HTTP scenario. Keep feature-specific routes in their own fixtures.
+
+## Time zone
+
+The test JVM runs with `user.timezone=Pacific/Kiritimati` (UTC+14), set on the `Test` tasks in
+`build.gradle.kts`. A generated OpenAPI document must not depend on the machine producing it:
+projects commit the document and `checkOpenApiSpec` compares it byte for byte, so output that
+follows the default time zone passes on a developer machine and fails on a UTC CI runner.
+
+Do not change this zone to `UTC`. In UTC, `ZoneId.systemDefault()` and `ZoneOffset.UTC` produce
+the same value, so tests pass even when code depends on the default zone. Changing the zone inside
+a test is not a substitute: values such as the date-time examples in
+`DefaultPrimitiveSchemaProvider` are computed once per JVM, before the test can run.
+UTC+14 has no daylight saving time and shifts examples to another day, which makes such a
+dependency obvious. `schema/DateTimeExampleOpenAPITest` asserts that the zone is not UTC and
+guards the fixed date-time examples.
 
 ## Running tests
 

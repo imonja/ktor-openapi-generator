@@ -86,6 +86,9 @@ tasks {
         reports.html.required.set(false)
         useJUnitPlatform()
         maxParallelForks = Runtime.getRuntime().availableProcessors()
+        // A non-UTC zone exposes generated output that depends on the machine's default time zone.
+        // Do not change it to UTC; see src/test/README.md#time-zone.
+        systemProperty("user.timezone", "Pacific/Kiritimati")
     }
 }
 
