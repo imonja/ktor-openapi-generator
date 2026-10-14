@@ -110,7 +110,7 @@ internal class DeprecatedSchemaPropertyOpenAPITest {
 
     @ParameterizedTest
     @EnumSource(OpenAPIVersion::class)
-    fun `OpenAPI JSON keeps annotations of deprecated referenced DTO properties`(format: OpenAPIVersion): Unit = testApplication {
+    fun `OpenAPI JSON wraps deprecated referenced DTO properties in allOf`(format: OpenAPIVersion): Unit = testApplication {
         application {
             install(ServerContentNegotiation) {
                 jackson()
@@ -153,7 +153,7 @@ internal class DeprecatedSchemaPropertyOpenAPITest {
         assertNotNull(conversationSchema, "OpenAPI should contain a schema for ConversationResponse")
 
         val accountProperty = conversationSchema.mapAt("properties").mapAt("account")
-        assertEquals("#/components/schemas/Account", accountProperty.referencedSchema(format))
+        assertEquals("#/components/schemas/Account", accountProperty.referencedSchema())
         assertEquals(true, accountProperty["deprecated"], "account should be marked deprecated")
 
         val authorProperty = conversationSchema.mapAt("properties").mapAt("author")
@@ -164,7 +164,7 @@ internal class DeprecatedSchemaPropertyOpenAPITest {
 
     @ParameterizedTest
     @EnumSource(OpenAPIVersion::class)
-    fun `OpenAPI JSON keeps annotations of described referenced DTO properties`(format: OpenAPIVersion): Unit = testApplication {
+    fun `OpenAPI JSON wraps described referenced DTO properties in allOf`(format: OpenAPIVersion): Unit = testApplication {
         application {
             install(ServerContentNegotiation) {
                 jackson()
@@ -207,19 +207,14 @@ internal class DeprecatedSchemaPropertyOpenAPITest {
         assertNotNull(conversationSchema, "OpenAPI should contain a schema for DescribedConversationResponse")
 
         val accountProperty = conversationSchema.mapAt("properties").mapAt("account")
-        assertEquals("#/components/schemas/Account", accountProperty.referencedSchema(format))
+        assertEquals("#/components/schemas/Account", accountProperty.referencedSchema())
         assertEquals("Account that started the conversation", accountProperty["description"])
     }
 
-    /** 3.0 ignores keywords next to `$ref` and needs the allOf wrapper; 2020-12 keeps them beside the reference. */
-    private fun Map<String, Any>.referencedSchema(format: OpenAPIVersion): Any? {
-        return if (format == OpenAPIVersion.V3_0) {
-            assertEquals(null, this["\$ref"], "3.0 property should not have a top-level ref")
-            listAt("allOf").single().mapAt()["\$ref"]
-        } else {
-            assertEquals(null, this["allOf"], "3.2 property should not be wrapped in allOf")
-            this["\$ref"]
-        }
+    /** Annotated references stay wrapped in allOf: 3.0 ignores keywords next to `$ref`, and client generators do too. */
+    private fun Map<String, Any>.referencedSchema(): Any? {
+        assertEquals(null, this["\$ref"], "property should not have a top-level ref")
+        return listAt("allOf").single().mapAt()["\$ref"]
     }
 
     private fun Map<String, Any>.mapAt(key: String): Map<String, Any> {

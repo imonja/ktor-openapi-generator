@@ -108,13 +108,7 @@ internal class OpenAPIVersionOpenAPITest {
         assertEquals("#/components/schemas/Child", properties["requiredChild"]["\$ref"].asText())
         assertEquals("#/components/schemas/Child", properties["child"]["anyOf"][0]["\$ref"].asText())
         assertEquals(true, properties["legacyChild"]["deprecated"].asBoolean())
-        if (format == OpenAPIVersion.V3_2) {
-            // 2020-12 allows keywords next to the reference, so the 3.0 allOf wrapper is inlined.
-            assertTrue(properties["legacyChild"].has("anyOf"))
-            assertFalse(properties["legacyChild"].has("allOf"))
-        } else {
-            assertTrue(properties["legacyChild"]["allOf"][0].has("anyOf"))
-        }
+        assertTrue(properties["legacyChild"]["allOf"][0].has("anyOf"))
         assertEquals("Payload", schemas["Payload"]["title"].asText())
         assertEquals("Child", schemas["Child"]["title"].asText())
         assertTrue(schemas["Child"]["properties"]["parent"].has("anyOf"))
@@ -218,37 +212,6 @@ internal class OpenAPIVersionOpenAPITest {
         assertEquals("title", schemas["Named"].fieldNames().next(), "title should lead the component schema")
         assertFalse(schemas["Named"]["properties"]["color"].has("title"), "inline schemas stay untitled")
         assertEquals("Custom", schemas["Custom"]["title"].asText(), "example payloads are not schema titles")
-    }
-
-    @ParameterizedTest
-    @EnumSource(OpenAPIVersion::class)
-    fun `single allOf wrapper is inlined only in 2020-12 documents and only without conflicts`(version: OpenAPIVersion) {
-        val ref = "#/components/schemas/Target"
-        val api = OpenAPIModel(openapi = version.value)
-        api.components.schemas["Target"] = SchemaModel.SchemaModelObj<Any?>(emptyMap(), emptyList())
-        api.components.schemas["Holder"] = SchemaModel.SchemaModelObj<Any?>(
-            mapOf(
-                "plain" to SchemaModel.AllOfSchemaModel(listOf(SchemaModel.SchemaModelRef<Any?>(ref, nullable = true)))
-                    .apply { deprecated = true },
-                "conflicting" to SchemaModel.AllOfSchemaModel(
-                    listOf(SchemaModel.SchemaModelRef<Any?>(ref).apply { description = "Inner" })
-                ).apply { description = "Outer" }
-            ),
-            emptyList()
-        )
-
-        val document = mapper.valueToTree<JsonNode>(api.serialize())
-        assertValidDocument(document, version)
-        val properties = document["components"]["schemas"]["Holder"]["properties"]
-        if (version == OpenAPIVersion.V3_2) {
-            assertEquals(mapper.readTree("""{"anyOf":[{"${'$'}ref":"$ref"},{"type":"null"}],"deprecated":true}"""), properties["plain"])
-        } else {
-            assertEquals(1, properties["plain"]["allOf"].size())
-            assertEquals(true, properties["plain"]["deprecated"].asBoolean())
-        }
-        // Inlining would overwrite one of the descriptions, so the wrapper stays.
-        assertEquals("Outer", properties["conflicting"]["description"].asText())
-        assertEquals("Inner", properties["conflicting"]["allOf"][0]["description"].asText())
     }
 
     @Test

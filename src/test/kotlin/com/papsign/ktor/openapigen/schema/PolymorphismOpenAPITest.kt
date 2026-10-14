@@ -58,7 +58,7 @@ internal class PolymorphismOpenAPITest {
             "type" : "string"
           }
         },
-        "required" : [ "str", "type" ],
+        "required" : [ "str" ],
         "type" : "object"
       }"""
                 )

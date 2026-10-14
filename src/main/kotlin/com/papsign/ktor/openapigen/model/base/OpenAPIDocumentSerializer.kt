@@ -124,17 +124,7 @@ internal class OpenAPIDocumentSerializer(private val version: OpenAPIVersion) {
                     this["contentMediaType"] = mediaType ?: "application/octet-stream"
                 }
             }
-            inlineSingleAllOf()
         }
-    }
-
-    /** JSON Schema 2020-12 allows keywords next to `$ref`, so the 3.0 `allOf` wrapper for annotated references is unnecessary. */
-    private fun MutableMap<String, Any?>.inlineSingleAllOf() {
-        val inner = (this["allOf"] as? List<*>)?.singleOrNull() as? Map<*, *> ?: return
-        if (inner.keys.any { it in keys }) return
-        remove("allOf")
-        @Suppress("UNCHECKED_CAST")
-        putAll(inner as Map<String, Any?>)
     }
 
     private fun Any?.mapObject(transform: MutableMap<String, Any?>.() -> Unit): Any? {

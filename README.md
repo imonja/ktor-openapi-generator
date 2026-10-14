@@ -158,9 +158,6 @@ references use `anyOf`, and nullable enums include `null`. Schema examples use
 have no JSON string type and use `contentMediaType` to identify file uploads in
 Swagger UI. For an inline binary body this matches the declared media type;
 for a DTO file property it defaults to `application/octet-stream`.
-References to DTOs that carry property annotations such as `@Deprecated` or
-`@Description` keep those keywords next to the reference instead of wrapping it
-in a single-element `allOf`.
 Parameter, media type and named examples retain their original representation.
 Parameter defaults are emitted at `schema.default`, as required by OpenAPI,
 instead of as a top-level parameter property.
@@ -168,8 +165,8 @@ instead of as a top-level parameter property.
 In every version, each schema in `components.schemas` has a `title` equal to its
 component name (as produced by the `SchemaNamer`). Swagger UI labels 3.1+ schemas
 only by `title`, so without it every model is shown as `object`. The discriminator
-property added by `@DiscriminatorAnnotation` is a plain string, required in each
-subtype; the `discriminator` object is declared only on the sealed base schema.
+property added by `@DiscriminatorAnnotation` is a plain string; the `discriminator`
+object is declared only on the sealed base schema.
 Regenerate committed documents after upgrading.
 
 This changes the default document format for existing applications. Select
