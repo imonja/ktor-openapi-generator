@@ -35,6 +35,12 @@ jobs:
             -   name: Run tests
                 run: ./gradlew ktlintCheck test --info
 
+            -   name: Run Gradle plugin tests
+                run: |
+                    ./gradlew :gradle-plugin:ktlintCheck :gradle-plugin:test :gradle-plugin:validatePlugins
+                    ./gradlew publishAllPublicationsToFunctionalTestRepository -Pversion=0.0.0-SNAPSHOT
+                    ./gradlew :gradle-plugin:functionalTest -Pversion=0.0.0-SNAPSHOT
+
             -   uses: paulhatch/semantic-version@v5.4.0
                 id: tag
                 with:
@@ -63,6 +69,26 @@ jobs:
                     ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
                     ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
                     ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+
+            -   name: Publish Gradle Plugin to GitHub Packages and Maven Central
+                if: ${{ steps.version.outputs.is_tag == 'true' || steps.tag.outputs.version_type != 'none' }}
+                run: ./gradlew :gradle-plugin:publish -Pversion=${{ steps.version.outputs.version }} -x check
+                env:
+                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                    GITHUB_USERNAME: ${{ github.actor }}
+                    ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+                    ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+                    ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+                    ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+
+            -   name: Publish Gradle Plugin to Gradle Plugin Portal
+                if: ${{ (steps.version.outputs.is_tag == 'true' || steps.tag.outputs.version_type != 'none') && !contains(steps.version.outputs.version, 'SNAPSHOT') }}
+                run: ./gradlew :gradle-plugin:publishPlugins -Pversion=${{ steps.version.outputs.version }} -x check
+                env:
+                    ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+                    ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+                    GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}
+                    GRADLE_PUBLISH_SECRET: ${{ secrets.GRADLE_PUBLISH_SECRET }}
 
             -   name: Generate release notes
                 if: ${{ steps.version.outputs.is_tag == 'false' && steps.tag.outputs.version_type != 'none' }}

@@ -22,3 +22,9 @@ jobs:
                     gradle-version: wrapper
             -   name: Bygg & test
                 run: ./gradlew ktlintCheck test --continue --configuration-cache --stacktrace --info
+            -   name: Gradle plugin lint & unit tests
+                run: ./gradlew :gradle-plugin:ktlintCheck :gradle-plugin:test :gradle-plugin:validatePlugins --continue --stacktrace
+            -   name: Gradle plugin functional tests
+                run: |
+                    ./gradlew publishAllPublicationsToFunctionalTestRepository -Pversion=0.0.0-SNAPSHOT --stacktrace
+                    ./gradlew :gradle-plugin:functionalTest -Pversion=0.0.0-SNAPSHOT --stacktrace

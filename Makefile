@@ -29,3 +29,8 @@ add-tag-and-push:
 	git tag -a "$$tag" -m "$$msg"; \
 	git push origin "$$tag"; \
 	echo "✅ Tag $$tag pushed successfully."
+
+plugin-test:
+	./gradlew :gradle-plugin:ktlintCheck :gradle-plugin:test :gradle-plugin:validatePlugins
+	./gradlew publishAllPublicationsToFunctionalTestRepository -Pversion=0.0.0-SNAPSHOT
+	./gradlew :gradle-plugin:functionalTest -Pversion=0.0.0-SNAPSHOT

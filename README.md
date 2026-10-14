@@ -82,6 +82,60 @@ Both are configurable via `install(OpenAPIGen) { ... }`:
 - `serveSwaggerUi`
 - `swaggerUiVersion`
 
+## Generating the Document at Build Time
+
+The `io.github.imonja.ktor-openapi` Gradle plugin writes the OpenAPI document to a file
+without starting a server: it runs one Ktor module on an engine that opens no sockets
+and serializes what `OpenAPIGen` registered.
+
+```kotlin
+plugins {
+    id("io.github.imonja.ktor-openapi") version "<version>"
+}
+
+ktorOpenApi {
+    module.set("com.example.OpenApiModuleKt.openApiModule") // required
+    outputFile.set(layout.projectDirectory.file("src/main/resources/openapi/api.json"))
+}
+```
+
+The module is referenced in Ktor's `ktor.application.modules` format, typically a
+top-level `fun Application.openApiModule()`. It must install `OpenAPIGen` and register
+all documented routes before it returns. It should not need a database, Redis or gRPC
+connection: handlers only use their dependencies when serving requests.
+
+Tasks:
+
+- `generateOpenApiSpec` writes the document. It always runs, and the file is replaced
+  atomically only after successful generation.
+- `checkOpenApiSpec` (part of `check`) fails if the committed document differs from a
+  freshly generated one.
+
+Options:
+
+| Option                 | Default                                     | Description                                                   |
+|------------------------|---------------------------------------------|---------------------------------------------------------------|
+| `module`               | —                                           | Ktor module that installs `OpenAPIGen` and declares routes    |
+| `outputFile`           | `src/main/resources/openapi/openapi.json`   | Generated document; pretty-printed JSON                       |
+| `generateOnBuild`      | `false`                                     | Regenerate after `classes`                                    |
+| `addLibraryDependency` | `true`                                      | Add `ktor-openapi-generator` of the plugin's version          |
+| `maxHeapSize`          | `512m`                                      | Heap of the generator JVM                                     |
+| `systemProperties`     | empty                                       | System properties of the generator JVM                        |
+| `jvmArgs`              | empty                                       | Extra arguments of the generator JVM                          |
+
+The plugin adds `io.github.imonja:ktor-openapi-generator` with its own version to
+`implementation`. You can still declare the library yourself; Gradle then selects the
+highest version, and the tasks log a warning whenever the selected library version
+differs from the plugin version. The generator runs on the project's Java toolchain
+and requires Gradle 9.
+
+Without the plugin, use the library API directly:
+
+```kotlin
+val json: String = OpenAPISpecGenerator.generate(Application::openApiModule)
+OpenAPISpecGenerator.generateTo(Path.of("openapi.json"), "com.example.OpenApiModuleKt.openApiModule")
+```
+
 ## OpenAPI Version
 
 The default document format is **OpenAPI 3.2.1**. To use the compatibility format:
@@ -144,6 +198,15 @@ Useful local commands:
 ./gradlew dokkaGenerateHtml
 ```
 
+The Gradle plugin is an included build in [`gradle-plugin`](gradle-plugin). Its functional
+tests resolve the library from a local repository, so publish it there first:
+
+```bash
+./gradlew :gradle-plugin:test
+./gradlew publishAllPublicationsToFunctionalTestRepository -Pversion=0.0.0-SNAPSHOT
+./gradlew :gradle-plugin:functionalTest -Pversion=0.0.0-SNAPSHOT
+```
+
 Tag helper commands:
 
 ```bash
@@ -158,6 +221,10 @@ GitHub Actions workflows:
 
 - Pull requests: lint + tests
 - `main`/tags: lint + tests + publish pipeline
+
+The library and the Gradle plugin share one version. The plugin is published to GitHub
+Packages, Maven Central and the Gradle Plugin Portal (release versions only; requires the
+`GRADLE_PUBLISH_KEY` and `GRADLE_PUBLISH_SECRET` secrets).
 
 Local publication:
 
