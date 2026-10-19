@@ -44,12 +44,14 @@ class OpenAPIGen(
     }
 
     class Configuration(val api: OpenAPIModel) {
-        /** Exact document version; validated against the supported serialization formats. Defaults to 3.2.1. */
+        /**
+         * Document version: `3.0`, `3.1` or `3.2` selects the latest version of that family (3.0.4, 3.1.2, 3.2.1);
+         * an exact supported version is kept as is. Unsupported values fail immediately. Defaults to 3.2.1.
+         */
         var openApiVersion: String
             get() = api.openapi
             set(value) {
-                OpenAPIVersion.fromValue(value)
-                api.openapi = value
+                api.openapi = OpenAPIVersion.resolve(value)
             }
 
         inline fun info(crossinline configure: InfoModel.() -> Unit) {
@@ -117,7 +119,7 @@ class OpenAPIGen(
         override fun install(pipeline: ApplicationCallPipeline, configure: Configuration.() -> Unit): OpenAPIGen {
             val api = OpenAPIModel()
             val cfg = Configuration(api).apply(configure)
-            OpenAPIVersion.fromValue(api.openapi)
+            OpenAPIVersion.resolve(api.openapi)
 
             if (cfg.serveOpenApiJson) {
                 pipeline.intercept(ApplicationCallPipeline.Call) {

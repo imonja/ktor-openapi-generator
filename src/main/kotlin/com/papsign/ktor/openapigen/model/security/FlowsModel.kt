@@ -88,6 +88,11 @@ class FlowsModel<TScope> : MutableMap<String, FlowsModel.FlowModel<TScope>> by L
         val refreshUrl: String? = null,
         val scopes: Map<T, String>
     ) : DataModel where T : Enum<T>, T : Described {
+        // `scopes` is required in every OAuth flow, so an empty map is kept as `{}` instead of being dropped.
+        override fun serialize(): Map<String, Any?> = super.serialize().toMutableMap().apply {
+            putIfAbsent("scopes", emptyMap<String, String>())
+        }
+
         companion object {
             fun <T> implicit(scopes: Iterable<T>, authorizationUrl: String, refreshUrl: String? = null): FlowModel<T> where T : Enum<T>, T : Described {
                 return FlowModel(

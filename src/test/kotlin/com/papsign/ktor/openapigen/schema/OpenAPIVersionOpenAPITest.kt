@@ -9,6 +9,7 @@ import com.papsign.ktor.openapigen.OpenAPIGen
 import com.papsign.ktor.openapigen.OpenAPIVersion
 import com.papsign.ktor.openapigen.annotations.parameters.PathParam
 import com.papsign.ktor.openapigen.annotations.parameters.QueryParam
+import com.papsign.ktor.openapigen.model.Described
 import com.papsign.ktor.openapigen.model.base.OpenAPIModel
 import com.papsign.ktor.openapigen.model.operation.MediaTypeModel
 import com.papsign.ktor.openapigen.model.operation.ParameterLocation
@@ -18,6 +19,9 @@ import com.papsign.ktor.openapigen.model.operation.StatusResponseModel
 import com.papsign.ktor.openapigen.model.schema.DataFormat
 import com.papsign.ktor.openapigen.model.schema.DataType
 import com.papsign.ktor.openapigen.model.schema.SchemaModel
+import com.papsign.ktor.openapigen.model.security.FlowsModel
+import com.papsign.ktor.openapigen.model.security.SecuritySchemeModel
+import com.papsign.ktor.openapigen.model.security.SecuritySchemeType
 import com.papsign.ktor.openapigen.route.apiRouting
 import com.papsign.ktor.openapigen.route.path.normal.get
 import com.papsign.ktor.openapigen.route.route
@@ -45,6 +49,8 @@ internal class OpenAPIVersionOpenAPITest {
     private val mapper = ObjectMapper()
 
     enum class Choice { FIRST, SECOND }
+
+    enum class Scope(override val description: String) : Described { READ("Read access") }
 
     data class Child(val id: String, val parent: Child?)
 
@@ -76,7 +82,7 @@ internal class OpenAPIVersionOpenAPITest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["3.0.0", "3.0.1", "3.0.2", "3.0.3", "3.0.4", "3.2.0", "3.2.1"])
+    @ValueSource(strings = ["3.0.0", "3.0.1", "3.0.2", "3.0.3", "3.0.4", "3.1.0", "3.1.1", "3.1.2", "3.2.0", "3.2.1"])
     fun `endpoint preserves the exact version and serves a valid document in its format`(version: String): Unit = testApplication {
         val format = OpenAPIVersion.fromValue(version)
         application {
@@ -118,7 +124,7 @@ internal class OpenAPIVersionOpenAPITest {
         val limit = operation["parameters"].first { it["name"].asText() == "limit" }
         assertEquals(10, limit["schema"]["default"].asInt())
         assertFalse(limit.has("default"))
-        if (format == OpenAPIVersion.V3_2) {
+        if (format != OpenAPIVersion.V3_0) {
             assertEquals(mapper.readTree("[\"string\",\"null\"]"), properties["text"]["type"])
             assertFalse(properties["text"].has("nullable"))
             assertEquals(mapper.readTree("[\"string\",\"null\"]"), properties["choice"]["type"])
@@ -173,13 +179,13 @@ internal class OpenAPIVersionOpenAPITest {
         assertEquals("Example", component["title"].asText())
         // Only component schemas are titled; the same model used inline is otherwise identical.
         val serialized = (component as ObjectNode).deepCopy().apply { remove("title") }
-        val serializedExample = if (version == OpenAPIVersion.V3_2) serialized["examples"][0] else serialized["example"]
+        val serializedExample = if (version != OpenAPIVersion.V3_0) serialized["examples"][0] else serialized["example"]
         assertEquals(mapper.valueToTree(example), serializedExample)
         assertEquals(mapper.valueToTree(example), document["components"]["requestBodies"]["Body"]["content"]["application/json"]["example"])
         assertEquals(serialized, document["components"]["parameters"]["Filter"]["schema"])
         assertEquals(serialized, document["components"]["requestBodies"]["Body"]["content"]["application/json"]["schema"])
         assertEquals(serialized, document["components"]["responses"]["Result"]["content"]["application/json"]["schema"])
-        if (version == OpenAPIVersion.V3_2) {
+        if (version != OpenAPIVersion.V3_0) {
             assertEquals("application/octet-stream", document["components"]["schemas"]["RawFile"]["contentMediaType"].asText())
             val binary = document["components"]["requestBodies"]["Binary"]["content"]["image/png"]["schema"]
             assertEquals("image/png", binary["contentMediaType"].asText())
@@ -217,12 +223,55 @@ internal class OpenAPIVersionOpenAPITest {
     @Test
     fun `legacy version strings remain supported and unknown dialects fail clearly`() {
         assertEquals("3.0.0", OpenAPIModel(openapi = "3.0.0").serialize()["openapi"])
-        val error = assertFailsWith<IllegalArgumentException> { OpenAPIModel(openapi = "3.1.2").serialize() }
+        assertEquals("3.1.0", OpenAPIModel(openapi = "3.1.0").serialize()["openapi"])
+        val error = assertFailsWith<IllegalArgumentException> { OpenAPIModel(openapi = "3.3").serialize() }
         assertTrue(error.message!!.contains("Unsupported OpenAPI version"))
     }
 
     @ParameterizedTest
-    @ValueSource(strings = ["2.0", "3.1.2", "3.0.5", "3.2.2", "3.2", "3.2.1-rc1", " 3.2.1", ""])
+    @EnumSource(OpenAPIVersion::class)
+    fun `major minor version selects the latest version of its family`(version: OpenAPIVersion) {
+        val api = OpenAPIModel()
+        val config = OpenAPIGen.Configuration(api)
+        config.openApiVersion = version.shortValue
+        assertEquals(version.value, config.openApiVersion)
+        assertEquals(version.value, api.openapi)
+        assertEquals(version.value, api.serialize()["openapi"])
+
+        // Assigned directly, the short form is resolved when the document is serialized.
+        val direct = OpenAPIModel(openapi = version.shortValue)
+        val document = mapper.valueToTree<JsonNode>(direct.serialize())
+        assertEquals(version.value, document["openapi"].asText())
+        assertValidDocument(document, version)
+    }
+
+    @Test
+    fun `short forms resolve to the latest published versions`() {
+        assertEquals(listOf("3.0.4", "3.1.2", "3.2.1"), listOf("3.0", "3.1", "3.2").map { OpenAPIVersion.resolve(it) })
+    }
+
+    @ParameterizedTest
+    @EnumSource(OpenAPIVersion::class)
+    fun `OAuth flows keep empty scopes`(version: OpenAPIVersion) {
+        val api = OpenAPIModel(openapi = version.value)
+        val scheme = SecuritySchemeModel(
+            type = SecuritySchemeType.oauth2,
+            referenceName = "oauth",
+            flows = FlowsModel<Scope>()
+                .authorizationCode(emptyList(), "https://auth.example/authorize", "https://auth.example/token")
+                .clientCredentials(listOf(Scope.READ), "https://auth.example/token")
+        )
+        api.components.securitySchemes[scheme.referenceName] = scheme
+
+        val document = mapper.valueToTree<JsonNode>(api.serialize())
+        assertValidDocument(document, version)
+        val flows = document["components"]["securitySchemes"]["oauth"]["flows"]
+        assertEquals(mapper.readTree("{}"), flows["authorizationCode"]["scopes"])
+        assertEquals(mapper.readTree("{\"READ\":\"Read access\"}"), flows["clientCredentials"]["scopes"])
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["2.0", "3", "3.3", "3.0.5", "3.1.3", "3.2.2", "3.2.1-rc1", " 3.2.1", " 3.1", "3.1.", "v3.1", ""])
     fun `configuration rejects unsupported versions immediately without changing the document`(version: String) {
         val api = OpenAPIModel()
         val config = OpenAPIGen.Configuration(api)
@@ -237,7 +286,7 @@ internal class OpenAPIVersionOpenAPITest {
 
     private fun assertValidDocument(document: JsonNode, version: OpenAPIVersion) {
         val dialect = if (version == OpenAPIVersion.V3_0) SpecVersion.VersionFlag.V4 else SpecVersion.VersionFlag.V202012
-        val resource = if (version == OpenAPIVersion.V3_0) "/openapi/3.0.schema.json" else "/openapi/3.2.schema.json"
+        val resource = "/openapi/${version.shortValue}.schema.json"
         val schema = javaClass.getResourceAsStream(resource)!!.use { JsonSchemaFactory.getInstance(dialect).getSchema(it) }
         val errors = schema.validate(document)
         assertTrue(errors.isEmpty(), errors.joinToString("\n"))

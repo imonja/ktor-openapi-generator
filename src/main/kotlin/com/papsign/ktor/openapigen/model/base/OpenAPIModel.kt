@@ -19,7 +19,9 @@ data class OpenAPIModel(
     var externalDocs: ExternalDocumentationModel? = null
 ) : DataModel {
     override fun serialize(): Map<String, Any?> {
-        val version = OpenAPIVersion.fromValue(openapi)
-        return OpenAPIDocumentSerializer(version).serialize(super.serialize())
+        // A `major.minor` value such as "3.1" is written as the latest version of its family.
+        val resolved = OpenAPIVersion.resolve(openapi)
+        val document = super.serialize().toMutableMap().apply { this["openapi"] = resolved }
+        return OpenAPIDocumentSerializer(OpenAPIVersion.fromValue(resolved)).serialize(document)
     }
 }

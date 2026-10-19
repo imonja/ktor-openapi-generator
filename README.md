@@ -138,21 +138,27 @@ OpenAPISpecGenerator.generateTo(Path.of("openapi.json"), "com.example.OpenApiMod
 
 ## OpenAPI Version
 
-The default document format is **OpenAPI 3.2.1**. To use the compatibility format:
+The default document format is **OpenAPI 3.2.1**. To select another version:
 
 ```kotlin
 install(OpenAPIGen) {
-    openApiVersion = "3.0.1"
+    openApiVersion = "3.1"
 }
 ```
 
-Supported values: `3.0.0`, `3.0.1`, `3.0.2`, `3.0.3`, `3.0.4`, `3.2.0` and
-`3.2.1`. The exact string is preserved in the document's `openapi` field;
-versions in the same family share the corresponding serialization rules.
+`3.0`, `3.1` and `3.2` select the latest version of that family: `3.0.4`, `3.1.2`
+and `3.2.1`. The document's `openapi` field always contains the full version, and
+`openApiVersion` returns it after assignment. Exact versions are also accepted and
+preserved as is: `3.0.0`–`3.0.4`, `3.1.0`–`3.1.2`, `3.2.0` and `3.2.1`. Versions in
+the same family share the corresponding serialization rules.
 Unsupported values fail immediately when assigned to `openApiVersion`.
 `info.version` is the version of your own API and is independent of this setting.
 
-In 3.2 documents, nullable types use JSON Schema type unions, nullable DTO
+3.1 and 3.2 documents are serialized by the same rules: the library does not emit
+any feature added in 3.2, so a 3.1 document differs only in its `openapi` field.
+Use 3.1 for tools that do not support 3.2 yet.
+
+In 3.1 and 3.2 documents, nullable types use JSON Schema type unions, nullable DTO
 references use `anyOf`, and nullable enums include `null`. Schema examples use
 `examples`; base64 strings use `contentEncoding: base64`. Raw binary schemas
 have no JSON string type and use `contentMediaType` to identify file uploads in
@@ -166,13 +172,15 @@ In every version, each schema in `components.schemas` has a `title` equal to its
 component name (as produced by the `SchemaNamer`). Swagger UI labels 3.1+ schemas
 only by `title`, so without it every model is shown as `object`. The discriminator
 property added by `@DiscriminatorAnnotation` is a plain string; the `discriminator`
-object is declared only on the sealed base schema.
+object is declared only on the sealed base schema. OAuth flows always contain
+`scopes`, which is required by OpenAPI, as `{}` when no scopes are declared.
 Regenerate committed documents after upgrading.
 
 This changes the default document format for existing applications. Select
-`openApiVersion = "3.0.4"` (or another supported 3.0 version) if a consumer
+`openApiVersion = "3.0"` (or another supported 3.0 version) if a consumer
 requires OpenAPI 3.0. Existing direct assignments such as
-`api.openapi = "3.0.0"` still select the 3.0 serialization rules. Unsupported
+`api.openapi = "3.0.0"` still select the 3.0 serialization rules; a short form
+such as `api.openapi = "3.1"` is written as `3.1.2` when serialized. Unsupported
 versions fail explicitly; assigning an arbitrary version string does not add
 support for its dialect. The same rules apply to `api.serialize()` for standalone
 document generation. HTTP request parsing and response handling are unchanged.
