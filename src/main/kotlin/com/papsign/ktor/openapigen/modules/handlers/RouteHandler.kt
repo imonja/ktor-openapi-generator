@@ -26,16 +26,27 @@ object RouteHandler : HandlerModule {
         val operationModules = provider.ofType<OperationModule>()
         apiGen.api.paths.getOrPut(path) { PathItemModel() }.also { pathItem ->
             methods.forEach {
-                val name = it.method.value.lowercase(Locale.getDefault())
+                val name = it.method.value.lowercase(Locale.ROOT)
                 // if (pathItem.containsKey(name)) error("$path::$name already defined")
                 val op = pathItem.getOrPut(name) { OperationModel() } as OperationModel
                 operationModules.forEach {
                     it.configure(apiGen, provider, op)
+                }
+                if (op.operationId == null) {
+                    op.operationId = generateOperationId(name, path)
                 }
             }
         }
         log.trace(
             "Registered $path::${methods.map { it.method.value }} with OpenAPI description with ${provider.ofType<SelectedModule>().map { it.module::class.simpleName }}"
         )
+    }
+
+    private fun generateOperationId(method: String, path: String): String {
+        val suffix = path.replace(Regex("\\{([^}]+)}")) { " By ${it.groupValues[1]} " }
+            .split(Regex("[^\\p{L}\\p{N}]+"))
+            .filter(String::isNotEmpty)
+            .joinToString("") { it.replaceFirstChar(Char::uppercaseChar) }
+        return method + suffix.ifEmpty { "Root" }
     }
 }

@@ -67,6 +67,45 @@ Full minimal example: [`src/test/kotlin/com/papsign/ktor/openapigen/examples/Min
 - Multipart and binary payload support
 - Validation and schema annotations
 
+## Operation IDs
+
+Each documented operation receives an `operationId` automatically from its HTTP method and full
+path. Names use camel case, retain version segments and parameter names, and prefix path parameters
+with `By`. Non-letter and non-digit separators, such as `-`, `_`, and `.`, separate words.
+
+| Operation | Automatic ID |
+| --- | --- |
+| `GET /users` | `getUsers` |
+| `POST /users` | `postUsers` |
+| `GET /users/{userId}/posts/{postId}` | `getUsersByUserIdPostsByPostId` |
+| `GET /v1/users` | `getV1Users` |
+| `GET /` | `getRoot` |
+
+Set an explicit ID to keep a client method name stable when its route changes:
+
+```kotlin
+import com.papsign.ktor.openapigen.route.operationId
+
+apiRouting {
+    route("/users") {
+        get<Unit, List<User>>(operationId("listUsers")) {
+            respond(emptyList())
+        }
+    }
+}
+```
+
+`OperationId("listUsers")` from the same package can also be passed directly as a route module.
+Explicit IDs are preserved as supplied; empty or whitespace-only values are rejected.
+
+IDs must be unique across the entire document, including explicit IDs and different HTTP methods.
+Document generation (standalone or through `/openapi.json`) fails on a duplicate, naming the ID and
+both operations. For example, `/user-profile` and `/user_profile` both produce `getUserProfile` for
+`GET`; assign a distinct explicit ID to resolve the collision. IDs never receive numeric suffixes.
+
+Each path alias gets its own automatic ID. Sharing one explicit ID across multiple aliases is a
+duplicate; declare those operations separately with distinct IDs instead.
+
 ## Multipart File Uploads
 
 Stream properties of a `@FormDataRequest` (`InputStream`, `ContentInputStream`, `NamedFileInputStream`)
