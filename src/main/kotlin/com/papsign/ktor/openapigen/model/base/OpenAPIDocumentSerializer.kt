@@ -99,6 +99,7 @@ internal class OpenAPIDocumentSerializer(private val version: OpenAPIVersion) {
         }
 
         if (version == OpenAPIVersion.V3_0) {
+            remove("contentMediaType")
             if (nullable) (this["enum"] as? List<*>)?.let { this["enum"] = it + listOf(null) }
             val examples = remove("examples") as? List<*>
             if (!containsKey("example") && !examples.isNullOrEmpty()) this["example"] = examples.first()
@@ -121,7 +122,7 @@ internal class OpenAPIDocumentSerializer(private val version: OpenAPIVersion) {
                     // Raw binary is not a JSON string. The annotation also preserves Swagger UI's file input.
                     remove("format")
                     remove("type")
-                    this["contentMediaType"] = mediaType ?: "application/octet-stream"
+                    this["contentMediaType"] = this["contentMediaType"] ?: mediaType ?: "application/octet-stream"
                 }
             }
         }

@@ -72,18 +72,22 @@ abstract class OpenAPIRoute<T : OpenAPIRoute<T>>(val ktorRoute: Route, val provi
                         getContentTypesMap<B>(bodyType).forEach { (contentType, parsers) ->
                             contentType(contentType) {
                                 handle {
-                                    val receive: B = parsers.getBodyParser(call.request.contentType()).parseBody(bodyType, this)
+                                    try {
+                                        val receive: B = parsers.getBodyParser(call.request.contentType()).parseBody(bodyType, this)
 
-                                    @Suppress("UNCHECKED_CAST")
-                                    val params: P = if (paramsType.classifier == Unit::class) {
-                                        Unit as P
-                                    } else {
-                                        parameterHandler.parse(
-                                            call.parameters,
-                                            call.request.headers
-                                        )
+                                        @Suppress("UNCHECKED_CAST")
+                                        val params: P = if (paramsType.classifier == Unit::class) {
+                                            Unit as P
+                                        } else {
+                                            parameterHandler.parse(
+                                                call.parameters,
+                                                call.request.headers
+                                            )
+                                        }
+                                        pass(this, responder, PHandler.handle(params), BHandler.handle(receive))
+                                    } finally {
+                                        CallResources.release(call)
                                     }
-                                    pass(this, responder, PHandler.handle(params), BHandler.handle(receive))
                                 }
                             }
                         }

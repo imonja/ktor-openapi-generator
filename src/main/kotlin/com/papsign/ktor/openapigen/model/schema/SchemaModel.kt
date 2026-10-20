@@ -1,5 +1,6 @@
 package com.papsign.ktor.openapigen.model.schema
 
+import com.papsign.ktor.openapigen.convertToValue
 import com.papsign.ktor.openapigen.model.DataModel
 import com.papsign.ktor.openapigen.model.base.RefModel
 
@@ -67,8 +68,14 @@ sealed class SchemaModel<T> : DataModel {
         override var example: T? = null,
         override var examples: List<T>? = null,
         override var description: String? = null,
-        override var deprecated: Boolean? = null
-    ) : SchemaModel<T>()
+        override var deprecated: Boolean? = null,
+        // OpenAPI 3.1+ only, dropped for 3.0
+        var contentMediaType: String? = null,
+        // `x-` keywords, inlined into the schema
+        var extensions: Map<String, Any?>? = null
+    ) : SchemaModel<T>() {
+        override fun serialize(): Map<String, Any?> = super.serialize() - "extensions" + extensions.orEmpty().mapValues { convertToValue(it.value) }
+    }
 
     data class SchemaModelRef<T>(override val `$ref`: String, val nullable: Boolean? = null) : SchemaModel<T>(), RefModel<SchemaModel<T>> {
         override var example: T? = null

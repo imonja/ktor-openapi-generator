@@ -67,6 +67,33 @@ Full minimal example: [`src/test/kotlin/com/papsign/ktor/openapigen/examples/Min
 - Multipart and binary payload support
 - Validation and schema annotations
 
+## Multipart File Uploads
+
+Stream properties of a `@FormDataRequest` (`InputStream`, `ContentInputStream`, `NamedFileInputStream`)
+are read completely before the handler runs: parts up to 256 KB stay in memory, larger ones are spooled
+to a temporary file that is deleted when the stream is closed or the request finishes.
+Parts whose name matches no property are skipped.
+
+File parts can be validated like string properties:
+
+```kotlin
+@FormDataRequest
+data class UploadAvatarRequest(
+    @FileSize(max = 1024 * 1024)                                  // bytes; empty files are rejected unless min = 0
+    @AllowedContentTypes("image/jpeg", "image/png", "image/webp") // wildcards like "image/*" work too
+    val file: NamedFileInputStream,
+)
+```
+
+- Violations throw `FileSizeConstraintViolation` / `ContentTypeConstraintViolation` (both `ConstraintViolation`)
+  before the handler is called; reading stops one byte past `max`.
+- `@AllowedContentTypes` checks the part's declared `Content-Type`, a missing header is a violation.
+- A misplaced annotation (wrong property type, `@AllowedContentTypes` together with `@PartEncoding`,
+  `min > max`) fails route registration.
+- Malformed multipart bodies, including parts above Ktor's `formFieldLimit`, become `BadRequestException`.
+- The document lists the allowed types in the part `encoding`, and the size as `x-min-file-size` /
+  `x-max-file-size` plus a line in the property description.
+
 ## Runtime Endpoints
 
 Default plugin endpoints:
