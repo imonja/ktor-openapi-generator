@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.papsign.ktor.openapigen.OpenAPIGen
 import com.papsign.ktor.openapigen.annotations.type.common.ConstraintViolation
+import com.papsign.ktor.openapigen.exceptions.OpenAPIRequiredFieldException
 import com.papsign.ktor.openapigen.interop.withAPI
 import com.papsign.ktor.openapigen.model.server.ServerModel
 import com.papsign.ktor.openapigen.openAPIGen
@@ -95,6 +96,9 @@ fun Application.setupBaseTestServer() {
             }
             exception<ConstraintViolation, Error>(HttpStatusCode.BadRequest) {
                 Error("violation.constraint", it.localizedMessage)
+            }
+            exception<OpenAPIRequiredFieldException, Error>(HttpStatusCode.BadRequest) {
+                Error("field.required", it.localizedMessage)
             }
             exception<ProperException, Error>(HttpStatusCode.BadRequest) {
                 it.printStackTrace()

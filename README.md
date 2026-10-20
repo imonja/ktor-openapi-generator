@@ -74,6 +74,11 @@ are read completely before the handler runs: parts up to 256 KB stay in memory, 
 to a temporary file that is deleted when the stream is closed or the request finishes.
 Parts whose name matches no property are skipped.
 
+A missing part is resolved like a parameter: the Kotlin default value if the constructor parameter has one,
+`null` for a nullable property, otherwise `OpenAPIRequiredFieldException`. A text part sent for a file property
+(or a file part for a scalar one) and an unparsable value become `BadRequestException`; an empty text part for a
+nullable file property is treated as no file, as HTML forms send it for an unselected optional file.
+
 File parts can be validated like string properties:
 
 ```kotlin

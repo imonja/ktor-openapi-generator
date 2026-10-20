@@ -54,23 +54,9 @@ class MultipartFormDataContentProviderTest {
     fun testMultipartParsing() {
         val requests = mapOf(
             "/1" to SimpleRequest("Test", 300, 26.95f, true, null, null, null, null).let { Pair(it, it.toParts()) },
-            "/2" to SimpleRequest("Test", 300, 26.95f, true, "Test", 300, 26.95f, true).let { Pair(it, it.toParts()) },
-            "/3" to Pair(
-                SimpleRequest("", 0, 0f, false, null, null, null, null),
-                listOf(
-                    PartData.FormItem(
-                        "yolo",
-                        { },
-                        headersOf(
-                            HttpHeaders.ContentDisposition,
-                            ContentDisposition.Inline
-                                .withParameter(ContentDisposition.Parameters.Name, "yolo")
-                                .toString()
-                        )
-                    )
-                )
-            )
+            "/2" to SimpleRequest("Test", 300, 26.95f, true, "Test", 300, 26.95f, true).let { Pair(it, it.toParts()) }
         )
+        // Missing required parts are covered by MultipartPartRulesTest.
         testApplication {
             application {
                 installOpenAPI()

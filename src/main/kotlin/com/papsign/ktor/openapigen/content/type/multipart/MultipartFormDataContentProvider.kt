@@ -8,6 +8,7 @@ import com.papsign.ktor.openapigen.annotations.type.file.FileSize
 import com.papsign.ktor.openapigen.annotations.type.file.FileSizeConstraintViolation
 import com.papsign.ktor.openapigen.content.type.BodyParser
 import com.papsign.ktor.openapigen.content.type.ContentTypeProvider
+import com.papsign.ktor.openapigen.exceptions.OpenAPIRequiredFieldException
 import com.papsign.ktor.openapigen.exceptions.assertContent
 import com.papsign.ktor.openapigen.model.operation.MediaTypeEncodingModel
 import com.papsign.ktor.openapigen.model.operation.MediaTypeModel
@@ -25,6 +26,7 @@ import io.ktor.server.routing.RoutingContext
 import io.ktor.util.asStream
 import io.ktor.utils.io.readAvailable
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -37,6 +39,7 @@ import java.nio.file.StandardOpenOption
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
+import kotlin.reflect.KParameter
 import kotlin.reflect.KType
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
@@ -116,53 +119,64 @@ object MultipartFormDataContentProvider : BodyParser, OpenAPIGenModuleExtension 
         val constraints = fileConstraints(clazz.jvmErasure)
         val objectMap = HashMap<String, Any>()
         try {
-            request.call.receiveMultipart().forEachPart {
-                val name = it.name
-                if (name == null || name !in names) {
-                    it.dispose()
-                } else {
-                    when (it) {
-                        is PartData.FormItem -> {
-                            objectMap[name] = it.value
+            // Ktor parses in a child coroutine: without a scope its failure would cancel the call instead of reaching this catch.
+            coroutineScope {
+                request.call.receiveMultipart().forEachPart {
+                    val name = it.name
+                    if (name == null || name !in names) {
+                        it.dispose()
+                    } else {
+                        when (it) {
+                            is PartData.FormItem -> {
+                                objectMap[name] = it.value
+                            }
+                            is PartData.FileItem -> {
+                                val channel = it.provider()
+                                objectMap[name] = receiveStream(request, it, constraints[name]) { buffer -> channel.readAvailable(buffer) }
+                            }
+                            is PartData.BinaryItem -> {
+                                val stream = it.provider().asStream()
+                                objectMap[name] = receiveStream(request, it, constraints[name]) { buffer -> stream.read(buffer) }
+                            }
+                            else -> {}
                         }
-                        is PartData.FileItem -> {
-                            val channel = it.provider()
-                            objectMap[name] = receiveStream(request, it, constraints[name]) { buffer -> channel.readAvailable(buffer) }
-                        }
-                        is PartData.BinaryItem -> {
-                            val stream = it.provider().asStream()
-                            objectMap[name] = receiveStream(request, it, constraints[name]) { buffer -> stream.read(buffer) }
-                        }
-                        else -> {}
                     }
                 }
             }
         } catch (e: IOException) {
             throw BadRequestException("Malformed multipart request: ${e.message}", e)
         }
-        return ctor.callBy(
-            ctor.parameters.associateWith {
-                val raw = objectMap[it.openAPIName]
-                if ((raw == null || (raw !is InputStream && streamTypes.contains(it.type))) && it.type.isMarkedNullable) {
-                    null
-                } else {
-                    if (raw is InputStream) {
-                        raw
-                    } else {
-                        val cvt = conversionsByType[it.type] ?: error("Unhandled Type ${it.type}")
-                        when (raw) {
-                            null -> {
-                                cvt.default ?: error("No provided value for field ${it.openAPIName}")
-                            }
-                            is String -> {
-                                cvt.parser(raw)
-                            }
-                            else -> error("Unhandled Type ${it.type}")
-                        }
-                    }
-                }
+        // Same rules as parameters: a Kotlin default, then null, otherwise the part is required.
+        val args = HashMap<KParameter, Any?>()
+        ctor.parameters.forEach { param ->
+            val name = param.openAPIName ?: param.name.orEmpty()
+            val value = objectMap[name]?.let { convert(param, name, it) }
+            when {
+                value != null -> args[param] = value
+                param.isOptional -> {}
+                param.type.isMarkedNullable -> args[param] = null
+                else -> throw OpenAPIRequiredFieldException("The field $name is required")
             }
-        )
+        }
+        return ctor.callBy(args)
+    }
+
+    private fun convert(param: KParameter, name: String, raw: Any): Any? {
+        if (param.type in streamTypes) {
+            return when {
+                raw is InputStream -> raw
+                // Forms send an empty text part for an optional file that was not chosen.
+                raw == "" && param.type.isMarkedNullable -> null
+                else -> throw BadRequestException("The field $name must be a file part")
+            }
+        }
+        if (raw !is String) throw BadRequestException("The field $name must be a text part")
+        val cvt = conversionsByType[param.type] ?: error("Unhandled Type ${param.type}")
+        return try {
+            cvt.parser(raw)
+        } catch (e: RuntimeException) {
+            throw BadRequestException("The field $name has an invalid value", e)
+        }
     }
 
     /** Larger stream parts are spooled to a temporary file, like servlet multipart handling does. */
