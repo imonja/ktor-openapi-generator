@@ -4,10 +4,10 @@ version: 2
 # All are merged manually; the commented-out dependabot-automerge job in pr.yml can auto-merge minor/patch.
 # Commit messages carry no (BUMP)/(MINOR) marker, so merged updates ship with the next manual release.
 updates:
+    # The root build includes gradle-plugin (includeBuild), so "/" covers both builds;
+    # listing "/gradle-plugin" separately opens duplicate PRs.
     -   package-ecosystem: gradle
-        directories:
-            - "/"
-            - "/gradle-plugin"
+        directory: "/"
         schedule:
             interval: weekly
             day: monday
