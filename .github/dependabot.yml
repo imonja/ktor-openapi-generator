@@ -1,0 +1,29 @@
+version: 2
+
+# Minor and patch updates arrive as one grouped PR per ecosystem and are auto-merged by pr.yml once the build passes.
+# Major updates get their own PRs and are merged manually.
+# Commit messages carry no (BUMP)/(MINOR) marker, so merged updates ship with the next manual release.
+updates:
+    -   package-ecosystem: gradle
+        directories:
+            - "/"
+            - "/gradle-plugin"
+        schedule:
+            interval: weekly
+            day: monday
+        groups:
+            gradle-minor-patch:
+                update-types:
+                    - minor
+                    - patch
+
+    -   package-ecosystem: github-actions
+        directory: "/"
+        schedule:
+            interval: weekly
+            day: monday
+        groups:
+            actions-minor-patch:
+                update-types:
+                    - minor
+                    - patch

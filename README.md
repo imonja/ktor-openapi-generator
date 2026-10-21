@@ -277,10 +277,11 @@ are described in [the OpenAPI development proposals](docs/design/openapi-evoluti
 
 ## Swagger UI Version
 
-The bundled Swagger UI version is **5.33.2**, which includes OpenAPI 3.2 support.
-At runtime, the version is read from the WebJar's Maven metadata, with a matching
-fallback in `SwaggerUIVersion`. The dependency is declared in `build.gradle.kts`;
-`src/main/resources/version.properties` records the same version.
+The bundled Swagger UI version is declared once, as `swaggerUiVersion` in
+`build.gradle.kts`; releases from 5.33.2 include OpenAPI 3.2 support. At runtime,
+`SwaggerUIVersion` reads the version from the WebJar's Maven metadata. If that
+metadata is missing (for example, stripped from a shaded jar), it falls back to
+`swagger-ui.properties`, which the build generates from the same declaration.
 
 Overriding `swaggerUiVersion` requires the corresponding WebJar resources on the
 classpath. For 3.2 documents, use a Swagger UI release with 3.2 support.

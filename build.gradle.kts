@@ -55,7 +55,6 @@ dependencies {
     implementation("org.slf4j:slf4j-api:2.0.17")
 
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1") // needed for multipart parsing
-    // Keep src/main/resources/version.properties and SwaggerUIVersion's fallback in sync.
     api("org.webjars:swagger-ui:$swaggerUiVersion")
 
     implementation("org.reflections:reflections:0.10.2") // only used while initializing
@@ -79,6 +78,30 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersjon") // junit testing framework
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersjon") // generated parameters for tests
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersjon") // testing runtime
+}
+
+// SwaggerUIVersion falls back to this file when the WebJar's Maven metadata is missing from the classpath
+val generateSwaggerUiProperties = tasks.register("generateSwaggerUiProperties") {
+    val outputDir = layout.buildDirectory.dir("generated/resources/swagger-ui")
+    val propertiesFile = outputDir.map { it.file("com/papsign/ktor/openapigen/swagger-ui.properties") }
+    val version = swaggerUiVersion
+
+    inputs.property("version", version)
+    outputs.dir(outputDir)
+
+    doLast {
+        val outputFile = propertiesFile.get().asFile
+        outputFile.parentFile.mkdirs()
+        outputFile.writeText("version=$version\n")
+    }
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDir(generateSwaggerUiProperties)
+        }
+    }
 }
 
 tasks {
