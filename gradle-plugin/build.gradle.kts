@@ -7,7 +7,7 @@ plugins {
     signing
     id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
     id("com.vanniktech.maven.publish") version "0.35.0"
-    id("com.gradle.plugin-publish") version "1.3.0"
+    id("com.gradle.plugin-publish") version "2.2.1"
 }
 
 group = "io.github.imonja"
