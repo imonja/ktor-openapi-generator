@@ -28,3 +28,28 @@ jobs:
                 run: |
                     ./gradlew publishAllPublicationsToFunctionalTestRepository -Pversion=0.0.0-SNAPSHOT --stacktrace
                     ./gradlew :gradle-plugin:functionalTest -Pversion=0.0.0-SNAPSHOT --stacktrace
+
+    # Dependabot auto-merge is disabled: Dependabot PRs are merged manually for now.
+    # To enable it, uncomment the job below and in the repository settings:
+    #   - Settings → General → Pull Requests: enable "Allow squash merging" and "Allow auto-merge";
+    #   - Settings → Branches → main: require the "build" status check (--auto waits for required checks only;
+    #     with "Required approvals" it also waits for your approval).
+    # The job auto-merges minor/patch updates only; major updates stay open for manual review.
+    # dependabot-automerge:
+    #     needs: build
+    #     if: github.actor == 'dependabot[bot]'
+    #     runs-on: ubuntu-latest
+    #     permissions:
+    #         contents: write
+    #         pull-requests: write
+    #     steps:
+    #         -   uses: dependabot/fetch-metadata@v2
+    #             id: metadata
+    #             with:
+    #                 github-token: ${{ secrets.GITHUB_TOKEN }}
+    #         -   name: Enable auto-merge
+    #             if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
+    #             run: gh pr merge --auto --squash "$PR_URL"
+    #             env:
+    #                 PR_URL: ${{ github.event.pull_request.html_url }}
+    #                 GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

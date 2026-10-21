@@ -1,7 +1,7 @@
 version: 2
 
-# Minor and patch updates arrive as one grouped PR per ecosystem and are auto-merged by pr.yml once the build passes.
-# Major updates get their own PRs and are merged manually.
+# Minor and patch updates arrive as one grouped PR per ecosystem; major updates get their own PRs.
+# All are merged manually; the commented-out dependabot-automerge job in pr.yml can auto-merge minor/patch.
 # Commit messages carry no (BUMP)/(MINOR) marker, so merged updates ship with the next manual release.
 updates:
     -   package-ecosystem: gradle
