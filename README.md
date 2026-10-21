@@ -101,10 +101,26 @@ Explicit IDs are preserved as supplied; empty or whitespace-only values are reje
 IDs must be unique across the entire document, including explicit IDs and different HTTP methods.
 Document generation (standalone or through `/openapi.json`) fails on a duplicate, naming the ID and
 both operations. For example, `/user-profile` and `/user_profile` both produce `getUserProfile` for
-`GET`; assign a distinct explicit ID to resolve the collision. IDs never receive numeric suffixes.
+`GET`; assign a distinct explicit ID to resolve the collision.
 
-Each path alias gets its own automatic ID. Sharing one explicit ID across multiple aliases is a
-duplicate; declare those operations separately with distinct IDs instead.
+Path aliases declared with `routes(...)` or `@Paths(...)` are the only exception. Within an alias
+group, an operation whose ID (explicit or automatic) is already used by an earlier alias receives
+the suffix `_N`, where `N` is the alias position starting from `0`:
+
+```kotlin
+routes("/v1/profile/share", "/v1/profile/create-share-link") {
+    post<Unit, ShareResponse, ShareRequest>(operationId("shareProfile")) { _, request ->
+        respond(share(request))
+    }
+}
+// POST /v1/profile/share             -> shareProfile
+// POST /v1/profile/create-share-link -> shareProfile_1
+```
+
+List the canonical path first so it keeps the unsuffixed ID. Automatic IDs are derived from each
+alias's own path, so they usually stay distinct without a suffix. Nested alias groups (including
+`@Paths` inside `routes(...)`) are numbered as one flat group, outermost alias first. Duplicates
+between methods of the same alias, or between separate alias groups, still fail.
 
 ## Multipart File Uploads
 

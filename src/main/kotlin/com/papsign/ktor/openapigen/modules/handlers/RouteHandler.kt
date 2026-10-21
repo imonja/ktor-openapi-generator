@@ -10,6 +10,7 @@ import com.papsign.ktor.openapigen.modules.openapi.HandlerModule
 import com.papsign.ktor.openapigen.modules.openapi.OperationModule
 import com.papsign.ktor.openapigen.modules.providers.MethodProvider
 import com.papsign.ktor.openapigen.modules.providers.PathProvider
+import com.papsign.ktor.openapigen.route.modules.PathAliasModule
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.Locale
@@ -24,6 +25,7 @@ object RouteHandler : HandlerModule {
         val paths = provider.ofType<PathProvider>()
         val path = "/${paths.flatMap { it.path.split('/').filter(String::isNotEmpty) }.joinToString("/")}"
         val operationModules = provider.ofType<OperationModule>()
+        val aliases = provider.ofType<PathAliasModule>()
         apiGen.api.paths.getOrPut(path) { PathItemModel() }.also { pathItem ->
             methods.forEach {
                 val name = it.method.value.lowercase(Locale.ROOT)
@@ -32,9 +34,12 @@ object RouteHandler : HandlerModule {
                 operationModules.forEach {
                     it.configure(apiGen, provider, op)
                 }
-                if (op.operationId == null) {
-                    op.operationId = generateOperationId(name, path)
-                }
+                val operationId = op.operationId ?: generateOperationId(name, path)
+                // Nested alias groups are numbered as one flat group, outermost alias first.
+                op.operationId = aliases.firstOrNull()?.group?.operationId(
+                    operationId,
+                    aliases.fold(0) { index, alias -> index * alias.size + alias.index }
+                ) ?: operationId
             }
         }
         log.trace(

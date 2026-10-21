@@ -1,5 +1,6 @@
 package com.papsign.ktor.openapigen.routing
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.papsign.ktor.openapigen.annotations.Paths
 import com.papsign.ktor.openapigen.annotations.parameters.PathParam
@@ -185,16 +186,115 @@ class OperationIdOpenAPITest {
     }
 
     @Test
-    fun `sharing an explicit ID across aliases fails`() {
-        val error = assertFailsWith<IllegalStateException> {
-            generate {
+    fun `an explicit ID shared by annotated aliases is suffixed after the first alias`() {
+        val document = generate {
+            get<UserAliases, String>(operationId("getUser")) { respond(it.userId) }
+        }
+
+        assertEquals("getUser", document.operationId("/v1/users/{userId}", "get"))
+        assertEquals("getUser_1", document.operationId("/v2/users/{userId}", "get"))
+    }
+
+    @Test
+    fun `an explicit ID shared by functional aliases is suffixed by alias position`() {
+        val document = generate {
+            routes("/v1/profile/sharing/public-profile", "/v1/profile/create-share-link", "/v1/profile/share") {
+                post<Unit, String, String>(OperationId("shareProfile")) { _, _ -> respond("shared") }
+            }
+        }
+
+        assertEquals("shareProfile", document.operationId("/v1/profile/sharing/public-profile", "post"))
+        assertEquals("shareProfile_1", document.operationId("/v1/profile/create-share-link", "post"))
+        assertEquals("shareProfile_2", document.operationId("/v1/profile/share", "post"))
+    }
+
+    @Test
+    fun `colliding automatic IDs within an alias group are suffixed`() {
+        val document = generate {
+            routes("/user-profile", "/user_profile") {
+                get<Unit, String> { respond("profile") }
+            }
+        }
+
+        assertEquals("getUserProfile", document.operationId("/user-profile", "get"))
+        assertEquals("getUserProfile_1", document.operationId("/user_profile", "get"))
+    }
+
+    @Test
+    fun `the suffix is the alias position even when earlier aliases have no suffix`() {
+        val document = generate {
+            routes("/user-profile", "/profile", "/user_profile") {
+                get<Unit, String> { respond("profile") }
+            }
+        }
+
+        assertEquals("getUserProfile", document.operationId("/user-profile", "get"))
+        assertEquals("getProfile", document.operationId("/profile", "get"))
+        assertEquals("getUserProfile_2", document.operationId("/user_profile", "get"))
+    }
+
+    @Test
+    fun `nested alias groups are numbered as one flat group`() {
+        val document = generate {
+            routes("/v1", "/v2") {
+                routes("/a", "/b") {
+                    get<Unit, String>(operationId("x")) { respond("x") }
+                }
+            }
+        }
+
+        assertEquals("x", document.operationId("/v1/a", "get"))
+        assertEquals("x_1", document.operationId("/v1/b", "get"))
+        assertEquals("x_2", document.operationId("/v2/a", "get"))
+        assertEquals("x_3", document.operationId("/v2/b", "get"))
+    }
+
+    @Test
+    fun `annotated aliases inside functional aliases are numbered as one flat group`() {
+        val document = generate {
+            routes("/api", "/public") {
                 get<UserAliases, String>(operationId("getUser")) { respond(it.userId) }
             }
         }
 
-        assertTrue(error.message.orEmpty().contains("getUser"), error.message)
-        assertTrue(error.message.orEmpty().contains("GET /v1/users/{userId}"), error.message)
-        assertTrue(error.message.orEmpty().contains("GET /v2/users/{userId}"), error.message)
+        assertEquals("getUser", document.operationId("/api/v1/users/{userId}", "get"))
+        assertEquals("getUser_1", document.operationId("/api/v2/users/{userId}", "get"))
+        assertEquals("getUser_2", document.operationId("/public/v1/users/{userId}", "get"))
+        assertEquals("getUser_3", document.operationId("/public/v2/users/{userId}", "get"))
+    }
+
+    @Test
+    fun `sharing an explicit ID across methods of the same alias still fails`() {
+        val error = assertFailsWith<IllegalStateException> {
+            generate {
+                routes("/a", "/b") {
+                    get<Unit, String>(operationId("x")) { respond("x") }
+                    post<Unit, String, String>(operationId("x")) { _, _ -> respond("x") }
+                }
+            }
+        }
+
+        assertTrue(error.message.orEmpty().contains("'x'"), error.message)
+        assertTrue(error.message.orEmpty().contains("GET /a"), error.message)
+        assertTrue(error.message.orEmpty().contains("POST /a"), error.message)
+    }
+
+    @Test
+    fun `sharing an explicit ID across separate alias groups still fails`() {
+        val error = assertFailsWith<IllegalStateException> {
+            generate {
+                routes("/a", "/b") {
+                    get<Unit, String>(operationId("x")) { respond("x") }
+                }
+                routes("/c", "/d") {
+                    get<Unit, String>(operationId("x")) { respond("x") }
+                }
+            }
+        }
+
+        assertTrue(error.message.orEmpty().contains("'x'"), error.message)
+        assertTrue(error.message.orEmpty().contains("GET /a"), error.message)
+        assertTrue(error.message.orEmpty().contains("GET /c"), error.message)
     }
 
     private fun generate(routes: NormalOpenAPIRoute.() -> Unit) = mapper.readTree(
@@ -204,4 +304,6 @@ class OperationIdOpenAPITest {
             apiRouting(routes)
         })
     )
+
+    private fun JsonNode.operationId(path: String, method: String) = path("paths").path(path).path(method).path("operationId").asText()
 }

@@ -8,6 +8,8 @@ import com.papsign.ktor.openapigen.modules.handlers.RequestHandlerModule
 import com.papsign.ktor.openapigen.modules.handlers.ResponseHandlerModule
 import com.papsign.ktor.openapigen.modules.registerModule
 import com.papsign.ktor.openapigen.route.modules.HttpMethodProviderModule
+import com.papsign.ktor.openapigen.route.modules.PathAliasGroup
+import com.papsign.ktor.openapigen.route.modules.PathAliasModule
 import com.papsign.ktor.openapigen.route.modules.PathProviderModule
 import io.ktor.http.HttpMethod
 import io.ktor.server.routing.HttpMethodRouteSelector
@@ -41,10 +43,16 @@ inline fun <TRoute : OpenAPIRoute<TRoute>> TRoute.route(path: String, crossinlin
  */
 @KtorDsl
 inline fun <TRoute : OpenAPIRoute<TRoute>> TRoute.routes(vararg paths: String, crossinline fn: TRoute.() -> Unit) {
-    paths.forEach { path ->
-        route(path) {
-            fn()
-        }
+    val group = PathAliasGroup()
+    paths.forEachIndexed { index, path ->
+        route(path).alias(group, index, paths.size).fn()
+    }
+}
+
+@PublishedApi
+internal fun <TRoute : OpenAPIRoute<TRoute>> TRoute.alias(group: PathAliasGroup, index: Int, size: Int): TRoute {
+    return apply {
+        provider.registerModule(PathAliasModule(group, index, size))
     }
 }
 
@@ -156,8 +164,9 @@ internal fun <TParams : Any, TResponse : Any, TRequest : Any, TRoute : OpenAPIRo
     when {
         paths != null -> {
             // Handle multiple paths (aliases)
-            paths.paths.forEach { pathStr ->
-                val new = child(ktorRoute.createRouteFromPath(pathStr))
+            val group = PathAliasGroup()
+            paths.paths.forEachIndexed { index, pathStr ->
+                val new = child(ktorRoute.createRouteFromPath(pathStr)).alias(group, index, paths.paths.size)
                 new.apply {
                     provider.registerModule(
                         RequestHandlerModule.create(
