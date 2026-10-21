@@ -6,7 +6,7 @@ plugins {
     `maven-publish`
     signing
     id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
-    id("com.vanniktech.maven.publish") version "0.35.0"
+    id("com.vanniktech.maven.publish") version "0.37.0"
     id("com.gradle.plugin-publish") version "1.3.0"
 }
 
@@ -47,11 +47,11 @@ val functionalTest: SourceSet by sourceSets.creating
 
 dependencies {
     testImplementation(kotlin("test"))
-    testImplementation("org.junit.jupiter:junit-jupiter:6.0.1")
+    testImplementation("org.junit.jupiter:junit-jupiter:6.1.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     "functionalTestImplementation"(kotlin("test"))
-    "functionalTestImplementation"("org.junit.jupiter:junit-jupiter:6.0.1")
+    "functionalTestImplementation"("org.junit.jupiter:junit-jupiter:6.1.3")
     "functionalTestRuntimeOnly"("org.junit.platform:junit-platform-launcher")
     "functionalTestImplementation"(gradleTestKit())
 }
