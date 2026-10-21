@@ -4,7 +4,7 @@ import com.vanniktech.maven.publish.JavadocJar
 
 plugins {
     kotlin("jvm") version "2.3.0"
-    id("net.nemerosa.versioning") version "3.1.0"
+    id("net.nemerosa.versioning") version "4.0.1"
     id("org.jetbrains.dokka") version "2.1.0"
     id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
     id("com.vanniktech.maven.publish") version "0.35.0"
