@@ -2,32 +2,22 @@ name: Pull Request
 
 on: pull_request
 
+concurrency:
+    group: pr-${{ github.event.pull_request.number }}
+    cancel-in-progress: true
+
+env:
+    GRADLE_OPTS: "-Dorg.gradle.configuration-cache=true"
+
 jobs:
+    # The job id is the "build" status check required by the main branch protection
     build:
         runs-on: ubuntu-latest
         permissions:
             contents: read
-            id-token: write
-            packages: write
         steps:
             -   uses: actions/checkout@v7
-            -   uses: actions/setup-java@v5.0.0
-                with:
-                    java-version: 21
-                    distribution: 'temurin'
-
-            -   name: Setup Gradle for a non-wrapper project
-                uses: gradle/actions/setup-gradle@v6
-                with:
-                    gradle-version: wrapper
-            -   name: Bygg & test
-                run: ./gradlew ktlintCheck test --continue --configuration-cache --stacktrace --info
-            -   name: Gradle plugin lint & unit tests
-                run: ./gradlew :gradle-plugin:ktlintCheck :gradle-plugin:test :gradle-plugin:validatePlugins --continue --stacktrace
-            -   name: Gradle plugin functional tests
-                run: |
-                    ./gradlew publishAllPublicationsToFunctionalTestRepository -Pversion=0.0.0-SNAPSHOT --stacktrace
-                    ./gradlew :gradle-plugin:functionalTest -Pversion=0.0.0-SNAPSHOT --stacktrace
+            -   uses: ./.github/actions/build-and-test
 
     # Dependabot auto-merge is disabled: Dependabot PRs are merged manually for now.
     # To enable it, uncomment the job below and in the repository settings:

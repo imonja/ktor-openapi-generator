@@ -2,25 +2,13 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.JavadocJar
 
+
 plugins {
     kotlin("jvm") version "2.3.0"
     id("net.nemerosa.versioning") version "3.1.0"
     id("org.jetbrains.dokka") version "2.1.0"
     id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
     id("com.vanniktech.maven.publish") version "0.35.0"
-}
-
-repositories {
-    mavenCentral()
-}
-
-group = "io.github.imonja"
-base.archivesName.set("ktor-open-api")
-// Version handling for tag-based releases
-if (project.hasProperty("releaseVersion")) {
-    version = project.property("releaseVersion") as String
-} else {
-    version = project.findProperty("version")?.toString() ?: ("1.0.0-" + getCheckedOutGitCommitHash())
 }
 
 fun runCommand(command: String): String {
@@ -36,6 +24,28 @@ fun getCheckedOutGitCommitHash(): String {
         return System.getenv("GITHUB_SHA")
     }
     return runCommand("git rev-parse --verify HEAD")
+}
+
+group = "io.github.imonja"
+base.archivesName.set("ktor-open-api")
+// Version handling for tag-based releases
+if (project.hasProperty("releaseVersion")) {
+    version = project.property("releaseVersion") as String
+} else {
+    version = project.findProperty("version")?.toString() ?: ("1.0.0-" + getCheckedOutGitCommitHash())
+}
+
+kotlin {
+    jvmToolchain(21)
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_3)
+        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_3)
+    }
+}
+
+repositories {
+    mavenCentral()
 }
 
 val ktorVersion = "3.4.0"
@@ -101,17 +111,6 @@ sourceSets {
         resources {
             srcDir(generateSwaggerUiProperties)
         }
-    }
-}
-
-tasks {
-    withType<Test> {
-        reports.html.required.set(false)
-        useJUnitPlatform()
-        maxParallelForks = Runtime.getRuntime().availableProcessors()
-        // A non-UTC zone exposes generated output that depends on the machine's default time zone.
-        // Do not change it to UTC; see src/test/README.md#time-zone.
-        systemProperty("user.timezone", "Pacific/Kiritimati")
     }
 }
 
@@ -195,27 +194,6 @@ mavenPublishing {
     }
 }
 
-val compileTestKotlin: KotlinCompile by tasks
-compileTestKotlin.compilerOptions {
-    freeCompilerArgs.set(listOf("-Xannotation-default-target=param-property"))
-}
-
-kotlin {
-    jvmToolchain(21)
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
-        apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_3)
-        languageVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_3)
-    }
-}
-
-// Pass på at når vi kaller JavaExec eller Test tasks så bruker vi samme språk-versjon som vi kompilerer til
-val toolchainLauncher = javaToolchains.launcherFor {
-    languageVersion.set(JavaLanguageVersion.of(21))
-}
-tasks.withType<Test>().configureEach { javaLauncher.set(toolchainLauncher) }
-tasks.withType<JavaExec>().configureEach { javaLauncher.set(toolchainLauncher) }
-
 ktlint {
     verbose.set(true)
     outputToConsole.set(true)
@@ -224,6 +202,31 @@ ktlint {
         exclude { it.file.toString().contains("build") }
     }
 }
+
+tasks {
+    withType<Test> {
+        reports.html.required.set(false)
+        useJUnitPlatform()
+        maxParallelForks = Runtime.getRuntime().availableProcessors()
+        // A non-UTC zone exposes generated output that depends on the machine's default time zone.
+        // Do not change it to UTC; see src/test/README.md#time-zone.
+        systemProperty("user.timezone", "Pacific/Kiritimati")
+    }
+}
+
+tasks.named<KotlinCompile>("compileTestKotlin") {
+    compilerOptions {
+        freeCompilerArgs.set(listOf("-Xannotation-default-target=param-property"))
+    }
+}
+
+
+// Pass på at når vi kaller JavaExec eller Test tasks så bruker vi samme språk-versjon som vi kompilerer til
+val toolchainLauncher = javaToolchains.launcherFor {
+    languageVersion.set(JavaLanguageVersion.of(21))
+}
+tasks.withType<Test>().configureEach { javaLauncher.set(toolchainLauncher) }
+tasks.withType<JavaExec>().configureEach { javaLauncher.set(toolchainLauncher) }
 
 tasks.register<Copy>("setupHooks") {
     description = "Setup git hooks for development"

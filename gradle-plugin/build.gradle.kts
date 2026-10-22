@@ -43,7 +43,7 @@ kotlin {
     }
 }
 
-val functionalTest: SourceSet by sourceSets.creating
+val functionalTest: SourceSet = sourceSets.create("functionalTest")
 
 dependencies {
     testImplementation(kotlin("test"))
