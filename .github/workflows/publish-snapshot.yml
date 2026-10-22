@@ -41,10 +41,11 @@ jobs:
                 id: tag
                 with:
                     bump_each_commit: true
-                    bump_each_commit_patch_pattern: "(BUMP)"
-                    # Explicit since v6 defaults to Conventional Commits patterns
-                    major_pattern: "(MAJOR)"
-                    minor_pattern: "(MINOR)"
+                    # Release markers count only at the start of the commit subject, e.g. "(BUMP) - fix(...): ...",
+                    # so a marker mentioned elsewhere in a message does not trigger a release
+                    bump_each_commit_patch_pattern: "/^\\(BUMP\\) - /"
+                    major_pattern: "/^\\(MAJOR\\) - /"
+                    minor_pattern: "/^\\(MINOR\\) - /"
                     tag_prefix: ""
 
             -   name: Get version
