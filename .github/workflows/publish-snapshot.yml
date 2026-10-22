@@ -15,7 +15,7 @@ jobs:
         name: Build & Test & Publish SNAPSHOT
 
         steps:
-            -   uses: actions/checkout@v6
+            -   uses: actions/checkout@v7
                 with:
                     fetch-depth: 0
             -   name: Setup JDK
