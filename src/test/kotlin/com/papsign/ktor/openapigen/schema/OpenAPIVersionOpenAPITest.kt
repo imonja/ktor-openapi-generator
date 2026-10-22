@@ -3,8 +3,8 @@ package com.papsign.ktor.openapigen.schema
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.networknt.schema.JsonSchemaFactory
-import com.networknt.schema.SpecVersion
+import com.networknt.schema.SchemaRegistry
+import com.networknt.schema.SpecificationVersion
 import com.papsign.ktor.openapigen.OpenAPIGen
 import com.papsign.ktor.openapigen.OpenAPIVersion
 import com.papsign.ktor.openapigen.annotations.parameters.PathParam
@@ -310,9 +310,9 @@ internal class OpenAPIVersionOpenAPITest {
         document: JsonNode,
         version: OpenAPIVersion,
     ) {
-        val dialect = if (version == OpenAPIVersion.V3_0) SpecVersion.VersionFlag.V4 else SpecVersion.VersionFlag.V202012
+        val dialect = if (version == OpenAPIVersion.V3_0) SpecificationVersion.DRAFT_4 else SpecificationVersion.DRAFT_2020_12
         val resource = "/openapi/${version.shortValue}.schema.json"
-        val schema = javaClass.getResourceAsStream(resource)!!.use { JsonSchemaFactory.getInstance(dialect).getSchema(it) }
+        val schema = javaClass.getResourceAsStream(resource)!!.use { SchemaRegistry.withDefaultDialect(dialect).getSchema(it) }
         val errors = schema.validate(document)
         assertTrue(errors.isEmpty(), errors.joinToString("\n"))
     }
@@ -322,7 +322,7 @@ internal class OpenAPIVersionOpenAPITest {
     ) {
         val schemaNode = document["components"]["schemas"]["Payload"].deepCopy<ObjectNode>()
         schemaNode.set<JsonNode>("components", document["components"])
-        val schema = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012).getSchema(schemaNode)
+        val schema = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12).getSchema(schemaNode)
         val sample = mapper.readTree(
             """
             {

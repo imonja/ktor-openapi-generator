@@ -5,7 +5,6 @@ import com.vanniktech.maven.publish.JavadocJar
 
 plugins {
     kotlin("jvm") version "2.4.21"
-    id("net.nemerosa.versioning") version "3.1.0"
     id("org.jetbrains.dokka") version "2.2.0"
     id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
     id("com.vanniktech.maven.publish") version "0.37.0"
@@ -89,7 +88,7 @@ dependencies {
     testImplementation("io.ktor:ktor-client-content-negotiation")
 
     testImplementation(kotlin("test"))
-    testImplementation("com.networknt:json-schema-validator:1.5.9")
+    testImplementation("com.networknt:json-schema-validator:2.0.8") // 3.x requires Jackson 3; stay on 2.x while the library uses Jackson 2
     testImplementation(kotlin("stdlib-jdk8"))
 
     testImplementation("ch.qos.logback:logback-classic:1.6.5") // logging framework for the tests

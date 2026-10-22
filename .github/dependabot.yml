@@ -21,6 +21,9 @@ updates:
             -   dependency-name: "io.ktor:ktor-server-status-pages"
             -   dependency-name: "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
             -   dependency-name: "org.slf4j:slf4j-api"
+            # 3.x requires Jackson 3; the tests stay on 2.x while the library uses Jackson 2
+            -   dependency-name: "com.networknt:json-schema-validator"
+                update-types: [ "version-update:semver-major" ]
         groups:
             gradle-minor-patch:
                 update-types:
