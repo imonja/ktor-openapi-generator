@@ -13,7 +13,6 @@ jobs:
         permissions:
             packages: write
             contents: write
-            checks: write
         name: Build & Test & Publish
 
         steps:

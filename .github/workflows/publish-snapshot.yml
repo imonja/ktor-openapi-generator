@@ -12,7 +12,6 @@ jobs:
         permissions:
             packages: write
             contents: read
-            checks: write
         name: Build & Test & Publish SNAPSHOT
 
         steps:

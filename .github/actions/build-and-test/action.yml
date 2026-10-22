@@ -37,9 +37,9 @@ runs:
                 ./gradlew publishAllPublicationsToFunctionalTestRepository -Pversion=0.0.0-SNAPSHOT --stacktrace
                 ./gradlew :gradle-plugin:functionalTest -Pversion=0.0.0-SNAPSHOT --stacktrace
 
-        # Fork PRs get a read-only token and cannot create check runs; they rely on the Gradle log
+        # Writes the results to the job summary (use-actions-summary defaults to true), so no checks permission is needed
         -   name: Test report
-            if: ${{ !cancelled() && github.event.pull_request.head.repo.fork != true }}
+            if: ${{ !cancelled() }}
             uses: dorny/test-reporter@v3
             with:
                 name: Junit tests
