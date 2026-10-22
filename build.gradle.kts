@@ -89,7 +89,7 @@ dependencies {
     testImplementation("io.ktor:ktor-client-content-negotiation")
 
     testImplementation(kotlin("test"))
-    testImplementation("com.networknt:json-schema-validator:1.5.9")
+    testImplementation("com.networknt:json-schema-validator:3.0.8")
     testImplementation(kotlin("stdlib-jdk8"))
 
     testImplementation("ch.qos.logback:logback-classic:1.6.5") // logging framework for the tests
