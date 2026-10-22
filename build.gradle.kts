@@ -4,11 +4,11 @@ import com.vanniktech.maven.publish.JavadocJar
 
 
 plugins {
-    kotlin("jvm") version "2.3.0"
+    kotlin("jvm") version "2.4.21"
     id("net.nemerosa.versioning") version "3.1.0"
-    id("org.jetbrains.dokka") version "2.1.0"
+    id("org.jetbrains.dokka") version "2.2.0"
     id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
-    id("com.vanniktech.maven.publish") version "0.35.0"
+    id("com.vanniktech.maven.publish") version "0.37.0"
 }
 
 fun runCommand(command: String): String {
@@ -48,9 +48,9 @@ repositories {
     mavenCentral()
 }
 
-val ktorVersion = "3.4.0"
+val ktorVersion = "3.6.0"
 val swaggerUiVersion = "5.33.2"
-val junitVersjon = "6.0.1"
+val junitVersjon = "6.1.3"
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
@@ -62,9 +62,9 @@ dependencies {
     implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
     implementation("io.ktor:ktor-server-status-pages:$ktorVersion")
 
-    implementation("org.slf4j:slf4j-api:2.0.17")
+    implementation("org.slf4j:slf4j-api:2.0.20")
 
-    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.20.1") // needed for multipart parsing
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.22.4") // needed for multipart parsing
     api("org.webjars:swagger-ui:$swaggerUiVersion")
 
     implementation("org.reflections:reflections:0.10.2") // only used while initializing
@@ -83,7 +83,7 @@ dependencies {
     testImplementation("com.networknt:json-schema-validator:1.5.9")
     testImplementation(kotlin("stdlib-jdk8"))
 
-    testImplementation("ch.qos.logback:logback-classic:1.5.21") // logging framework for the tests
+    testImplementation("ch.qos.logback:logback-classic:1.6.5") // logging framework for the tests
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersjon") // junit testing framework
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersjon") // generated parameters for tests
