@@ -1,3 +1,4 @@
+import org.gradle.plugin.compatibility.compatibility
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -7,7 +8,7 @@ plugins {
     signing
     id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
     id("com.vanniktech.maven.publish") version "0.37.0"
-    id("com.gradle.plugin-publish") version "1.3.0"
+    id("com.gradle.plugin-publish") version "2.2.1"
 }
 
 group = "io.github.imonja"
@@ -113,6 +114,12 @@ gradlePlugin {
             description = "Generates the OpenAPI document of a Ktor application using ktor-openapi-generator " +
                 "without starting a server, and verifies that the committed document is up to date"
             tags = listOf("ktor", "openapi", "swagger", "kotlin")
+            // Verified by the functional tests, which run the sample build with --configuration-cache
+            compatibility {
+                features {
+                    configurationCache = true
+                }
+            }
         }
     }
 }

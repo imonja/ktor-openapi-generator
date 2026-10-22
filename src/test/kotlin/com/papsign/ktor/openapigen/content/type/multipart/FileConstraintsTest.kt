@@ -2,8 +2,8 @@ package com.papsign.ktor.openapigen.content.type.multipart
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.networknt.schema.JsonSchemaFactory
-import com.networknt.schema.SpecVersion
+import com.networknt.schema.SchemaRegistry
+import com.networknt.schema.SpecificationVersion
 import com.papsign.ktor.openapigen.OpenAPIGen
 import com.papsign.ktor.openapigen.OpenAPIVersion
 import com.papsign.ktor.openapigen.annotations.type.file.AllowedContentTypes
@@ -340,9 +340,9 @@ internal class FileConstraintsTest {
         document: JsonNode,
         version: OpenAPIVersion,
     ) {
-        val dialect = if (version == OpenAPIVersion.V3_0) SpecVersion.VersionFlag.V4 else SpecVersion.VersionFlag.V202012
+        val dialect = if (version == OpenAPIVersion.V3_0) SpecificationVersion.DRAFT_4 else SpecificationVersion.DRAFT_2020_12
         val resource = "/openapi/${version.shortValue}.schema.json"
-        val schema = javaClass.getResourceAsStream(resource)!!.use { JsonSchemaFactory.getInstance(dialect).getSchema(it) }
+        val schema = javaClass.getResourceAsStream(resource)!!.use { SchemaRegistry.withDefaultDialect(dialect).getSchema(it) }
         val errors = schema.validate(document)
         assertTrue(errors.isEmpty(), errors.joinToString("\n"))
     }
