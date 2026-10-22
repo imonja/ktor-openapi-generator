@@ -214,6 +214,13 @@ ktlint {
     }
 }
 
+// ktlintFormat must always rewrite the sources: an up-to-date or cached result would skip formatting,
+// for example after a file was reverted in the IDE or .editorconfig changed
+tasks.matching { task -> task.name.startsWith("runKtlintFormatOver") }.configureEach {
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+}
+
 tasks {
     withType<Test> {
         reports.html.required.set(false)
