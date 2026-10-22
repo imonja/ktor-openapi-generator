@@ -17,8 +17,11 @@ updates:
                     - minor
                     - patch
 
+    # "/" covers .github/workflows; composite actions under .github/actions are listed separately
     -   package-ecosystem: github-actions
-        directory: "/"
+        directories:
+            - "/"
+            - "/.github/actions/*"
         schedule:
             interval: weekly
             day: monday

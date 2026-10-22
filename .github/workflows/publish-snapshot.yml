@@ -12,30 +12,14 @@ jobs:
         permissions:
             packages: write
             contents: read
+            checks: write
         name: Build & Test & Publish SNAPSHOT
 
         steps:
             -   uses: actions/checkout@v7
                 with:
                     fetch-depth: 0
-            -   name: Setup JDK
-                uses: actions/setup-java@v5.0.0
-                with:
-                    distribution: 'temurin'
-                    java-version: 21
-            -   name: Setup Gradle for a non-wrapper project
-                uses: gradle/actions/setup-gradle@v6
-                with:
-                    gradle-version: wrapper
-
-            -   name: Run tests
-                run: ./gradlew ktlintCheck test
-
-            -   name: Run Gradle plugin tests
-                run: |
-                    ./gradlew :gradle-plugin:ktlintCheck :gradle-plugin:test :gradle-plugin:validatePlugins
-                    ./gradlew publishAllPublicationsToFunctionalTestRepository -Pversion=0.0.0-SNAPSHOT
-                    ./gradlew :gradle-plugin:functionalTest -Pversion=0.0.0-SNAPSHOT
+            -   uses: ./.github/actions/build-and-test
 
             -   uses: paulhatch/semantic-version@v6.0.4
                 id: tag
@@ -53,8 +37,8 @@ jobs:
                 run: |
                     branch=$(echo "${GITHUB_REF_NAME}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9.]+/-/g; s/^-+|-+$//g')
                     version="${{ steps.tag.outputs.version }}-${branch}-SNAPSHOT"
-                    echo "version=${version}" >> $GITHUB_OUTPUT
-                    echo "### Published \`${version}\`" >> $GITHUB_STEP_SUMMARY
+                    echo "version=${version}" >> "$GITHUB_OUTPUT"
+                    echo "### Published \`${version}\`" >> "$GITHUB_STEP_SUMMARY"
 
             -   name: Publish library
                 run: ./gradlew -Pversion=${{ steps.version.outputs.version }} publish -x check

@@ -1,0 +1,47 @@
+name: Build & test
+description: >
+    Sets up JDK and the Gradle cache, then runs every check that must pass before publishing:
+    lint and tests of the library and the Gradle plugin, plugin validation and functional tests.
+    The caller checks out the repository first.
+
+runs:
+    using: composite
+    steps:
+        -   name: Setup JDK
+            uses: actions/setup-java@v6
+            with:
+                distribution: 'temurin'
+                java-version: 21
+
+        -   name: Gradle cache
+            uses: actions/cache@v6
+            with:
+                path: |
+                    ~/.gradle/caches
+                    ~/.gradle/wrapper
+                key: gradle-${{ runner.os }}-${{ hashFiles('*.gradle.kts', 'gradle-plugin/*.gradle.kts', 'gradle.properties', 'gradle/wrapper/gradle-wrapper.properties') }}
+                restore-keys: |
+                    gradle-${{ runner.os }}-
+
+        -   name: Library lint & tests
+            shell: bash
+            run: ./gradlew ktlintCheck test --continue --stacktrace
+
+        -   name: Gradle plugin lint & unit tests
+            shell: bash
+            run: ./gradlew :gradle-plugin:ktlintCheck :gradle-plugin:test :gradle-plugin:validatePlugins --continue --stacktrace
+
+        -   name: Gradle plugin functional tests
+            shell: bash
+            run: |
+                ./gradlew publishAllPublicationsToFunctionalTestRepository -Pversion=0.0.0-SNAPSHOT --stacktrace
+                ./gradlew :gradle-plugin:functionalTest -Pversion=0.0.0-SNAPSHOT --stacktrace
+
+        # Fork PRs get a read-only token and cannot create check runs; they rely on the Gradle log
+        -   name: Test report
+            if: ${{ !cancelled() && github.event.pull_request.head.repo.fork != true }}
+            uses: dorny/test-reporter@v3
+            with:
+                name: Junit tests
+                path: ./**/build/test-results/*/TEST-*.xml
+                reporter: java-junit
