@@ -1,8 +1,8 @@
 name: Next version
 description: >
     Calculates the next release version from the commits since the latest tag.
-    A commit releases only when its subject starts with a release marker: "(BUMP) - " for a patch,
-    "(MINOR) - " for a minor or "(MAJOR) - " for a major version. Without a marker version_type is "none".
+    A commit releases only when its subject starts with a release marker: "(BUMP)" for a patch,
+    "(MINOR)" for a minor or "(MAJOR)" for a major version. Without a marker version_type is "none".
     The caller checks out the repository with fetch-depth: 0.
 
 outputs:
@@ -22,7 +22,7 @@ runs:
             with:
                 bump_each_commit: true
                 # Markers count only at the start of the subject, so a marker mentioned elsewhere does not release
-                bump_each_commit_patch_pattern: "/^\\(BUMP\\) - /"
-                major_pattern: "/^\\(MAJOR\\) - /"
-                minor_pattern: "/^\\(MINOR\\) - /"
+                bump_each_commit_patch_pattern: "/^\\(BUMP\\)/"
+                major_pattern: "/^\\(MAJOR\\)/"
+                minor_pattern: "/^\\(MINOR\\)/"
                 tag_prefix: ""
