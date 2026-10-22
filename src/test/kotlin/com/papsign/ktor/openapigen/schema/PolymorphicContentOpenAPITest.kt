@@ -20,27 +20,26 @@ import kotlin.test.assertEquals
 
 // Модель ответа с массивом объектов
 data class ItemsResponse(
-    val items: List<ItemWrapper>
+    val items: List<ItemWrapper>,
 )
 
 // Обертка для объекта с полиморфным содержимым
 data class ItemWrapper(
     val id: Long,
     val title: String,
-    val content: Content
+    val content: Content,
 )
 
 // Sealed class для полиморфного содержимого
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
 @DiscriminatorAnnotation()
 sealed class Content {
-
     @JsonTypeName("Post")
     @DiscriminatorAnnotation()
     data class Post(
         val body: String,
         val author: String,
-        val publishedAt: String
+        val publishedAt: String,
     ) : Content()
 
     @JsonTypeName("Order")
@@ -49,14 +48,14 @@ sealed class Content {
         val amount: Double,
         val currency: String,
         val customerEmail: String,
-        val items: List<String>
+        val items: List<String>,
     ) : Content()
 }
 
 fun NormalOpenAPIRoute.contentRoute() {
     route("content") {
         get<Unit, ItemsResponse>(
-            info("Get items with polymorphic content", "Returns array of items with Post or Order content")
+            info("Get items with polymorphic content", "Returns array of items with Post or Order content"),
         ) { _ ->
             respond(
                 ItemsResponse(
@@ -67,8 +66,8 @@ fun NormalOpenAPIRoute.contentRoute() {
                             content = Content.Post(
                                 body = "This is a blog post content",
                                 author = "John Doe",
-                                publishedAt = "2023-01-01T10:00:00Z"
-                            )
+                                publishedAt = "2023-01-01T10:00:00Z",
+                            ),
                         ),
                         ItemWrapper(
                             id = 2,
@@ -77,40 +76,40 @@ fun NormalOpenAPIRoute.contentRoute() {
                                 amount = 99.99,
                                 currency = "USD",
                                 customerEmail = "customer@example.com",
-                                items = listOf("Product A", "Product B")
-                            )
-                        )
-                    )
-                )
+                                items = listOf("Product A", "Product B"),
+                            ),
+                        ),
+                    ),
+                ),
             )
         }
     }
 }
 
 internal class PolymorphicContentOpenAPITest {
-
     @Test
-    fun testPolymorphicContentGeneration() = testApplication {
-        application {
-            setupBaseTestServer()
-            apiRouting {
-                contentRoute()
+    fun testPolymorphicContentGeneration() =
+        testApplication {
+            application {
+                setupBaseTestServer()
+                apiRouting {
+                    contentRoute()
+                }
+            }
+
+            client.get("http://localhost/openapi.json").apply {
+                assertEquals(HttpStatusCode.OK, status)
+                val bodyAsText = bodyAsText()
+
+                println("==== Generated OpenAPI schema: ====")
+                println(bodyAsText)
+                println("==== End of schema ====")
+
+                // Проверяем основные элементы
+                assertTrue(bodyAsText.contains("Content"), "Should contain Content schema")
+                assertTrue(bodyAsText.contains("Post"), "Should contain Post schema")
+                assertTrue(bodyAsText.contains("Order"), "Should contain Order schema")
+                assertTrue(bodyAsText.contains("oneOf"), "Should contain oneOf")
             }
         }
-
-        client.get("http://localhost/openapi.json").apply {
-            assertEquals(HttpStatusCode.OK, status)
-            val bodyAsText = bodyAsText()
-
-            println("==== Generated OpenAPI schema: ====")
-            println(bodyAsText)
-            println("==== End of schema ====")
-
-            // Проверяем основные элементы
-            assertTrue(bodyAsText.contains("Content"), "Should contain Content schema")
-            assertTrue(bodyAsText.contains("Post"), "Should contain Post schema")
-            assertTrue(bodyAsText.contains("Order"), "Should contain Order schema")
-            assertTrue(bodyAsText.contains("oneOf"), "Should contain oneOf")
-        }
-    }
 }

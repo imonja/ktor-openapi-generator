@@ -5,5 +5,8 @@ import com.papsign.ktor.openapigen.modules.ModuleProvider
 import com.papsign.ktor.openapigen.modules.OpenAPIModule
 
 interface HandlerModule : OpenAPIModule {
-    fun configure(apiGen: OpenAPIGen, provider: ModuleProvider<*>)
+    fun configure(
+        apiGen: OpenAPIGen,
+        provider: ModuleProvider<*>,
+    )
 }

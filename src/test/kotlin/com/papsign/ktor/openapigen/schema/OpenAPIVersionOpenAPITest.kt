@@ -50,9 +50,16 @@ internal class OpenAPIVersionOpenAPITest {
 
     enum class Choice { FIRST, SECOND }
 
-    enum class Scope(override val description: String) : Described { READ("Read access") }
+    enum class Scope(
+        override val description: String,
+    ) : Described {
+        READ("Read access"),
+    }
 
-    data class Child(val id: String, val parent: Child?)
+    data class Child(
+        val id: String,
+        val parent: Child?,
+    )
 
     data class Payload(
         val requiredChild: Child,
@@ -64,13 +71,13 @@ internal class OpenAPIVersionOpenAPITest {
         val scores: Map<String, Int?>?,
         val bytes: ByteArray?,
         val file: InputStream?,
-        val nothing: Nothing? = null
+        val nothing: Nothing? = null,
     )
 
     data class Parameters(
         @PathParam("Identifier") val id: String,
         @QueryParam("Optional filter") val filter: String?,
-        @QueryParam("Page size") val limit: Int = 10
+        @QueryParam("Page size") val limit: Int = 10,
     )
 
     @Test
@@ -83,85 +90,92 @@ internal class OpenAPIVersionOpenAPITest {
 
     @ParameterizedTest
     @ValueSource(strings = ["3.0.0", "3.0.1", "3.0.2", "3.0.3", "3.0.4", "3.1.0", "3.1.1", "3.1.2", "3.2.0", "3.2.1"])
-    fun `endpoint preserves the exact version and serves a valid document in its format`(version: String): Unit = testApplication {
-        val format = OpenAPIVersion.fromValue(version)
-        application {
-            installJackson()
-            install(OpenAPIGen) {
-                openApiVersion = version
-                replaceModule(
-                    DefaultSchemaNamer,
-                    object : SchemaNamer {
-                        override fun get(type: KType): String = type.jvmErasure.simpleName!!
+    fun `endpoint preserves the exact version and serves a valid document in its format`(
+        version: String,
+    ): Unit =
+        testApplication {
+            val format = OpenAPIVersion.fromValue(version)
+            application {
+                installJackson()
+                install(OpenAPIGen) {
+                    openApiVersion = version
+                    replaceModule(
+                        DefaultSchemaNamer,
+                        object : SchemaNamer {
+                            override fun get(
+                                type: KType,
+                            ): String = type.jvmErasure.simpleName!!
+                        },
+                    )
+                }
+                apiRouting {
+                    route("/models/{id}") {
+                        get<Parameters, Payload> { _ -> error("Documentation only") }
                     }
-                )
-            }
-            apiRouting {
-                route("/models/{id}") {
-                    get<Parameters, Payload> { _ -> error("Documentation only") }
                 }
             }
+
+            val response = client.get("/openapi.json")
+            assertEquals(HttpStatusCode.OK, response.status)
+            val document = mapper.readTree(response.bodyAsText())
+            assertEquals(version, document["openapi"].asText())
+            assertValidDocument(document, format)
+
+            val schemas = document["components"]["schemas"]
+            val properties = schemas["Payload"]["properties"]
+            assertEquals("#/components/schemas/Child", properties["requiredChild"]["\$ref"].asText())
+            assertEquals("#/components/schemas/Child", properties["child"]["anyOf"][0]["\$ref"].asText())
+            assertEquals(true, properties["legacyChild"]["deprecated"].asBoolean())
+            assertTrue(properties["legacyChild"]["allOf"][0].has("anyOf"))
+            assertEquals("Payload", schemas["Payload"]["title"].asText())
+            assertEquals("Child", schemas["Child"]["title"].asText())
+            assertTrue(schemas["Child"]["properties"]["parent"].has("anyOf"))
+
+            val operation = document["paths"]["/models/{id}"]["get"]
+            val querySchema = operation["parameters"].first { it["name"].asText() == "filter" }["schema"]
+            val limit = operation["parameters"].first { it["name"].asText() == "limit" }
+            assertEquals(10, limit["schema"]["default"].asInt())
+            assertFalse(limit.has("default"))
+            if (format != OpenAPIVersion.V3_0) {
+                assertEquals(mapper.readTree("[\"string\",\"null\"]"), properties["text"]["type"])
+                assertFalse(properties["text"].has("nullable"))
+                assertEquals(mapper.readTree("[\"string\",\"null\"]"), properties["choice"]["type"])
+                assertTrue(properties["choice"]["enum"].any { it.isNull })
+                assertEquals(mapper.readTree("[\"array\",\"null\"]"), properties["children"]["type"])
+                assertTrue(properties["children"]["items"].has("anyOf"))
+                assertEquals(mapper.readTree("[\"integer\",\"null\"]"), properties["scores"]["additionalProperties"]["type"])
+                assertEquals("base64", properties["bytes"]["contentEncoding"].asText())
+                assertEquals("application/octet-stream", properties["file"]["contentMediaType"].asText())
+                assertFalse(properties["file"].has("type"))
+                assertEquals("null", properties["nothing"]["type"].asText())
+                assertEquals("string", querySchema["type"].asText())
+                assertPayloadSemantics(document)
+            } else {
+                assertEquals("string", properties["text"]["type"].asText())
+                assertEquals(true, properties["text"]["nullable"].asBoolean())
+                assertEquals("byte", properties["bytes"]["format"].asText())
+                assertEquals("binary", properties["file"]["format"].asText())
+                assertEquals(false, querySchema["nullable"].asBoolean())
+            }
+
+            val ui = client.get("/swagger-ui/index.html")
+            assertEquals(HttpStatusCode.OK, ui.status)
+            val bundle = client.get("/swagger-ui/swagger-ui-bundle.js")
+            assertEquals(HttpStatusCode.OK, bundle.status)
+            assertTrue(bundle.bodyAsText().contains("oas32"), "Bundled Swagger UI must include OpenAPI 3.2 support")
         }
-
-        val response = client.get("/openapi.json")
-        assertEquals(HttpStatusCode.OK, response.status)
-        val document = mapper.readTree(response.bodyAsText())
-        assertEquals(version, document["openapi"].asText())
-        assertValidDocument(document, format)
-
-        val schemas = document["components"]["schemas"]
-        val properties = schemas["Payload"]["properties"]
-        assertEquals("#/components/schemas/Child", properties["requiredChild"]["\$ref"].asText())
-        assertEquals("#/components/schemas/Child", properties["child"]["anyOf"][0]["\$ref"].asText())
-        assertEquals(true, properties["legacyChild"]["deprecated"].asBoolean())
-        assertTrue(properties["legacyChild"]["allOf"][0].has("anyOf"))
-        assertEquals("Payload", schemas["Payload"]["title"].asText())
-        assertEquals("Child", schemas["Child"]["title"].asText())
-        assertTrue(schemas["Child"]["properties"]["parent"].has("anyOf"))
-
-        val operation = document["paths"]["/models/{id}"]["get"]
-        val querySchema = operation["parameters"].first { it["name"].asText() == "filter" }["schema"]
-        val limit = operation["parameters"].first { it["name"].asText() == "limit" }
-        assertEquals(10, limit["schema"]["default"].asInt())
-        assertFalse(limit.has("default"))
-        if (format != OpenAPIVersion.V3_0) {
-            assertEquals(mapper.readTree("[\"string\",\"null\"]"), properties["text"]["type"])
-            assertFalse(properties["text"].has("nullable"))
-            assertEquals(mapper.readTree("[\"string\",\"null\"]"), properties["choice"]["type"])
-            assertTrue(properties["choice"]["enum"].any { it.isNull })
-            assertEquals(mapper.readTree("[\"array\",\"null\"]"), properties["children"]["type"])
-            assertTrue(properties["children"]["items"].has("anyOf"))
-            assertEquals(mapper.readTree("[\"integer\",\"null\"]"), properties["scores"]["additionalProperties"]["type"])
-            assertEquals("base64", properties["bytes"]["contentEncoding"].asText())
-            assertEquals("application/octet-stream", properties["file"]["contentMediaType"].asText())
-            assertFalse(properties["file"].has("type"))
-            assertEquals("null", properties["nothing"]["type"].asText())
-            assertEquals("string", querySchema["type"].asText())
-            assertPayloadSemantics(document)
-        } else {
-            assertEquals("string", properties["text"]["type"].asText())
-            assertEquals(true, properties["text"]["nullable"].asBoolean())
-            assertEquals("byte", properties["bytes"]["format"].asText())
-            assertEquals("binary", properties["file"]["format"].asText())
-            assertEquals(false, querySchema["nullable"].asBoolean())
-        }
-
-        val ui = client.get("/swagger-ui/index.html")
-        assertEquals(HttpStatusCode.OK, ui.status)
-        val bundle = client.get("/swagger-ui/swagger-ui-bundle.js")
-        assertEquals(HttpStatusCode.OK, bundle.status)
-        assertTrue(bundle.bodyAsText().contains("oas32"), "Bundled Swagger UI must include OpenAPI 3.2 support")
-    }
 
     @ParameterizedTest
     @EnumSource(OpenAPIVersion::class)
-    fun `component and media type schemas migrate without modifying example payloads`(version: OpenAPIVersion) {
+    fun `component and media type schemas migrate without modifying example payloads`(
+        version: OpenAPIVersion,
+    ) {
         val example = mapOf("nullable" to true, "type" to "string", "schema" to mapOf("format" to "binary"))
         val schema = SchemaModel.SchemaModelLitteral<Map<String, Any>>(
             type = DataType.`object`,
             nullable = true,
             example = example,
-            examples = listOf(example)
+            examples = listOf(example),
         )
         val api = OpenAPIModel(openapi = version.value)
         api.components.schemas["Example"] = schema
@@ -170,7 +184,7 @@ internal class OpenAPIVersionOpenAPITest {
         api.components.responses["Result"] = StatusResponseModel("Success", content = mutableMapOf("application/json" to MediaTypeModel(schema)))
         api.components.schemas["RawFile"] = SchemaModel.SchemaModelLitteral<InputStream>(DataType.string, DataFormat.binary)
         api.components.requestBodies["Binary"] = RequestBodyModel(
-            content = mutableMapOf("image/png" to MediaTypeModel(api.components.schemas.getValue("RawFile")))
+            content = mutableMapOf("image/png" to MediaTypeModel(api.components.schemas.getValue("RawFile"))),
         )
 
         val document = mapper.valueToTree<JsonNode>(api.serialize())
@@ -198,16 +212,18 @@ internal class OpenAPIVersionOpenAPITest {
 
     @ParameterizedTest
     @EnumSource(OpenAPIVersion::class)
-    fun `component schemas are titled with their component name`(version: OpenAPIVersion) {
+    fun `component schemas are titled with their component name`(
+        version: OpenAPIVersion,
+    ) {
         val api = OpenAPIModel(openapi = version.value)
         api.components.schemas["Color"] = SchemaModel.SchemaModelEnum<String>(listOf("RED", "GREEN"))
         api.components.schemas["Named"] = SchemaModel.SchemaModelObj<Any?>(
             mapOf("color" to SchemaModel.SchemaModelRef<Any?>("#/components/schemas/Color")),
-            listOf("color")
+            listOf("color"),
         )
         api.components.schemas["Custom"] = SchemaModel.SchemaModelLitteral<Map<String, Any>>(
             type = DataType.`object`,
-            example = mapOf("title" to "Explicit")
+            example = mapOf("title" to "Explicit"),
         )
 
         val document = mapper.valueToTree<JsonNode>(api.serialize())
@@ -230,7 +246,9 @@ internal class OpenAPIVersionOpenAPITest {
 
     @ParameterizedTest
     @EnumSource(OpenAPIVersion::class)
-    fun `major minor version selects the latest version of its family`(version: OpenAPIVersion) {
+    fun `major minor version selects the latest version of its family`(
+        version: OpenAPIVersion,
+    ) {
         val api = OpenAPIModel()
         val config = OpenAPIGen.Configuration(api)
         config.openApiVersion = version.shortValue
@@ -252,14 +270,16 @@ internal class OpenAPIVersionOpenAPITest {
 
     @ParameterizedTest
     @EnumSource(OpenAPIVersion::class)
-    fun `OAuth flows keep empty scopes`(version: OpenAPIVersion) {
+    fun `OAuth flows keep empty scopes`(
+        version: OpenAPIVersion,
+    ) {
         val api = OpenAPIModel(openapi = version.value)
         val scheme = SecuritySchemeModel(
             type = SecuritySchemeType.oauth2,
             referenceName = "oauth",
             flows = FlowsModel<Scope>()
                 .authorizationCode(emptyList(), "https://auth.example/authorize", "https://auth.example/token")
-                .clientCredentials(listOf(Scope.READ), "https://auth.example/token")
+                .clientCredentials(listOf(Scope.READ), "https://auth.example/token"),
         )
         api.components.securitySchemes[scheme.referenceName] = scheme
 
@@ -272,7 +292,9 @@ internal class OpenAPIVersionOpenAPITest {
 
     @ParameterizedTest
     @ValueSource(strings = ["2.0", "3", "3.3", "3.0.5", "3.1.3", "3.2.2", "3.2.1-rc1", " 3.2.1", " 3.1", "3.1.", "v3.1", ""])
-    fun `configuration rejects unsupported versions immediately without changing the document`(version: String) {
+    fun `configuration rejects unsupported versions immediately without changing the document`(
+        version: String,
+    ) {
         val api = OpenAPIModel()
         val config = OpenAPIGen.Configuration(api)
         config.openApiVersion = "3.0.1"
@@ -284,7 +306,10 @@ internal class OpenAPIVersionOpenAPITest {
         assertEquals("3.0.1", api.serialize()["openapi"])
     }
 
-    private fun assertValidDocument(document: JsonNode, version: OpenAPIVersion) {
+    private fun assertValidDocument(
+        document: JsonNode,
+        version: OpenAPIVersion,
+    ) {
         val dialect = if (version == OpenAPIVersion.V3_0) SpecVersion.VersionFlag.V4 else SpecVersion.VersionFlag.V202012
         val resource = "/openapi/${version.shortValue}.schema.json"
         val schema = javaClass.getResourceAsStream(resource)!!.use { JsonSchemaFactory.getInstance(dialect).getSchema(it) }
@@ -292,7 +317,9 @@ internal class OpenAPIVersionOpenAPITest {
         assertTrue(errors.isEmpty(), errors.joinToString("\n"))
     }
 
-    private fun assertPayloadSemantics(document: JsonNode) {
+    private fun assertPayloadSemantics(
+        document: JsonNode,
+    ) {
         val schemaNode = document["components"]["schemas"]["Payload"].deepCopy<ObjectNode>()
         schemaNode.set<JsonNode>("components", document["components"])
         val schema = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012).getSchema(schemaNode)
@@ -304,7 +331,7 @@ internal class OpenAPIVersionOpenAPITest {
               "children": [null, {"id": "2", "parent": null}],
               "scores": {"first": null}, "nothing": null
             }
-            """.trimIndent()
+            """.trimIndent(),
         )
         assertTrue(schema.validate(sample).isEmpty(), "Nullable DTOs, enums and collection elements must accept null")
         val invalidEnum = sample.deepCopy<ObjectNode>().put("choice", "UNKNOWN")

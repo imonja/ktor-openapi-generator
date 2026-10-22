@@ -16,12 +16,18 @@ import io.ktor.server.testing.testApplication
 import org.junit.jupiter.api.Test
 
 class RouteAliasOpenAPITest {
-
     @Paths("/api/v1/users/{id}", "/api/v2/users/{id}", "/users/{id}")
-    data class UserParams(@PathParam("User ID") val id: String)
+    data class UserParams(
+        @PathParam("User ID") val id: String,
+    )
 
-    data class UserResponse(val message: String)
-    data class ProductResponse(val message: String)
+    data class UserResponse(
+        val message: String,
+    )
+
+    data class ProductResponse(
+        val message: String,
+    )
 
     @Test
     fun testRouteAliasesInOpenAPI() {

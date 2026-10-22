@@ -6,4 +6,7 @@ import com.papsign.ktor.openapigen.validation.ValidatorAnnotation
 @Target(AnnotationTarget.TYPE, AnnotationTarget.PROPERTY)
 @SchemaProcessorAnnotation(MaxProcessor::class)
 @ValidatorAnnotation(MaxProcessor::class)
-annotation class Max(val value: Long, val errorMessage: String = "")
+annotation class Max(
+    val value: Long,
+    val errorMessage: String = "",
+)

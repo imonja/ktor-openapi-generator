@@ -8,5 +8,5 @@ data class InfoModel(
     var description: String? = null,
     var termsOfService: String? = null,
     var contact: ContactModel? = null,
-    var license: LicenseModel? = null
+    var license: LicenseModel? = null,
 ) : DataModel

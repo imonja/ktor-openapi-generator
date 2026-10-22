@@ -33,67 +33,79 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation as ServerCon
  * (see `user.timezone` in build.gradle.kts), so a zone-dependent example fails here on any host.
  */
 class DateTimeExampleOpenAPITest {
-
     data class Event(
         val instant: Instant,
         val zoned: ZonedDateTime,
         val date: Date,
-        val offsetTime: OffsetTime
+        val offsetTime: OffsetTime,
     )
 
     @Test
-    fun `date-time examples do not depend on the default time zone or the current time`(): Unit = testApplication {
-        application {
-            install(ServerContentNegotiation) {
-                jackson {
-                    registerModule(JavaTimeModule())
-                    disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+    fun `date-time examples do not depend on the default time zone or the current time`(): Unit =
+        testApplication {
+            application {
+                install(ServerContentNegotiation) {
+                    jackson {
+                        registerModule(JavaTimeModule())
+                        disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                    }
                 }
-            }
 
-            install(OpenAPIGen) {
-                replaceModule(
-                    DefaultSchemaNamer,
-                    object : SchemaNamer {
-                        override fun get(type: KType): String {
-                            return type.jvmErasure.simpleName ?: type.toString()
+                install(OpenAPIGen) {
+                    replaceModule(
+                        DefaultSchemaNamer,
+                        object : SchemaNamer {
+                            override fun get(
+                                type: KType,
+                            ): String = type.jvmErasure.simpleName ?: type.toString()
+                        },
+                    )
+                    info {
+                        version = "1.0"
+                        title = "Date-Time Example Test API"
+                    }
+                }
+
+                apiRouting {
+                    route("events") {
+                        post<Unit, Event, Unit> { _, _ ->
+                            respond(Event(Instant.EPOCH, ZonedDateTime.now(), Date(), OffsetTime.now()))
                         }
                     }
-                )
-                info {
-                    version = "1.0"
-                    title = "Date-Time Example Test API"
                 }
             }
 
-            apiRouting {
-                route("events") {
-                    post<Unit, Event, Unit> { _, _ ->
-                        respond(Event(Instant.EPOCH, ZonedDateTime.now(), Date(), OffsetTime.now()))
-                    }
-                }
+            assertNotEquals(
+                "UTC",
+                java.util.TimeZone
+                    .getDefault()
+                    .id,
+                "the test JVM must run in a non-UTC zone",
+            )
+
+            val client = createClient {
+                install(ContentNegotiation) { jackson() }
             }
+
+            val openAPIResponse = client.get("/openapi.json")
+            assertEquals(HttpStatusCode.OK, openAPIResponse.status)
+
+            val properties = openAPIResponse
+                .body<Map<String, Any>>()
+                .mapAt("components")
+                .mapAt("schemas")
+                .mapAt("Event")
+                .mapAt("properties")
+
+            assertEquals(listOf("2025-04-01T12:30:00Z"), properties.mapAt("instant")["examples"])
+            assertEquals(listOf("2025-04-01T12:30:00Z"), properties.mapAt("zoned")["examples"])
+            assertEquals(listOf("2025-04-01T12:30:00.000+00:00"), properties.mapAt("date")["examples"])
+            assertEquals(listOf("11:30Z"), properties.mapAt("offsetTime")["examples"])
         }
 
-        assertNotEquals("UTC", java.util.TimeZone.getDefault().id, "the test JVM must run in a non-UTC zone")
-
-        val client = createClient {
-            install(ContentNegotiation) { jackson() }
-        }
-
-        val openAPIResponse = client.get("/openapi.json")
-        assertEquals(HttpStatusCode.OK, openAPIResponse.status)
-
-        val properties = openAPIResponse.body<Map<String, Any>>()
-            .mapAt("components").mapAt("schemas").mapAt("Event").mapAt("properties")
-
-        assertEquals(listOf("2025-04-01T12:30:00Z"), properties.mapAt("instant")["examples"])
-        assertEquals(listOf("2025-04-01T12:30:00Z"), properties.mapAt("zoned")["examples"])
-        assertEquals(listOf("2025-04-01T12:30:00.000+00:00"), properties.mapAt("date")["examples"])
-        assertEquals(listOf("11:30Z"), properties.mapAt("offsetTime")["examples"])
-    }
-
-    private fun Map<String, Any>.mapAt(key: String): Map<String, Any> {
+    private fun Map<String, Any>.mapAt(
+        key: String,
+    ): Map<String, Any> {
         @Suppress("UNCHECKED_CAST")
         return this[key] as? Map<String, Any> ?: error("Expected '$key' to be an object")
     }

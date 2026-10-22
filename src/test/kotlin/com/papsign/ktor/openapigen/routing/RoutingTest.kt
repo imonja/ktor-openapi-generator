@@ -24,11 +24,21 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class RoutingTest {
+    data class TestHeaderParams(
+        @param:HeaderParam("test param") val `Test-Header`: Long,
+    )
 
-    data class TestHeaderParams(@param:HeaderParam("test param") val `Test-Header`: Long)
-    data class TestHeaderParams2(@param:HeaderParam("test param") val `test-header`: Long)
-    data class TestBodyParams(val xyz: Long)
-    data class TestResponse(val msg: String)
+    data class TestHeaderParams2(
+        @param:HeaderParam("test param") val `test-header`: Long,
+    )
+
+    data class TestBodyParams(
+        val xyz: Long,
+    )
+
+    data class TestResponse(
+        val msg: String,
+    )
 
     @Test
     fun testPostWithHeaderAndBodyParams() {
@@ -46,16 +56,17 @@ class RoutingTest {
                     }
                 }
             }
-            client.post("http://localhost/" + route) {
-                header(HttpHeaders.ContentType, "application/json")
-                header(HttpHeaders.Accept, "application/json")
-                header("test-header", "123")
-                setBody("{\"xyz\":456}")
-            }.apply {
-                assertEquals(HttpStatusCode.OK, status)
-                assertTrue { contentType()?.match(Application.Json) == true }
-                assertEquals(bodyAsText(), "{\"msg\":\"${TestHeaderParams(123)} -> ${TestBodyParams(456)}\"}")
-            }
+            client
+                .post("http://localhost/" + route) {
+                    header(HttpHeaders.ContentType, "application/json")
+                    header(HttpHeaders.Accept, "application/json")
+                    header("test-header", "123")
+                    setBody("{\"xyz\":456}")
+                }.apply {
+                    assertEquals(HttpStatusCode.OK, status)
+                    assertTrue { contentType()?.match(Application.Json) == true }
+                    assertEquals(bodyAsText(), "{\"msg\":\"${TestHeaderParams(123)} -> ${TestBodyParams(456)}\"}")
+                }
         }
     }
 
@@ -75,14 +86,15 @@ class RoutingTest {
                     }
                 }
             }
-            client.get("http://localhost/" + route) {
-                header(HttpHeaders.Accept, "application/json")
-                header("Test-Header", "123")
-            }.apply {
-                assertEquals(HttpStatusCode.OK, status)
-                assertTrue { contentType()?.match(Application.Json) == true }
-                assertEquals(bodyAsText(), "{\"msg\":\"${TestHeaderParams2(123)}\"}")
-            }
+            client
+                .get("http://localhost/" + route) {
+                    header(HttpHeaders.Accept, "application/json")
+                    header("Test-Header", "123")
+                }.apply {
+                    assertEquals(HttpStatusCode.OK, status)
+                    assertTrue { contentType()?.match(Application.Json) == true }
+                    assertEquals(bodyAsText(), "{\"msg\":\"${TestHeaderParams2(123)}\"}")
+                }
         }
     }
 
@@ -102,16 +114,17 @@ class RoutingTest {
                     }
                 }
             }
-            client.post("http://localhost/" + route) {
-                header(HttpHeaders.ContentType, "application/json")
-                header(HttpHeaders.Accept, "application/json")
-                header("test-header", "123")
-                setBody("{\"xyz\":456}")
-            }.apply {
-                assertEquals(HttpStatusCode.OK, status)
-                assertTrue { contentType()?.match(Application.Json) == true }
-                assertEquals(bodyAsText(), "{\"msg\":\"Test Response\"}")
-            }
+            client
+                .post("http://localhost/" + route) {
+                    header(HttpHeaders.ContentType, "application/json")
+                    header(HttpHeaders.Accept, "application/json")
+                    header("test-header", "123")
+                    setBody("{\"xyz\":456}")
+                }.apply {
+                    assertEquals(HttpStatusCode.OK, status)
+                    assertTrue { contentType()?.match(Application.Json) == true }
+                    assertEquals(bodyAsText(), "{\"msg\":\"Test Response\"}")
+                }
         }
     }
 
@@ -131,13 +144,14 @@ class RoutingTest {
                     }
                 }
             }
-            client.get("http://localhost/" + route) {
-                header(HttpHeaders.Accept, "application/json")
-            }.apply {
-                assertEquals(HttpStatusCode.OK, status)
-                assertTrue { contentType()?.match(Application.Json) == true }
-                assertEquals(bodyAsText(), "{\"msg\":\"Test Response\"}")
-            }
+            client
+                .get("http://localhost/" + route) {
+                    header(HttpHeaders.Accept, "application/json")
+                }.apply {
+                    assertEquals(HttpStatusCode.OK, status)
+                    assertTrue { contentType()?.match(Application.Json) == true }
+                    assertEquals(bodyAsText(), "{\"msg\":\"Test Response\"}")
+                }
         }
     }
 }

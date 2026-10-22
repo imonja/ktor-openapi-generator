@@ -27,7 +27,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
-data class SpecItem(val name: String)
+data class SpecItem(
+    val name: String,
+)
 
 fun Application.specTestModule() {
     install(OpenAPIGen) {
@@ -86,7 +88,15 @@ class OpenAPISpecGeneratorTest {
     fun `operations follow declaration order`() {
         val document = mapper.readTree(OpenAPISpecGenerator.generate(Application::specTestModule))
 
-        assertEquals(listOf("get", "post", "put", "delete"), document.path("paths").path("/items").fieldNames().asSequence().toList())
+        assertEquals(
+            listOf("get", "post", "put", "delete"),
+            document
+                .path("paths")
+                .path("/items")
+                .fieldNames()
+                .asSequence()
+                .toList(),
+        )
     }
 
     @Test
@@ -117,7 +127,9 @@ class OpenAPISpecGeneratorTest {
     }
 
     @Test
-    fun `failed generation keeps the existing file`(@TempDir dir: Path) {
+    fun `failed generation keeps the existing file`(
+        @TempDir dir: Path,
+    ) {
         val output = dir.resolve("openapi.json")
         Files.writeString(output, "previous")
 
@@ -130,7 +142,9 @@ class OpenAPISpecGeneratorTest {
     }
 
     @Test
-    fun `generateTo replaces the file and creates parent directories`(@TempDir dir: Path) {
+    fun `generateTo replaces the file and creates parent directories`(
+        @TempDir dir: Path,
+    ) {
         val output = dir.resolve("nested/openapi.json")
 
         OpenAPISpecGenerator.generateTo(output, Application::specTestModule)
@@ -140,7 +154,9 @@ class OpenAPISpecGeneratorTest {
     }
 
     @Test
-    fun `runner exits even when application code leaves non-daemon threads`(@TempDir dir: Path) {
+    fun `runner exits even when application code leaves non-daemon threads`(
+        @TempDir dir: Path,
+    ) {
         val output = dir.resolve("openapi.json")
         val java = File(System.getProperty("java.home"), "bin/java").path
         val process = ProcessBuilder(
@@ -151,7 +167,7 @@ class OpenAPISpecGeneratorTest {
             "--module",
             "$module.specModuleWithNonDaemonThread",
             "--output",
-            output.toString()
+            output.toString(),
         ).redirectErrorStream(true).redirectOutput(dir.resolve("runner.log").toFile()).start()
 
         val finished = process.waitFor(2, TimeUnit.MINUTES)
@@ -163,7 +179,9 @@ class OpenAPISpecGeneratorTest {
     }
 
     @Test
-    fun `runner exits with failure status when the module fails`(@TempDir dir: Path) {
+    fun `runner exits with failure status when the module fails`(
+        @TempDir dir: Path,
+    ) {
         val output = dir.resolve("openapi.json")
         val java = File(System.getProperty("java.home"), "bin/java").path
         val process = ProcessBuilder(
@@ -174,7 +192,7 @@ class OpenAPISpecGeneratorTest {
             "--module",
             "$module.specModuleWithoutOpenApiGen",
             "--output",
-            output.toString()
+            output.toString(),
         ).redirectErrorStream(true).redirectOutput(dir.resolve("runner.log").toFile()).start()
 
         assertTrue(process.waitFor(2, TimeUnit.MINUTES), "Runner did not exit")

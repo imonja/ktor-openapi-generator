@@ -8,5 +8,5 @@ object CollectionConverterFactory : ConverterSelectorFactory(
     PrimitiveConverter,
     EnumConverter,
     ListConverter,
-    ArrayConverter
+    ArrayConverter,
 )

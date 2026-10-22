@@ -10,18 +10,18 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
 internal class JwtAuthOpenAPITest {
-
     @Test
-    fun testRequest() = testApplication {
-        application {
-            testServerWithJwtAuth()
-        }
-        client.get("http://localhost/openapi.json").apply {
-            assertEquals(HttpStatusCode.OK, status)
-            val bodyAsText = bodyAsText()
-            assertTrue(
-                bodyAsText.contains(
-                    """"securitySchemes" : {
+    fun testRequest() =
+        testApplication {
+            application {
+                testServerWithJwtAuth()
+            }
+            client.get("http://localhost/openapi.json").apply {
+                assertEquals(HttpStatusCode.OK, status)
+                val bodyAsText = bodyAsText()
+                assertTrue(
+                    bodyAsText.contains(
+                        """"securitySchemes" : {
       "ThisIsSchemeName" : {
         "in" : "cookie",
         "name" : "ThisIsCookieName",
@@ -32,17 +32,17 @@ internal class JwtAuthOpenAPITest {
         "scheme" : "bearer",
         "type" : "http"
       }
-    }"""
+    }""",
+                    ),
                 )
-            )
-            assertTrue(
-                bodyAsText.contains(
-                    """"security" : [ {
+                assertTrue(
+                    bodyAsText.contains(
+                        """"security" : [ {
           "jwtAuth" : [ ],
           "ThisIsSchemeName" : [ ]
-        }"""
+        }""",
+                    ),
                 )
-            )
+            }
         }
-    }
 }

@@ -8,7 +8,9 @@ import java.io.Closeable
 internal class CallResources : Closeable {
     private val resources = mutableListOf<Closeable>()
 
-    fun register(resource: Closeable) {
+    fun register(
+        resource: Closeable,
+    ) {
         synchronized(resources) { resources += resource }
     }
 
@@ -20,9 +22,13 @@ internal class CallResources : Closeable {
     companion object {
         private val key = AttributeKey<CallResources>("OpenAPIGenCallResources")
 
-        fun of(call: ApplicationCall): CallResources = call.attributes.computeIfAbsent(key) { CallResources() }
+        fun of(
+            call: ApplicationCall,
+        ): CallResources = call.attributes.computeIfAbsent(key) { CallResources() }
 
-        fun release(call: ApplicationCall) {
+        fun release(
+            call: ApplicationCall,
+        ) {
             call.attributes.getOrNull(key)?.close()
         }
     }

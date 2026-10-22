@@ -18,7 +18,7 @@ data class OpenAPIModel(
     var components: ComponentsModel = ComponentsModel(),
     var security: LinkedHashSet<SecurityModel> = LinkedHashSet(),
     var tags: LinkedHashSet<TagModel> = LinkedHashSet(),
-    var externalDocs: ExternalDocumentationModel? = null
+    var externalDocs: ExternalDocumentationModel? = null,
 ) : DataModel {
     override fun serialize(): Map<String, Any?> {
         // A `major.minor` value such as "3.1" is written as the latest version of its family.

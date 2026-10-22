@@ -6,27 +6,27 @@ import kotlin.reflect.KType
 import kotlin.reflect.full.isSubclassOf
 import kotlin.reflect.jvm.jvmErasure
 
-class MapConverter(type: KType) : MappedConverter {
-
+class MapConverter(
+    type: KType,
+) : MappedConverter {
     val keyConverter = PrimitiveConverterFactory.buildConverterForced(type.arguments[0].type!!)
     val valueConverter = PrimitiveConverterFactory.buildConverterForced(type.arguments[1].type!!)
 
-    override fun convert(value: String): Any? {
-        return convert(value.split(",").windowed(2).associate { it[0] to it[1] })
-    }
+    override fun convert(
+        value: String,
+    ): Any? = convert(value.split(",").windowed(2).associate { it[0] to it[1] })
 
-    override fun convert(map: Map<String, String>): Any? {
-        return map.entries.associate { (key, value) -> keyConverter.convert(key) to valueConverter.convert(value) }
-    }
+    override fun convert(
+        map: Map<String, String>,
+    ): Any? = map.entries.associate { (key, value) -> keyConverter.convert(key) to valueConverter.convert(value) }
 
     companion object : ConverterSelector {
+        override fun canHandle(
+            type: KType,
+        ): Boolean = type.jvmErasure.isSubclassOf(Map::class)
 
-        override fun canHandle(type: KType): Boolean {
-            return type.jvmErasure.isSubclassOf(Map::class)
-        }
-
-        override fun create(type: KType): MapConverter {
-            return MapConverter(type)
-        }
+        override fun create(
+            type: KType,
+        ): MapConverter = MapConverter(type)
     }
 }

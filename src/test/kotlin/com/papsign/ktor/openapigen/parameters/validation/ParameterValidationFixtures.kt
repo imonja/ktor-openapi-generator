@@ -24,24 +24,21 @@ data class ValidatedQueryParams(
     @Min(0)
     @Max(100)
     val count: Int,
-
     @QueryParam("String name with length validation")
     @Length(min = 3, max = 50)
     val name: String,
-
     @QueryParam("Optional string with min length")
     @MinLength(2)
-    val tag: String? = null
+    val tag: String? = null,
 )
 
 data class ValidatedPathParams(
     @PathParam("ID with minimum value")
     @Min(1)
     val id: Long,
-
     @PathParam("Category with max length")
     @MaxLength(20)
-    val category: String
+    val category: String,
 )
 
 data class ValidatedHeaderParams(
@@ -49,10 +46,9 @@ data class ValidatedHeaderParams(
     @OpenAPIName("User-Agent")
     @Length(min = 5, max = 100)
     val userAgent: String,
-
     @HeaderParam("Request ID header")
     @OpenAPIName("Request-Id")
-    val requestId: String // Keep this simple for now
+    val requestId: String, // Keep this simple for now
 )
 
 data class ValidationResponse(
@@ -60,7 +56,7 @@ data class ValidationResponse(
     val count: Int? = null,
     val name: String? = null,
     val id: Long? = null,
-    val category: String? = null
+    val category: String? = null,
 )
 
 // API routes with validated parameters
@@ -70,15 +66,15 @@ fun NormalOpenAPIRoute.validationTestRoutes() {
         get<ValidatedQueryParams, ValidationResponse>(
             info(
                 summary = "Test query parameter validation",
-                description = "Endpoint with validated query parameters"
-            )
+                description = "Endpoint with validated query parameters",
+            ),
         ) { params ->
             respond(
                 ValidationResponse(
                     message = "Query validation success",
                     count = params.count,
-                    name = params.name
-                )
+                    name = params.name,
+                ),
             )
         }
 
@@ -87,15 +83,15 @@ fun NormalOpenAPIRoute.validationTestRoutes() {
             get<ValidatedPathParams, ValidationResponse>(
                 info(
                     summary = "Test path parameter validation",
-                    description = "Endpoint with validated path parameters"
-                )
+                    description = "Endpoint with validated path parameters",
+                ),
             ) { params ->
                 respond(
                     ValidationResponse(
                         message = "Path validation success",
                         id = params.id,
-                        category = params.category
-                    )
+                        category = params.category,
+                    ),
                 )
             }
         }
@@ -105,13 +101,13 @@ fun NormalOpenAPIRoute.validationTestRoutes() {
             get<ValidatedHeaderParams, ValidationResponse>(
                 info(
                     summary = "Test header parameter processing",
-                    description = "Endpoint with basic header parameters"
-                )
+                    description = "Endpoint with basic header parameters",
+                ),
             ) { params ->
                 respond(
                     ValidationResponse(
-                        message = "Header processing success: ${params.userAgent}, ${params.requestId}"
-                    )
+                        message = "Header processing success: ${params.userAgent}, ${params.requestId}",
+                    ),
                 )
             }
         }

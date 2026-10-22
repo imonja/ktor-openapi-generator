@@ -23,7 +23,5 @@ interface APITag {
     val externalDocs: ExternalDocumentationModel?
         get() = null
 
-    fun toTag(): TagModel {
-        return TagModel(name, description, externalDocs)
-    }
+    fun toTag(): TagModel = TagModel(name, description, externalDocs)
 }

@@ -6,7 +6,10 @@ import com.papsign.ktor.openapigen.model.schema.SchemaModel
 import java.math.BigDecimal
 
 object ClampProcessor : IntegerNumberConstraintProcessor<Clamp>() {
-    override fun process(modelLitteral: SchemaModel.SchemaModelLitteral<*>, annotation: Clamp): SchemaModel.SchemaModelLitteral<*> {
+    override fun process(
+        modelLitteral: SchemaModel.SchemaModelLitteral<*>,
+        annotation: Clamp,
+    ): SchemaModel.SchemaModelLitteral<*> {
         @Suppress("UNCHECKED_CAST")
         return (modelLitteral as SchemaModel.SchemaModelLitteral<Any?>).apply {
             minimum = annotation.min
@@ -14,7 +17,7 @@ object ClampProcessor : IntegerNumberConstraintProcessor<Clamp>() {
         }
     }
 
-    override fun getConstraint(annotation: Clamp): NumberConstraint {
-        return NumberConstraint(BigDecimal(annotation.min), BigDecimal(annotation.max), errorMessage = annotation.errorMessage)
-    }
+    override fun getConstraint(
+        annotation: Clamp,
+    ): NumberConstraint = NumberConstraint(BigDecimal(annotation.min), BigDecimal(annotation.max), errorMessage = annotation.errorMessage)
 }

@@ -7,10 +7,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class SwaggerUIVersionTest {
-
-    private fun versionOf(resource: String): String? = SwaggerUIVersion::class.java.getResourceAsStream(resource)?.use { stream ->
-        Properties().apply { load(stream) }.getProperty("version")
-    }
+    private fun versionOf(
+        resource: String,
+    ): String? =
+        SwaggerUIVersion::class.java.getResourceAsStream(resource)?.use { stream ->
+            Properties().apply { load(stream) }.getProperty("version")
+        }
 
     @Test
     fun `version comes from the WebJar metadata`() {

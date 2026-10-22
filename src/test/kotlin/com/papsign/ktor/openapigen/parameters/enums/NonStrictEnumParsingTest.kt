@@ -20,17 +20,20 @@ import kotlin.test.*
 
 enum class NonStrictTestEnum {
     VALID,
-    ALSO_VALID
+    ALSO_VALID,
 }
 
 @Path("/")
-data class NullableNonStrictEnumParams(@QueryParam("") val type: NonStrictTestEnum? = null)
+data class NullableNonStrictEnumParams(
+    @QueryParam("") val type: NonStrictTestEnum? = null,
+)
 
 @Path("/")
-data class NonNullableNonStrictEnumParams(@QueryParam("") val type: NonStrictTestEnum)
+data class NonNullableNonStrictEnumParams(
+    @QueryParam("") val type: NonStrictTestEnum,
+)
 
 class NonStrictEnumParsingTest {
-
     companion object {
         // test server for nullable enums
         private fun Application.nullableEnum() {

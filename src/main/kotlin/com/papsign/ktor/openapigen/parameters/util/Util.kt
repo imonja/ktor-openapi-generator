@@ -14,7 +14,9 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.jvm.jvmErasure
 
-fun <T : Any> buildParameterHandler(tType: KType): ParameterHandler<T> {
+fun <T : Any> buildParameterHandler(
+    tType: KType,
+): ParameterHandler<T> {
     @Suppress("UNCHECKED_CAST")
     if (tType.classifier == Unit::class) return UnitParameterHandler as ParameterHandler<T>
     val tClass = tType.jvmErasure
@@ -30,6 +32,6 @@ fun <T : Any> buildParameterHandler(tType: KType): ParameterHandler<T> {
     @Suppress("UNCHECKED_CAST")
     return ModularParameterHandler(
         parsers,
-        constructor as KFunction<T>
+        constructor as KFunction<T>,
     )
 }

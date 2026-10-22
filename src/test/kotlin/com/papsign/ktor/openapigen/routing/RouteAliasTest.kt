@@ -14,8 +14,9 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
 class RouteAliasTest {
-
-    data class TestResponse(val message: String)
+    data class TestResponse(
+        val message: String,
+    )
 
     @Test
     fun testRouteAliases() {

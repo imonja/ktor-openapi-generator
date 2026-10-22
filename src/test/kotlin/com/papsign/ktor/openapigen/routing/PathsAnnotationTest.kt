@@ -17,15 +17,21 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
 class PathsAnnotationTest {
-
     @Paths("/api/v1/users/{id}", "/api/v2/users/{id}", "/users/{id}")
-    data class UserParams(@PathParam("User ID") val id: String)
+    data class UserParams(
+        @PathParam("User ID") val id: String,
+    )
 
     // For routes without parameters, we use Unit directly
     // @Paths annotation doesn't work with Unit, so we'll test differently
 
-    data class UserResponse(val message: String)
-    data class ProductResponse(val message: String)
+    data class UserResponse(
+        val message: String,
+    )
+
+    data class ProductResponse(
+        val message: String,
+    )
 
     @Test
     fun testPathsAnnotationWithParams() {

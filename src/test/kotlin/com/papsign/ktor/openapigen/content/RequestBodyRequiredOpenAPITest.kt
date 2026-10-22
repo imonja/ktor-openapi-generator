@@ -19,20 +19,29 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class RequestBodyRequiredOpenAPITest {
-
     // Test classes with different @Request configurations
     @Request("Required request with default true")
-    data class RequiredByDefaultRequest(val message: String)
+    data class RequiredByDefaultRequest(
+        val message: String,
+    )
 
     @Request(description = "Explicitly required request", required = true)
-    data class ExplicitlyRequiredRequest(val message: String)
+    data class ExplicitlyRequiredRequest(
+        val message: String,
+    )
 
     @Request(description = "Optional request", required = false)
-    data class OptionalRequest(val message: String)
+    data class OptionalRequest(
+        val message: String,
+    )
 
-    data class NoAnnotationRequest(val message: String)
+    data class NoAnnotationRequest(
+        val message: String,
+    )
 
-    data class TestResponse(val result: String)
+    data class TestResponse(
+        val result: String,
+    )
 
     @Test
     fun testRequestRequiredByDefault() {
@@ -62,7 +71,8 @@ class RequestBodyRequiredOpenAPITest {
 
             // Should contain required: true (or omit it since true is default in OpenAPI)
             assertTrue(
-                openApiContent.contains("\"required\":true") || (!openApiContent.contains("\"required\":false") && openApiContent.contains("\"/required-by-default\""))
+                openApiContent.contains("\"required\":true") ||
+                    (!openApiContent.contains("\"required\":false") && openApiContent.contains("\"/required-by-default\"")),
             )
         }
     }
@@ -95,7 +105,8 @@ class RequestBodyRequiredOpenAPITest {
 
             // Should contain required: true or not mention required at all (since true is default)
             assertTrue(
-                openApiContent.contains("\"required\":true") || (!openApiContent.contains("\"required\":false") && openApiContent.contains("\"/explicitly-required\""))
+                openApiContent.contains("\"required\":true") ||
+                    (!openApiContent.contains("\"required\":false") && openApiContent.contains("\"/explicitly-required\"")),
             )
         }
     }
@@ -159,7 +170,8 @@ class RequestBodyRequiredOpenAPITest {
 
             // Should default to required: true for non-Unit types
             assertTrue(
-                openApiContent.contains("\"required\":true") || (!openApiContent.contains("\"required\":false") && openApiContent.contains("\"/no-annotation\""))
+                openApiContent.contains("\"required\":true") ||
+                    (!openApiContent.contains("\"required\":false") && openApiContent.contains("\"/no-annotation\"")),
             )
         }
     }

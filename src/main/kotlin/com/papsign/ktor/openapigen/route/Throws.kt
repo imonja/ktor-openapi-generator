@@ -15,18 +15,24 @@ import kotlinx.coroutines.coroutineScope
 import kotlin.reflect.KClass
 import kotlin.reflect.full.superclasses
 
-data class ThrowsInfo(override val exceptions: List<APIException<*, *>>) : ThrowInfoProvider
+data class ThrowsInfo(
+    override val exceptions: List<APIException<*, *>>,
+) : ThrowInfoProvider
 
 /**
  * exists for simpler syntax
  */
-inline fun <T : OpenAPIRoute<T>, reified EX : Throwable> T.throws(status: HttpStatusCode, exClass: KClass<EX>, crossinline fn: T.() -> Unit = {}): T {
-    return throws<T, EX>(status, fn)
-}
+inline fun <T : OpenAPIRoute<T>, reified EX : Throwable> T.throws(
+    status: HttpStatusCode,
+    exClass: KClass<EX>,
+    crossinline fn: T.() -> Unit = {},
+): T = throws<T, EX>(status, fn)
 
-inline fun <T : OpenAPIRoute<T>, reified EX : Throwable> T.throws(status: HttpStatusCode, crossinline fn: T.() -> Unit = {}): T {
-    return throws<T, EX, Unit>(status, fn = fn)
-}
+inline fun <T : OpenAPIRoute<T>, reified EX : Throwable> T.throws(
+    status: HttpStatusCode,
+    crossinline fn: T.() -> Unit = {
+    },
+): T = throws<T, EX, Unit>(status, fn = fn)
 
 /**
  * exists for simpler syntax
@@ -35,22 +41,22 @@ inline fun <T : OpenAPIRoute<T>, reified EX : Throwable, reified B> T.throws(
     status: HttpStatusCode,
     example: B? = null,
     exClass: KClass<EX>,
-    crossinline fn: T.() -> Unit = {}
-): T {
-    return throws<T, EX, B>(status, example, null, fn)
-}
+    crossinline fn: T.() -> Unit = {},
+): T = throws<T, EX, B>(status, example, null, fn)
 
 inline fun <T : OpenAPIRoute<T>, reified EX : Throwable, reified B> T.throws(
     status: HttpStatusCode,
     example: B? = null,
     noinline gen: ((EX) -> B)? = null,
-    crossinline fn: T.() -> Unit = {}
-): T {
-    return throws(APIException.apiException(status, example, gen), fn = fn)
-}
+    crossinline fn: T.() -> Unit = {},
+): T = throws(APIException.apiException(status, example, gen), fn = fn)
 
-inline fun <T : OpenAPIRoute<T>> T.throws(vararg responses: APIException<*, *>, crossinline fn: T.() -> Unit = {}): T {
-    return child(ktorRoute.createConstantChild()).apply {
+inline fun <T : OpenAPIRoute<T>> T.throws(
+    vararg responses: APIException<*, *>,
+    crossinline fn: T.() -> Unit = {
+    },
+): T =
+    child(ktorRoute.createConstantChild()).apply {
         provider.registerModule(ThrowsInfo(responses.asList()))
         val handler = makeExceptionHandler(responses)
         ktorRoute.intercept(ApplicationCallPipeline.Monitoring) {
@@ -71,11 +77,15 @@ inline fun <T : OpenAPIRoute<T>> T.throws(vararg responses: APIException<*, *>, 
         }
         fn()
     }
-}
 
-fun makeExceptionHandler(info: Array<out APIException<*, *>>): suspend PipelineContext<*, PipelineCall>.(t: Throwable) -> Unit {
+fun makeExceptionHandler(
+    info: Array<out APIException<*, *>>,
+): suspend PipelineContext<*, PipelineCall>.(t: Throwable) -> Unit {
     val classes = info.associateBy { it.exceptionClass }
-    fun findHandlerByType(clazz: KClass<*>): APIException<*, *>? {
+
+    fun findHandlerByType(
+        clazz: KClass<*>,
+    ): APIException<*, *>? {
         classes[clazz]?.let { return it }
         clazz.superclasses.forEach {
             findHandlerByType(it)?.let { return it }
@@ -95,9 +105,11 @@ fun makeExceptionHandler(info: Array<out APIException<*, *>>): suspend PipelineC
                     call.respond(handler.status)
                 }
             }
+
             ex != null -> {
                 call.respond(handler.status, ex)
             }
+
             else -> {
                 call.respond(handler.status)
             }

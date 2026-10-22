@@ -9,8 +9,11 @@ import com.papsign.ktor.openapigen.modules.openapi.OperationModule
 import com.papsign.ktor.openapigen.modules.providers.AuthProvider
 
 object AuthHandler : OperationModule {
-
-    override fun configure(apiGen: OpenAPIGen, provider: ModuleProvider<*>, operation: OperationModel) {
+    override fun configure(
+        apiGen: OpenAPIGen,
+        provider: ModuleProvider<*>,
+        operation: OperationModel,
+    ) {
         val authHandlers = provider.ofType<AuthProvider<*>>()
         val security = authHandlers.flatMap { it.security }.distinct()
         operation.security = security.map {
@@ -18,6 +21,7 @@ object AuthHandler : OperationModule {
                 it.forEach { sec[it.scheme.referenceName] = it.requirements }
             }
         }
-        apiGen.api.components.securitySchemes.putAll(security.flatMap { it.map { it.scheme } }.associateBy { it.referenceName })
+        apiGen.api.components.securitySchemes
+            .putAll(security.flatMap { it.map { it.scheme } }.associateBy { it.referenceName })
     }
 }

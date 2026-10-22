@@ -9,7 +9,9 @@ import kotlin.reflect.KType
 
 @Target(AnnotationTarget.CLASS)
 @SchemaProcessorAnnotation(LegacyDiscriminatorProcessor::class)
-annotation class DiscriminatorAnnotation(val fieldName: String = "type")
+annotation class DiscriminatorAnnotation(
+    val fieldName: String = "type",
+)
 
 // Difference between legacy mode and current
 // https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/typescript.md
@@ -18,16 +20,20 @@ annotation class DiscriminatorAnnotation(val fieldName: String = "type")
 // - discriminatorName in each type Parameters array
 // - { discriminator: { propertyName: discriminatorName } } in the sealed base type
 object LegacyDiscriminatorProcessor : SchemaProcessor<DiscriminatorAnnotation> {
-    override fun process(model: SchemaModel<*>, type: KType, annotation: DiscriminatorAnnotation): SchemaModel<*> {
+    override fun process(
+        model: SchemaModel<*>,
+        type: KType,
+        annotation: DiscriminatorAnnotation,
+    ): SchemaModel<*> {
         val mapElement = (
             annotation.fieldName to SchemaModel.SchemaModelLitteral<String>(DataType.string)
-            )
+        )
 
         if (model is SchemaModel.OneSchemaModelOf<*>) {
             return SchemaModel.OneSchemaModelOf(
                 model.oneOf,
                 mapOf(mapElement),
-                Discriminator(annotation.fieldName)
+                Discriminator(annotation.fieldName),
             )
         }
 

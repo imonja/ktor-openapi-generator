@@ -11,6 +11,6 @@ data class HeaderModel<T>(
     var allowEmptyValue: Boolean? = null,
     var schema: SchemaModel<T>? = null,
     var example: T? = null,
-    var examples: MutableMap<String, ExampleModel<T>>? = null
+    var examples: MutableMap<String, ExampleModel<T>>? = null,
     // incomplete
 ) : DataModel

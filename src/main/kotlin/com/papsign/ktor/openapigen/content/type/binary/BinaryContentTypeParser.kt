@@ -23,25 +23,42 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.jvm.jvmErasure
 
 object BinaryContentTypeParser : BodyParser, ResponseSerializer, OpenAPIGenModuleExtension {
+    private fun <T : Any> KClass<T>.getAcceptableConstructor(): KFunction<T> =
+        constructors.first {
+            it.parameters.size == 1 && acceptedTypes.contains(it.parameters[0].type)
+        }
 
-    private fun <T : Any> KClass<T>.getAcceptableConstructor(): KFunction<T> {
-        return constructors.first { it.parameters.size == 1 && acceptedTypes.contains(it.parameters[0].type) }
-    }
+    override fun <T : Any> getParseableContentTypes(
+        type: KType,
+    ): List<ContentType> =
+        type.jvmErasure
+            .findAnnotation<BinaryRequest>()
+            ?.contentTypes
+            ?.map(ContentType.Companion::parse) ?: listOf()
 
-    override fun <T : Any> getParseableContentTypes(type: KType): List<ContentType> {
-        return type.jvmErasure.findAnnotation<BinaryRequest>()?.contentTypes?.map(ContentType.Companion::parse) ?: listOf()
-    }
+    override fun <T : Any> getSerializableContentTypes(
+        type: KType,
+    ): List<ContentType> =
+        type.jvmErasure
+            .findAnnotation<BinaryResponse>()
+            ?.contentTypes
+            ?.map(ContentType.Companion::parse) ?: listOf()
 
-    override fun <T : Any> getSerializableContentTypes(type: KType): List<ContentType> {
-        return type.jvmErasure.findAnnotation<BinaryResponse>()?.contentTypes?.map(ContentType.Companion::parse) ?: listOf()
-    }
-
-    override suspend fun <T : Any> respond(response: T, request: RoutingContext, contentType: ContentType) {
+    override suspend fun <T : Any> respond(
+        response: T,
+        request: RoutingContext,
+        contentType: ContentType,
+    ) {
         val code = response::class.findAnnotation<Response>()?.statusCode?.let { HttpStatusCode.fromValue(it) } ?: HttpStatusCode.OK
         respond(code, response, request, contentType)
     }
 
-    override suspend fun <T : Any> respond(statusCode: HttpStatusCode, response: T, request: RoutingContext, contentType: ContentType) {
+    override suspend fun <T : Any> respond(
+        statusCode: HttpStatusCode,
+        response: T,
+        request: RoutingContext,
+        contentType: ContentType,
+    ) {
         if (response is Unit) {
             request.call.respondBytes(response.toString().toByteArray(), contentType, statusCode)
             return
@@ -55,16 +72,17 @@ object BinaryContentTypeParser : BodyParser, ResponseSerializer, OpenAPIGenModul
     }
 
     @Suppress("UNCHECKED_CAST")
-    override suspend fun <T : Any> parseBody(clazz: KType, request: RoutingContext): T {
-        return (clazz.classifier as KClass<T>).getAcceptableConstructor().call(request.call.receiveStream())
-    }
+    override suspend fun <T : Any> parseBody(
+        clazz: KType,
+        request: RoutingContext,
+    ): T = (clazz.classifier as KClass<T>).getAcceptableConstructor().call(request.call.receiveStream())
 
     override fun <T> getMediaType(
         type: KType,
         apiGen: OpenAPIGen,
         provider: ModuleProvider<*>,
         example: T?,
-        usage: ContentTypeProvider.Usage
+        usage: ContentTypeProvider.Usage,
     ): Map<ContentType, MediaTypeModel<T>>? {
         if (type == unitKType) return null
         val contentTypes = when (usage) {
@@ -72,6 +90,7 @@ object BinaryContentTypeParser : BodyParser, ResponseSerializer, OpenAPIGenModul
                 val binaryRequest = type.jvmErasure.findAnnotation<BinaryRequest>() ?: return null
                 binaryRequest.contentTypes
             }
+
             ContentTypeProvider.Usage.SERIALIZE -> {
                 val binaryRequest = type.jvmErasure.findAnnotation<BinaryResponse>() ?: return null
                 binaryRequest.contentTypes
@@ -79,16 +98,23 @@ object BinaryContentTypeParser : BodyParser, ResponseSerializer, OpenAPIGenModul
         }.also {
             it.forEach { ContentType.parse(it) }
         }
-        val subtypes = type.jvmErasure.getAcceptableConstructor().parameters.map { it.type }.toSet()
+        val subtypes = type.jvmErasure
+            .getAcceptableConstructor()
+            .parameters
+            .map { it.type }
+            .toSet()
         assertContent(acceptedTypes.containsAll(subtypes)) {
             "${this::class.simpleName} can only be used with type ${acceptedTypes.joinToString()}, you are using ${subtypes.minus(acceptedTypes)}"
         }
         when (usage) {
             ContentTypeProvider.Usage.PARSE -> {
-                assertContent(type.jvmErasure.constructors.find { it.parameters.size == 1 && acceptedTypes.contains(it.parameters[0].type) } != null) {
+                assertContent(
+                    type.jvmErasure.constructors.find { it.parameters.size == 1 && acceptedTypes.contains(it.parameters[0].type) } != null,
+                ) {
                     "${this::class.simpleName} can only be used with types taking $acceptedTypes as constructor parameter"
                 }
             }
+
             ContentTypeProvider.Usage.SERIALIZE -> {
                 val public = type.jvmErasure.declaredMemberProperties.filter { it.visibility == KVisibility.PUBLIC }
                 assertContent(public.size == 1 && public.all { acceptedTypes.contains(it.returnType) }) {

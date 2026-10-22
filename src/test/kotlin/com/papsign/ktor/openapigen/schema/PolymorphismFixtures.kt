@@ -19,7 +19,7 @@ fun NormalOpenAPIRoute.sealedRoute() {
         post<Unit, Base, Base>(
             info("Sealed class Endpoint", "This is a Sealed class Endpoint"),
             exampleRequest = Base.A("Hi"),
-            exampleResponse = Base.A("Hi")
+            exampleResponse = Base.A("Hi"),
         ) { params, base ->
             respond(base)
         }
@@ -31,20 +31,24 @@ fun NormalOpenAPIRoute.sealedRoute() {
 sealed class Base {
     @JsonTypeName("A")
     @DiscriminatorAnnotation()
-    class A(val str: String) : Base()
+    class A(
+        val str: String,
+    ) : Base()
 
     @JsonTypeName("B")
     @DiscriminatorAnnotation()
     class B(
         @Min(0)
         @Max(2)
-        val i: Int
+        val i: Int,
     ) : Base()
 
     @WithExample
     @JsonTypeName("C")
     @DiscriminatorAnnotation()
-    class C(@Clamp(0, 10) val l: Long) : Base() {
+    class C(
+        @Clamp(0, 10) val l: Long,
+    ) : Base() {
         companion object : ExampleProvider<C> {
             override val example: C = C(5)
         }

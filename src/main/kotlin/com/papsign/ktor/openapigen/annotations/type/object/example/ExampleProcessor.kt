@@ -7,12 +7,16 @@ import kotlin.reflect.full.companionObjectInstance
 import kotlin.reflect.jvm.jvmErasure
 
 object ExampleProcessor : SchemaProcessor<WithExample> {
-    override fun process(model: SchemaModel<*>, type: KType, annotation: WithExample): SchemaModel<*> {
+    override fun process(
+        model: SchemaModel<*>,
+        type: KType,
+        annotation: WithExample,
+    ): SchemaModel<*> {
         val exampleClass = if (annotation.provider == NoExampleProvider::class) {
             type.jvmErasure.companionObjectInstance as? ExampleProvider<*>
                 ?: error(
                     "Classes annotated with ${WithExample::class.simpleName} without a specified example provider " +
-                        "must have a companion object implementing ${ExampleProvider::class}"
+                        "must have a companion object implementing ${ExampleProvider::class}",
                 )
         } else {
             annotation.provider.objectInstance ?: error("Classes extending ${ExampleProvider::class} must be objects")

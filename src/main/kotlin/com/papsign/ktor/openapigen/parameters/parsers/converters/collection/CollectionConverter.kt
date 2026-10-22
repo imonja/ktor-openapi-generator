@@ -5,17 +5,20 @@ import com.papsign.ktor.openapigen.parameters.parsers.converters.primitive.Primi
 import com.papsign.ktor.openapigen.parameters.util.ListToArray
 import kotlin.reflect.KType
 
-abstract class CollectionConverter(type: KType) : ListedConverter {
-
+abstract class CollectionConverter(
+    type: KType,
+) : ListedConverter {
     private val converter: Converter = PrimitiveConverterFactory.buildConverterForced(ListToArray.arrayComponentKType(type))
 
-    abstract fun transform(lst: List<Any?>): Any?
+    abstract fun transform(
+        lst: List<Any?>,
+    ): Any?
 
-    override fun convert(value: String): Any? {
-        return convert(value.split(","))
-    }
+    override fun convert(
+        value: String,
+    ): Any? = convert(value.split(","))
 
-    override fun convert(list: List<String>): Any? {
-        return list.map(converter::convert).let(::transform)
-    }
+    override fun convert(
+        list: List<String>,
+    ): Any? = list.map(converter::convert).let(::transform)
 }

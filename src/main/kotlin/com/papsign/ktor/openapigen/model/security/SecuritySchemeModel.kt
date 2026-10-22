@@ -15,12 +15,15 @@ data class SecuritySchemeModel<TScope> constructor(
     val scheme: HttpSecurityScheme? = null,
     val bearerFormat: String? = null,
     val flows: FlowsModel<TScope>? = null,
-    val openIdConnectUrl: String? = null
+    val openIdConnectUrl: String? = null,
 ) : DataModel where TScope : Enum<TScope>, TScope : Described {
-
-    override fun serialize(): Map<String, Any?> {
-        return this::class.memberProperties.associateBy { it.name }.mapValues<String, KProperty1<out SecuritySchemeModel<TScope>, Any?>, Any?> { (_, prop) ->
-            convertToValue((prop as KProperty1<DataModel, *>).get(this))
-        }.filter { it.key != "referenceName" }.cleanEmptyValues()
-    }
+    override fun serialize(): Map<String, Any?> =
+        this::class
+            .memberProperties
+            .associateBy {
+                it.name
+            }.mapValues<String, KProperty1<out SecuritySchemeModel<TScope>, Any?>, Any?> { (_, prop) ->
+                convertToValue((prop as KProperty1<DataModel, *>).get(this))
+            }.filter { it.key != "referenceName" }
+            .cleanEmptyValues()
 }

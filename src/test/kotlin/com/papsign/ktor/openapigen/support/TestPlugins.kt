@@ -9,8 +9,8 @@ import io.ktor.server.application.install
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import kotlin.reflect.KType
 
-fun Application.installOpenAPI(): OpenAPIGen {
-    return install(OpenAPIGen) {
+fun Application.installOpenAPI(): OpenAPIGen =
+    install(OpenAPIGen) {
         // basic info
         info {
             version = "0.0.1"
@@ -30,13 +30,13 @@ fun Application.installOpenAPI(): OpenAPIGen {
             DefaultSchemaNamer,
             object : SchemaNamer {
                 val regex = Regex("[A-Za-z0-9_.]+")
-                override fun get(type: KType): String {
-                    return type.toString().replace(regex) { it.value.split(".").last() }.replace(Regex(">|<|, "), "_")
-                }
-            }
+
+                override fun get(
+                    type: KType,
+                ): String = type.toString().replace(regex) { it.value.split(".").last() }.replace(Regex(">|<|, "), "_")
+            },
         )
     }
-}
 
 fun Application.installJackson() {
     install(ContentNegotiation) {

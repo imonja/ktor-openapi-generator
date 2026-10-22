@@ -53,7 +53,6 @@ import java.util.concurrent.TimeUnit
 import kotlin.reflect.KType
 
 object JwtTestApplication {
-
     public fun Application.testServerWithJwtAuth() {
         // define basic OpenAPI info
         val authProvider = JwtProvider()
@@ -75,10 +74,11 @@ object JwtTestApplication {
                 DefaultSchemaNamer,
                 object : SchemaNamer {
                     val regex = Regex("[A-Za-z0-9_.]+")
-                    override fun get(type: KType): String {
-                        return type.toString().replace(regex) { it.value.split(".").last() }.replace(Regex(">|<|, "), "_")
-                    }
-                }
+
+                    override fun get(
+                        type: KType,
+                    ): String = type.toString().replace(regex) { it.value.split(".").last() }.replace(Regex(">|<|, "), "_")
+                },
             )
         }
 
@@ -87,7 +87,7 @@ object JwtTestApplication {
                 enable(
                     DeserializationFeature.WRAP_EXCEPTIONS,
                     DeserializationFeature.USE_BIG_INTEGER_FOR_INTS,
-                    DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS
+                    DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS,
                 )
 
                 enable(SerializationFeature.WRAP_EXCEPTIONS, SerializationFeature.INDENT_OUTPUT)
@@ -98,7 +98,7 @@ object JwtTestApplication {
                     DefaultPrettyPrinter().apply {
                         indentArraysWith(DefaultPrettyPrinter.FixedSpaceIndenter.instance)
                         indentObjectsWith(DefaultIndenter("  ", "\n"))
-                    }
+                    },
                 )
 
                 registerModule(JavaTimeModule())
@@ -115,17 +115,22 @@ object JwtTestApplication {
                 val host = ServerModel(
                     call.request.origin.scheme + "://" + call.request.host() + if (setOf(
                             80,
-                            443
+                            443,
                         ).contains(call.request.port())
                     ) {
                         ""
                     } else {
                         ":${call.request.port()}"
-                    }
+                    },
                 )
-                call.application.openAPIGen.api.servers.add(0, host)
-                call.respond(call.application.openAPIGen.api.serialize())
-                call.application.openAPIGen.api.servers.remove(host)
+                call.application.openAPIGen.api.servers
+                    .add(0, host)
+                call.respond(
+                    call.application.openAPIGen.api
+                        .serialize(),
+                )
+                call.application.openAPIGen.api.servers
+                    .remove(host)
             }
 
             get("/") {
@@ -137,7 +142,7 @@ object JwtTestApplication {
             auth {
                 get<StringParam, StringResponse, UserPrincipal>(
                     info("String Param Endpoint", "This is a String Param Endpoint"),
-                    example = StringResponse("Hi")
+                    example = StringResponse("Hi"),
                 ) { params ->
                     val (userId, name) = principal()
                     respond(StringResponse("Hello $name, you submitted ${params.a}"))
@@ -147,14 +152,20 @@ object JwtTestApplication {
     }
 
     @Path("string/{a}")
-    data class StringParam(@param:PathParam("A simple String Param") val a: String)
+    data class StringParam(
+        @param:PathParam("A simple String Param") val a: String,
+    )
 
     @Response("A String Response")
-    data class StringResponse(@param:Description("The string value") val str: String)
+    data class StringResponse(
+        @param:Description("The string value") val str: String,
+    )
 
     val authProvider = JwtProvider()
 
-    inline fun NormalOpenAPIRoute.auth(route: OpenAPIAuthenticatedRoute<UserPrincipal>.() -> Unit): OpenAPIAuthenticatedRoute<UserPrincipal> {
+    inline fun NormalOpenAPIRoute.auth(
+        route: OpenAPIAuthenticatedRoute<UserPrincipal>.() -> Unit,
+    ): OpenAPIAuthenticatedRoute<UserPrincipal> {
         val authenticatedKtorRoute = this.ktorRoute.authenticate { }
         val openAPIAuthenticatedRoute =
             OpenAPIAuthenticatedRoute(authenticatedKtorRoute, this.provider.child(), authProvider = authProvider)
@@ -163,7 +174,10 @@ object JwtTestApplication {
         }
     }
 
-    data class UserPrincipal(val userId: String, val name: String?) : Principal
+    data class UserPrincipal(
+        val userId: String,
+        val name: String?,
+    ) : Principal
 
     class JwtProvider : AuthProvider<UserPrincipal> {
         override val security: Iterable<Iterable<AuthProvider.Security<*>>> =
@@ -174,41 +188,47 @@ object JwtTestApplication {
                             SecuritySchemeType.http,
                             scheme = HttpSecurityScheme.bearer,
                             bearerFormat = "JWT",
-                            referenceName = "jwtAuth"
+                            referenceName = "jwtAuth",
                         ),
-                        emptyList()
+                        emptyList(),
                     ),
                     AuthProvider.Security(
                         SecuritySchemeModel(
                             SecuritySchemeType.apiKey,
                             `in` = APIKeyLocation.cookie,
                             name = "ThisIsCookieName",
-                            referenceName = "ThisIsSchemeName"
+                            referenceName = "ThisIsSchemeName",
                         ),
-                        emptyList<Scopes>()
-                    )
-                )
+                        emptyList<Scopes>(),
+                    ),
+                ),
             )
 
-        override suspend fun getAuth(pipeline: RoutingContext): UserPrincipal {
-            return pipeline.call.authentication.principal() ?: throw RuntimeException("No JWTPrincipal")
-        }
+        override suspend fun getAuth(
+            pipeline: RoutingContext,
+        ): UserPrincipal = pipeline.call.authentication.principal() ?: throw RuntimeException("No JWTPrincipal")
 
-        override fun apply(route: NormalOpenAPIRoute): OpenAPIAuthenticatedRoute<UserPrincipal> {
+        override fun apply(
+            route: NormalOpenAPIRoute,
+        ): OpenAPIAuthenticatedRoute<UserPrincipal> {
             val authenticatedKtorRoute = route.ktorRoute.authenticate { }
             return OpenAPIAuthenticatedRoute(authenticatedKtorRoute, route.provider.child(), this)
         }
     }
 
-    enum class Scopes(override val description: String) : Described {
-        Profile("Some scope")
+    enum class Scopes(
+        override val description: String,
+    ) : Described {
+        Profile("Some scope"),
     }
 
     val jwtRealm: String = "example-jwt-realm"
     val jwtIssuer: String = "http://localhost:9091/auth/realms/$jwtRealm"
     val jwtEndpoint: String = "$jwtIssuer/protocol/openid-connect/certs"
 
-    fun installJwt(provider: AuthenticationConfig) {
+    fun installJwt(
+        provider: AuthenticationConfig,
+    ) {
         provider.apply {
             jwt {
                 realm = jwtRealm
@@ -216,17 +236,18 @@ object JwtTestApplication {
                 validate { credentials ->
                     UserPrincipal(
                         credentials.payload.subject,
-                        credentials.payload.claims["name"]?.asString()
+                        credentials.payload.claims["name"]?.asString(),
                     )
                 }
             }
         }
     }
 
-    private fun getJwkProvider(jwkEndpoint: String): JwkProvider {
-        return JwkProviderBuilder(URL(jwkEndpoint))
+    private fun getJwkProvider(
+        jwkEndpoint: String,
+    ): JwkProvider =
+        JwkProviderBuilder(URL(jwkEndpoint))
             .cached(10, 24, TimeUnit.HOURS)
             .rateLimited(10, 1, TimeUnit.MINUTES)
             .build()
-    }
 }

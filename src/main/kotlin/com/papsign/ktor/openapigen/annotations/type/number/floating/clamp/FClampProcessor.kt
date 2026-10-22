@@ -6,7 +6,10 @@ import com.papsign.ktor.openapigen.model.schema.SchemaModel
 import java.math.BigDecimal
 
 object FClampProcessor : FloatingNumberConstraintProcessor<FClamp>() {
-    override fun process(modelLitteral: SchemaModel.SchemaModelLitteral<*>, annotation: FClamp): SchemaModel.SchemaModelLitteral<*> {
+    override fun process(
+        modelLitteral: SchemaModel.SchemaModelLitteral<*>,
+        annotation: FClamp,
+    ): SchemaModel.SchemaModelLitteral<*> {
         @Suppress("UNCHECKED_CAST")
         return (modelLitteral as SchemaModel.SchemaModelLitteral<Any?>).apply {
             minimum = annotation.min
@@ -14,7 +17,7 @@ object FClampProcessor : FloatingNumberConstraintProcessor<FClamp>() {
         }
     }
 
-    override fun getConstraint(annotation: FClamp): NumberConstraint {
-        return NumberConstraint(BigDecimal(annotation.min), BigDecimal(annotation.max), errorMessage = annotation.errorMessage)
-    }
+    override fun getConstraint(
+        annotation: FClamp,
+    ): NumberConstraint = NumberConstraint(BigDecimal(annotation.min), BigDecimal(annotation.max), errorMessage = annotation.errorMessage)
 }

@@ -6,13 +6,17 @@ import com.papsign.ktor.openapigen.model.schema.SchemaModel
 import java.math.BigDecimal
 
 object FMaxProcessor : FloatingNumberConstraintProcessor<FMax>() {
-    override fun process(modelLitteral: SchemaModel.SchemaModelLitteral<*>, annotation: FMax): SchemaModel.SchemaModelLitteral<*> {
+    override fun process(
+        modelLitteral: SchemaModel.SchemaModelLitteral<*>,
+        annotation: FMax,
+    ): SchemaModel.SchemaModelLitteral<*> {
         @Suppress("UNCHECKED_CAST")
         return (modelLitteral as SchemaModel.SchemaModelLitteral<Any?>).apply {
             maximum = annotation.value
         }
     }
-    override fun getConstraint(annotation: FMax): NumberConstraint {
-        return NumberConstraint(max = BigDecimal(annotation.value), errorMessage = annotation.errorMessage)
-    }
+
+    override fun getConstraint(
+        annotation: FMax,
+    ): NumberConstraint = NumberConstraint(max = BigDecimal(annotation.value), errorMessage = annotation.errorMessage)
 }

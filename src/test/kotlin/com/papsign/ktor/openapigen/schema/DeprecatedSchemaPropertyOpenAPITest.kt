@@ -26,190 +26,200 @@ import kotlin.test.assertNotNull
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation as ServerContentNegotiation
 
 internal class DeprecatedSchemaPropertyOpenAPITest {
-
     data class RenameRequest(
         @Deprecated("Use currentName")
         val oldName: String,
         @Description("Legacy display name returned for old clients")
         @Deprecated("Use currentName")
         val legacyName: String,
-        val currentName: String
+        val currentName: String,
     )
 
-    data class RenameResponse(val accepted: Boolean)
+    data class RenameResponse(
+        val accepted: Boolean,
+    )
 
-    data class Account(val id: String)
+    data class Account(
+        val id: String,
+    )
 
     data class ConversationResponse(
         @Deprecated("Use author instead")
         val account: Account,
-        val author: Account
+        val author: Account,
     )
 
     data class DescribedConversationResponse(
         @Description("Account that started the conversation")
-        val account: Account
+        val account: Account,
     )
 
     @Test
-    fun `OpenAPI JSON marks Kotlin deprecated DTO properties as deprecated schema properties`(): Unit = testApplication {
-        application {
-            install(ServerContentNegotiation) {
-                jackson()
-            }
-
-            install(OpenAPIGen) {
-                useSimpleSchemaNames()
-                info {
-                    version = "1.0"
-                    title = "Deprecated Schema Property Test API"
+    fun `OpenAPI JSON marks Kotlin deprecated DTO properties as deprecated schema properties`(): Unit =
+        testApplication {
+            application {
+                install(ServerContentNegotiation) {
+                    jackson()
                 }
-            }
 
-            apiRouting {
-                route("renames") {
-                    post<Unit, RenameResponse, RenameRequest> { _, _ ->
-                        respond(RenameResponse(true))
+                install(OpenAPIGen) {
+                    useSimpleSchemaNames()
+                    info {
+                        version = "1.0"
+                        title = "Deprecated Schema Property Test API"
+                    }
+                }
+
+                apiRouting {
+                    route("renames") {
+                        post<Unit, RenameResponse, RenameRequest> { _, _ ->
+                            respond(RenameResponse(true))
+                        }
                     }
                 }
             }
-        }
 
-        val client = createClient {
-            install(ContentNegotiation) { jackson() }
-        }
-
-        val openAPIResponse = client.get("/openapi.json")
-        assertEquals(HttpStatusCode.OK, openAPIResponse.status)
-
-        val openAPIJson = openAPIResponse.body<Map<String, Any>>()
-        val schemas = openAPIJson.mapAt("components").mapAt("schemas")
-        val renameRequestSchema = schemas.values
-            .filterIsInstance<Map<String, Any>>()
-            .firstOrNull { schema ->
-                val properties = schema["properties"] as? Map<*, *>
-                properties?.containsKey("oldName") == true &&
-                    properties.containsKey("legacyName") &&
-                    properties.containsKey("currentName")
+            val client = createClient {
+                install(ContentNegotiation) { jackson() }
             }
 
-        assertNotNull(renameRequestSchema, "OpenAPI should contain a schema for RenameRequest")
+            val openAPIResponse = client.get("/openapi.json")
+            assertEquals(HttpStatusCode.OK, openAPIResponse.status)
 
-        val oldNameProperty = renameRequestSchema.mapAt("properties").mapAt("oldName")
-        assertEquals(true, oldNameProperty["deprecated"], "oldName should be marked deprecated")
-        assertEquals("Use currentName", oldNameProperty["description"], "oldName should use the deprecation message as fallback description")
+            val openAPIJson = openAPIResponse.body<Map<String, Any>>()
+            val schemas = openAPIJson.mapAt("components").mapAt("schemas")
+            val renameRequestSchema = schemas.values
+                .filterIsInstance<Map<String, Any>>()
+                .firstOrNull { schema ->
+                    val properties = schema["properties"] as? Map<*, *>
+                    properties?.containsKey("oldName") == true &&
+                        properties.containsKey("legacyName") &&
+                        properties.containsKey("currentName")
+                }
 
-        val legacyNameProperty = renameRequestSchema.mapAt("properties").mapAt("legacyName")
-        assertEquals(true, legacyNameProperty["deprecated"], "legacyName should be marked deprecated")
-        assertEquals(
-            "Legacy display name returned for old clients",
-            legacyNameProperty["description"],
-            "legacyName should keep its explicit description"
-        )
-    }
+            assertNotNull(renameRequestSchema, "OpenAPI should contain a schema for RenameRequest")
+
+            val oldNameProperty = renameRequestSchema.mapAt("properties").mapAt("oldName")
+            assertEquals(true, oldNameProperty["deprecated"], "oldName should be marked deprecated")
+            assertEquals("Use currentName", oldNameProperty["description"], "oldName should use the deprecation message as fallback description")
+
+            val legacyNameProperty = renameRequestSchema.mapAt("properties").mapAt("legacyName")
+            assertEquals(true, legacyNameProperty["deprecated"], "legacyName should be marked deprecated")
+            assertEquals(
+                "Legacy display name returned for old clients",
+                legacyNameProperty["description"],
+                "legacyName should keep its explicit description",
+            )
+        }
 
     @ParameterizedTest
     @EnumSource(OpenAPIVersion::class)
-    fun `OpenAPI JSON wraps deprecated referenced DTO properties in allOf`(format: OpenAPIVersion): Unit = testApplication {
-        application {
-            install(ServerContentNegotiation) {
-                jackson()
-            }
-
-            install(OpenAPIGen) {
-                useSimpleSchemaNames()
-                info {
-                    version = "1.0"
-                    title = "Deprecated Referenced Schema Property Test API"
+    fun `OpenAPI JSON wraps deprecated referenced DTO properties in allOf`(
+        format: OpenAPIVersion,
+    ): Unit =
+        testApplication {
+            application {
+                install(ServerContentNegotiation) {
+                    jackson()
                 }
-                openApiVersion = format.value
-            }
 
-            apiRouting {
-                route("conversations") {
-                    post<Unit, ConversationResponse, Unit> { _, _ ->
-                        respond(ConversationResponse(Account("account-id"), Account("author-id")))
+                install(OpenAPIGen) {
+                    useSimpleSchemaNames()
+                    info {
+                        version = "1.0"
+                        title = "Deprecated Referenced Schema Property Test API"
+                    }
+                    openApiVersion = format.value
+                }
+
+                apiRouting {
+                    route("conversations") {
+                        post<Unit, ConversationResponse, Unit> { _, _ ->
+                            respond(ConversationResponse(Account("account-id"), Account("author-id")))
+                        }
                     }
                 }
             }
-        }
 
-        val client = createClient {
-            install(ContentNegotiation) { jackson() }
-        }
-
-        val openAPIResponse = client.get("/openapi.json")
-        assertEquals(HttpStatusCode.OK, openAPIResponse.status)
-
-        val openAPIJson = openAPIResponse.body<Map<String, Any>>()
-        val schemas = openAPIJson.mapAt("components").mapAt("schemas")
-        val conversationSchema = schemas.values
-            .filterIsInstance<Map<String, Any>>()
-            .firstOrNull { schema ->
-                val properties = schema["properties"] as? Map<*, *>
-                properties?.containsKey("account") == true && properties.containsKey("author")
+            val client = createClient {
+                install(ContentNegotiation) { jackson() }
             }
 
-        assertNotNull(conversationSchema, "OpenAPI should contain a schema for ConversationResponse")
+            val openAPIResponse = client.get("/openapi.json")
+            assertEquals(HttpStatusCode.OK, openAPIResponse.status)
 
-        val accountProperty = conversationSchema.mapAt("properties").mapAt("account")
-        assertEquals("#/components/schemas/Account", accountProperty.referencedSchema())
-        assertEquals(true, accountProperty["deprecated"], "account should be marked deprecated")
+            val openAPIJson = openAPIResponse.body<Map<String, Any>>()
+            val schemas = openAPIJson.mapAt("components").mapAt("schemas")
+            val conversationSchema = schemas.values
+                .filterIsInstance<Map<String, Any>>()
+                .firstOrNull { schema ->
+                    val properties = schema["properties"] as? Map<*, *>
+                    properties?.containsKey("account") == true && properties.containsKey("author")
+                }
 
-        val authorProperty = conversationSchema.mapAt("properties").mapAt("author")
-        assertEquals("#/components/schemas/Account", authorProperty["\$ref"], "author should keep a plain ref")
-        assertEquals(null, authorProperty["allOf"], "author should not be wrapped in allOf")
-        assertEquals(null, authorProperty["deprecated"], "author should not be marked deprecated")
-    }
+            assertNotNull(conversationSchema, "OpenAPI should contain a schema for ConversationResponse")
+
+            val accountProperty = conversationSchema.mapAt("properties").mapAt("account")
+            assertEquals("#/components/schemas/Account", accountProperty.referencedSchema())
+            assertEquals(true, accountProperty["deprecated"], "account should be marked deprecated")
+
+            val authorProperty = conversationSchema.mapAt("properties").mapAt("author")
+            assertEquals("#/components/schemas/Account", authorProperty["\$ref"], "author should keep a plain ref")
+            assertEquals(null, authorProperty["allOf"], "author should not be wrapped in allOf")
+            assertEquals(null, authorProperty["deprecated"], "author should not be marked deprecated")
+        }
 
     @ParameterizedTest
     @EnumSource(OpenAPIVersion::class)
-    fun `OpenAPI JSON wraps described referenced DTO properties in allOf`(format: OpenAPIVersion): Unit = testApplication {
-        application {
-            install(ServerContentNegotiation) {
-                jackson()
-            }
-
-            install(OpenAPIGen) {
-                useSimpleSchemaNames()
-                info {
-                    version = "1.0"
-                    title = "Described Referenced Schema Property Test API"
+    fun `OpenAPI JSON wraps described referenced DTO properties in allOf`(
+        format: OpenAPIVersion,
+    ): Unit =
+        testApplication {
+            application {
+                install(ServerContentNegotiation) {
+                    jackson()
                 }
-                openApiVersion = format.value
-            }
 
-            apiRouting {
-                route("described-conversations") {
-                    post<Unit, DescribedConversationResponse, Unit> { _, _ ->
-                        respond(DescribedConversationResponse(Account("account-id")))
+                install(OpenAPIGen) {
+                    useSimpleSchemaNames()
+                    info {
+                        version = "1.0"
+                        title = "Described Referenced Schema Property Test API"
+                    }
+                    openApiVersion = format.value
+                }
+
+                apiRouting {
+                    route("described-conversations") {
+                        post<Unit, DescribedConversationResponse, Unit> { _, _ ->
+                            respond(DescribedConversationResponse(Account("account-id")))
+                        }
                     }
                 }
             }
-        }
 
-        val client = createClient {
-            install(ContentNegotiation) { jackson() }
-        }
-
-        val openAPIResponse = client.get("/openapi.json")
-        assertEquals(HttpStatusCode.OK, openAPIResponse.status)
-
-        val openAPIJson = openAPIResponse.body<Map<String, Any>>()
-        val schemas = openAPIJson.mapAt("components").mapAt("schemas")
-        val conversationSchema = schemas.values
-            .filterIsInstance<Map<String, Any>>()
-            .firstOrNull { schema ->
-                val properties = schema["properties"] as? Map<*, *>
-                properties?.containsKey("account") == true
+            val client = createClient {
+                install(ContentNegotiation) { jackson() }
             }
 
-        assertNotNull(conversationSchema, "OpenAPI should contain a schema for DescribedConversationResponse")
+            val openAPIResponse = client.get("/openapi.json")
+            assertEquals(HttpStatusCode.OK, openAPIResponse.status)
 
-        val accountProperty = conversationSchema.mapAt("properties").mapAt("account")
-        assertEquals("#/components/schemas/Account", accountProperty.referencedSchema())
-        assertEquals("Account that started the conversation", accountProperty["description"])
-    }
+            val openAPIJson = openAPIResponse.body<Map<String, Any>>()
+            val schemas = openAPIJson.mapAt("components").mapAt("schemas")
+            val conversationSchema = schemas.values
+                .filterIsInstance<Map<String, Any>>()
+                .firstOrNull { schema ->
+                    val properties = schema["properties"] as? Map<*, *>
+                    properties?.containsKey("account") == true
+                }
+
+            assertNotNull(conversationSchema, "OpenAPI should contain a schema for DescribedConversationResponse")
+
+            val accountProperty = conversationSchema.mapAt("properties").mapAt("account")
+            assertEquals("#/components/schemas/Account", accountProperty.referencedSchema())
+            assertEquals("Account that started the conversation", accountProperty["description"])
+        }
 
     /** Annotated references stay wrapped in allOf: 3.0 ignores keywords next to `$ref`, and client generators do too. */
     private fun Map<String, Any>.referencedSchema(): Any? {
@@ -217,7 +227,9 @@ internal class DeprecatedSchemaPropertyOpenAPITest {
         return listAt("allOf").single().mapAt()["\$ref"]
     }
 
-    private fun Map<String, Any>.mapAt(key: String): Map<String, Any> {
+    private fun Map<String, Any>.mapAt(
+        key: String,
+    ): Map<String, Any> {
         @Suppress("UNCHECKED_CAST")
         return this[key] as? Map<String, Any> ?: error("Expected '$key' to be an object")
     }
@@ -227,7 +239,9 @@ internal class DeprecatedSchemaPropertyOpenAPITest {
         return this as? Map<String, Any> ?: error("Expected value to be an object")
     }
 
-    private fun Map<String, Any>.listAt(key: String): List<Any> {
+    private fun Map<String, Any>.listAt(
+        key: String,
+    ): List<Any> {
         @Suppress("UNCHECKED_CAST")
         return this[key] as? List<Any> ?: error("Expected '$key' to be an array")
     }
@@ -236,10 +250,10 @@ internal class DeprecatedSchemaPropertyOpenAPITest {
         replaceModule(
             DefaultSchemaNamer,
             object : SchemaNamer {
-                override fun get(type: KType): String {
-                    return type.jvmErasure.simpleName ?: type.toString()
-                }
-            }
+                override fun get(
+                    type: KType,
+                ): String = type.jvmErasure.simpleName ?: type.toString()
+            },
         )
     }
 }

@@ -7,16 +7,19 @@ import kotlin.reflect.KType
 import kotlin.reflect.full.isSubtypeOf
 
 class TypeReflectionTest {
-
     @Target(AnnotationTarget.TYPE)
     annotation class TypeAnnotation
 
     open class Base
 
     open class A : Base()
+
     open class B : Base()
+
     open class BA : B()
+
     open class BB : B()
+
     open class BBA : BB()
 
     @Test
@@ -57,7 +60,9 @@ class TypeReflectionTest {
     }
 
     enum class TestEnum {
-        A, B, C
+        A,
+        B,
+        C,
     }
 
     @Test

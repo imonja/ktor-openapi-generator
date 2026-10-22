@@ -21,8 +21,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class GenericsTest {
-
-    data class TestHeaderParams(@param:HeaderParam("test param") val `Test-Header`: MutableList<Long>)
+    data class TestHeaderParams(
+        @param:HeaderParam("test param") val `Test-Header`: MutableList<Long>,
+    )
 
     @Test
     fun testTypedMap() {
@@ -40,15 +41,16 @@ class GenericsTest {
                     }
                 }
             }
-            client.post("http://localhost/" + route) {
-                header(HttpHeaders.ContentType, "application/json")
-                header(HttpHeaders.Accept, "application/json")
-                header("Test-Header", "1,2,3")
-                setBody("{\"xyz\":456}")
-            }.apply {
-                assertTrue { contentType()?.match(Application.Json) == true }
-                assertEquals(bodyAsText(), "[\"TestHeaderParams(Test-Header=[1, 2, 3])\",\"{xyz=456}\"]")
-            }
+            client
+                .post("http://localhost/" + route) {
+                    header(HttpHeaders.ContentType, "application/json")
+                    header(HttpHeaders.Accept, "application/json")
+                    header("Test-Header", "1,2,3")
+                    setBody("{\"xyz\":456}")
+                }.apply {
+                    assertTrue { contentType()?.match(Application.Json) == true }
+                    assertEquals(bodyAsText(), "[\"TestHeaderParams(Test-Header=[1, 2, 3])\",\"{xyz=456}\"]")
+                }
         }
     }
 
@@ -68,15 +70,16 @@ class GenericsTest {
                     }
                 }
             }
-            client.post("http://localhost/" + route) {
-                header(HttpHeaders.ContentType, "application/json")
-                header(HttpHeaders.Accept, "application/json")
-                header("Test-Header", "1,2,3")
-                setBody("[\"a\",\"b\",\"c\"]")
-            }.apply {
-                assertTrue { contentType()?.match(Application.Json) == true }
-                assertEquals(bodyAsText(), "[\"TestHeaderParams(Test-Header=[1, 2, 3])\",\"[a, b, c]\"]")
-            }
+            client
+                .post("http://localhost/" + route) {
+                    header(HttpHeaders.ContentType, "application/json")
+                    header(HttpHeaders.Accept, "application/json")
+                    header("Test-Header", "1,2,3")
+                    setBody("[\"a\",\"b\",\"c\"]")
+                }.apply {
+                    assertTrue { contentType()?.match(Application.Json) == true }
+                    assertEquals(bodyAsText(), "[\"TestHeaderParams(Test-Header=[1, 2, 3])\",\"[a, b, c]\"]")
+                }
         }
     }
 }

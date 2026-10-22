@@ -16,5 +16,5 @@ import com.papsign.ktor.openapigen.schema.processor.SchemaProcessorAnnotation
 @SchemaProcessorAnnotation(AllowedContentTypesProcessor::class)
 annotation class AllowedContentTypes(
     vararg val value: String,
-    val errorMessage: String = ""
+    val errorMessage: String = "",
 )

@@ -9,7 +9,10 @@ internal class PathAliasGroup {
 
     /** Suffixes [operationId] with [index] when an earlier alias in the group already uses it. */
     @Synchronized
-    fun operationId(operationId: String, index: Int): String {
+    fun operationId(
+        operationId: String,
+        index: Int,
+    ): String {
         val indices = indicesById.getOrPut(operationId) { mutableSetOf() }
         val duplicate = indices.any { it < index }
         indices.add(index)
@@ -19,4 +22,8 @@ internal class PathAliasGroup {
 
 /** Marks a route as the alias at [index] of [size] paths declared by `routes()` or `@Paths`. */
 @PublishedApi
-internal class PathAliasModule(val group: PathAliasGroup, val index: Int, val size: Int) : OpenAPIModule
+internal class PathAliasModule(
+    val group: PathAliasGroup,
+    val index: Int,
+    val size: Int,
+) : OpenAPIModule

@@ -16,5 +16,5 @@ import com.papsign.ktor.openapigen.schema.processor.SchemaProcessorAnnotation
 annotation class FileSize(
     val min: Long = 1,
     val max: Long = Long.MAX_VALUE,
-    val errorMessage: String = ""
+    val errorMessage: String = "",
 )

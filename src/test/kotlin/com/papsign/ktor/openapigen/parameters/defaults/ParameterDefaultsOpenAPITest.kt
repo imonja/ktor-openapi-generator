@@ -13,197 +13,207 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class ParameterDefaultsOpenAPITest {
+    @Test
+    fun `documents defaults alongside required path parameters`() =
+        testApplication {
+            application { configureParameterDefaults() }
+            val paths = parameterPaths()
+
+            @Suppress("UNCHECKED_CAST")
+            val mixedPath = paths["/entities/{entityId}/process"] as Map<String, Any>
+
+            @Suppress("UNCHECKED_CAST")
+            val mixedOp = mixedPath["get"] as Map<String, Any>
+
+            @Suppress("UNCHECKED_CAST")
+            val mixedParams = mixedOp["parameters"] as List<Map<String, Any>>
+
+            val limitParam = mixedParams.find { it["name"] == "limit" }
+            assertNotNull(limitParam, "Should have limit parameter")
+            assertEquals(10, (limitParam["schema"] as Map<*, *>)["default"], "limit should have default=10")
+            assertEquals(false, limitParam["required"], "limit should not be required")
+
+            val offsetParam = mixedParams.find { it["name"] == "offset" }
+            assertNotNull(offsetParam, "Should have offset parameter")
+            assertEquals(0, (offsetParam["schema"] as Map<*, *>)["default"], "offset should have default=0")
+
+            val sortParam = mixedParams.find { it["name"] == "sort" }
+            assertNotNull(sortParam, "Should have sort parameter")
+            assertEquals("asc", (sortParam["schema"] as Map<*, *>)["default"], "sort should have default='asc'")
+
+            val entityIdParam = mixedParams.find { it["name"] == "entityId" }
+            assertNotNull(entityIdParam, "Should have entityId parameter")
+            assertEquals(true, entityIdParam["required"], "entityId should be required")
+            assertEquals(false, (entityIdParam["schema"] as Map<*, *>).containsKey("default"), "entityId should not have default")
+        }
 
     @Test
-    fun `documents defaults alongside required path parameters`() = testApplication {
-        application { configureParameterDefaults() }
-        val paths = parameterPaths()
+    fun `documents query parameter defaults`() =
+        testApplication {
+            application { configureParameterDefaults() }
+            val paths = parameterPaths()
 
-        @Suppress("UNCHECKED_CAST")
-        val mixedPath = paths["/entities/{entityId}/process"] as Map<String, Any>
+            @Suppress("UNCHECKED_CAST")
+            val queryPath = paths["/search"] as Map<String, Any>
 
-        @Suppress("UNCHECKED_CAST")
-        val mixedOp = mixedPath["get"] as Map<String, Any>
+            @Suppress("UNCHECKED_CAST")
+            val queryOp = queryPath["get"] as Map<String, Any>
 
-        @Suppress("UNCHECKED_CAST")
-        val mixedParams = mixedOp["parameters"] as List<Map<String, Any>>
+            @Suppress("UNCHECKED_CAST")
+            val queryParams = queryOp["parameters"] as List<Map<String, Any>>
 
-        val limitParam = mixedParams.find { it["name"] == "limit" }
-        assertNotNull(limitParam, "Should have limit parameter")
-        assertEquals(10, (limitParam["schema"] as Map<*, *>)["default"], "limit should have default=10")
-        assertEquals(false, limitParam["required"], "limit should not be required")
+            val pageSizeParam = queryParams.find { it["name"] == "pageSize" }
+            assertNotNull(pageSizeParam)
+            assertEquals(20, (pageSizeParam["schema"] as Map<*, *>)["default"], "pageSize should have default=20")
 
-        val offsetParam = mixedParams.find { it["name"] == "offset" }
-        assertNotNull(offsetParam, "Should have offset parameter")
-        assertEquals(0, (offsetParam["schema"] as Map<*, *>)["default"], "offset should have default=0")
+            val filterParam = queryParams.find { it["name"] == "filter" }
+            assertNotNull(filterParam)
+            assertEquals("all", (filterParam["schema"] as Map<*, *>)["default"], "filter should have default='all'")
 
-        val sortParam = mixedParams.find { it["name"] == "sort" }
-        assertNotNull(sortParam, "Should have sort parameter")
-        assertEquals("asc", (sortParam["schema"] as Map<*, *>)["default"], "sort should have default='asc'")
-
-        val entityIdParam = mixedParams.find { it["name"] == "entityId" }
-        assertNotNull(entityIdParam, "Should have entityId parameter")
-        assertEquals(true, entityIdParam["required"], "entityId should be required")
-        assertEquals(false, (entityIdParam["schema"] as Map<*, *>).containsKey("default"), "entityId should not have default")
-    }
+            val archivedParam = queryParams.find { it["name"] == "includeArchived" }
+            assertNotNull(archivedParam)
+            assertEquals(false, (archivedParam["schema"] as Map<*, *>)["default"], "includeArchived should have default=false")
+        }
 
     @Test
-    fun `documents query parameter defaults`() = testApplication {
-        application { configureParameterDefaults() }
-        val paths = parameterPaths()
+    fun `documents header parameter defaults`() =
+        testApplication {
+            application { configureParameterDefaults() }
+            val paths = parameterPaths()
 
-        @Suppress("UNCHECKED_CAST")
-        val queryPath = paths["/search"] as Map<String, Any>
+            @Suppress("UNCHECKED_CAST")
+            val headerPath = paths["/headers"] as Map<String, Any>
 
-        @Suppress("UNCHECKED_CAST")
-        val queryOp = queryPath["get"] as Map<String, Any>
+            @Suppress("UNCHECKED_CAST")
+            val headerOp = headerPath["get"] as Map<String, Any>
 
-        @Suppress("UNCHECKED_CAST")
-        val queryParams = queryOp["parameters"] as List<Map<String, Any>>
+            @Suppress("UNCHECKED_CAST")
+            val headerParams = headerOp["parameters"] as List<Map<String, Any>>
 
-        val pageSizeParam = queryParams.find { it["name"] == "pageSize" }
-        assertNotNull(pageSizeParam)
-        assertEquals(20, (pageSizeParam["schema"] as Map<*, *>)["default"], "pageSize should have default=20")
+            val apiVersionParam = headerParams.find { it["name"] == "x-api-version" }
+            assertNotNull(apiVersionParam)
+            assertEquals("v1", (apiVersionParam["schema"] as Map<*, *>)["default"], "x-api-version should have default='v1'")
+            assertEquals("header", apiVersionParam["in"], "Should be header parameter")
 
-        val filterParam = queryParams.find { it["name"] == "filter" }
-        assertNotNull(filterParam)
-        assertEquals("all", (filterParam["schema"] as Map<*, *>)["default"], "filter should have default='all'")
-
-        val archivedParam = queryParams.find { it["name"] == "includeArchived" }
-        assertNotNull(archivedParam)
-        assertEquals(false, (archivedParam["schema"] as Map<*, *>)["default"], "includeArchived should have default=false")
-    }
-
-    @Test
-    fun `documents header parameter defaults`() = testApplication {
-        application { configureParameterDefaults() }
-        val paths = parameterPaths()
-
-        @Suppress("UNCHECKED_CAST")
-        val headerPath = paths["/headers"] as Map<String, Any>
-
-        @Suppress("UNCHECKED_CAST")
-        val headerOp = headerPath["get"] as Map<String, Any>
-
-        @Suppress("UNCHECKED_CAST")
-        val headerParams = headerOp["parameters"] as List<Map<String, Any>>
-
-        val apiVersionParam = headerParams.find { it["name"] == "x-api-version" }
-        assertNotNull(apiVersionParam)
-        assertEquals("v1", (apiVersionParam["schema"] as Map<*, *>)["default"], "x-api-version should have default='v1'")
-        assertEquals("header", apiVersionParam["in"], "Should be header parameter")
-
-        val timeoutParam = headerParams.find { it["name"] == "x-timeout" }
-        assertNotNull(timeoutParam)
-        assertEquals(30, (timeoutParam["schema"] as Map<*, *>)["default"], "x-timeout should have default=30")
-        assertEquals("header", timeoutParam["in"], "Should be header parameter")
-    }
+            val timeoutParam = headerParams.find { it["name"] == "x-timeout" }
+            assertNotNull(timeoutParam)
+            assertEquals(30, (timeoutParam["schema"] as Map<*, *>)["default"], "x-timeout should have default=30")
+            assertEquals("header", timeoutParam["in"], "Should be header parameter")
+        }
 
     @Test
-    fun `documents defaults with mixed nullability`() = testApplication {
-        application { configureParameterDefaults() }
-        val paths = parameterPaths()
+    fun `documents defaults with mixed nullability`() =
+        testApplication {
+            application { configureParameterDefaults() }
+            val paths = parameterPaths()
 
-        @Suppress("UNCHECKED_CAST")
-        val mixedNullPath = paths["/mixed"] as Map<String, Any>
+            @Suppress("UNCHECKED_CAST")
+            val mixedNullPath = paths["/mixed"] as Map<String, Any>
 
-        @Suppress("UNCHECKED_CAST")
-        val mixedNullOp = mixedNullPath["get"] as Map<String, Any>
+            @Suppress("UNCHECKED_CAST")
+            val mixedNullOp = mixedNullPath["get"] as Map<String, Any>
 
-        @Suppress("UNCHECKED_CAST")
-        val mixedNullParams = mixedNullOp["parameters"] as List<Map<String, Any>>
+            @Suppress("UNCHECKED_CAST")
+            val mixedNullParams = mixedNullOp["parameters"] as List<Map<String, Any>>
 
-        val nonNullParam = mixedNullParams.find { it["name"] == "nonNullableDefault" }
-        assertNotNull(nonNullParam)
-        assertEquals(42, (nonNullParam["schema"] as Map<*, *>)["default"], "nonNullableDefault should have default=42")
+            val nonNullParam = mixedNullParams.find { it["name"] == "nonNullableDefault" }
+            assertNotNull(nonNullParam)
+            assertEquals(42, (nonNullParam["schema"] as Map<*, *>)["default"], "nonNullableDefault should have default=42")
 
-        val nullableDefaultParam = mixedNullParams.find { it["name"] == "nullableDefault" }
-        assertNotNull(nullableDefaultParam)
-        assertEquals(100, (nullableDefaultParam["schema"] as Map<*, *>)["default"], "nullableDefault should have default=100")
+            val nullableDefaultParam = mixedNullParams.find { it["name"] == "nullableDefault" }
+            assertNotNull(nullableDefaultParam)
+            assertEquals(100, (nullableDefaultParam["schema"] as Map<*, *>)["default"], "nullableDefault should have default=100")
 
-        val nullableNoDefaultParam = mixedNullParams.find { it["name"] == "nullableNoDefault" }
-        assertNotNull(nullableNoDefaultParam)
-        assertEquals(false, (nullableNoDefaultParam["schema"] as Map<*, *>).containsKey("default"), "nullableNoDefault should not have default")
-        assertEquals(false, nullableNoDefaultParam["required"], "nullableNoDefault should not be required")
-    }
-
-    @Test
-    fun `documents primitive parameter defaults`() = testApplication {
-        application { configureParameterDefaults() }
-        val paths = parameterPaths()
-
-        @Suppress("UNCHECKED_CAST")
-        val primitivePath = paths["/primitives"] as Map<String, Any>
-
-        @Suppress("UNCHECKED_CAST")
-        val primitiveOp = primitivePath["get"] as Map<String, Any>
-
-        @Suppress("UNCHECKED_CAST")
-        val primitiveParams = primitiveOp["parameters"] as List<Map<String, Any>>
-
-        val stringDefaultParam = primitiveParams.find { it["name"] == "stringDefault" }
-        assertNotNull(stringDefaultParam)
-        assertEquals("default-text", (stringDefaultParam["schema"] as Map<*, *>)["default"], "stringDefault should have default='default-text'")
-
-        val boolDefaultParam = primitiveParams.find { it["name"] == "boolDefault" }
-        assertNotNull(boolDefaultParam)
-        assertEquals(true, (boolDefaultParam["schema"] as Map<*, *>)["default"], "boolDefault should have default=true")
-
-        val doubleDefaultParam = primitiveParams.find { it["name"] == "doubleDefault" }
-        assertNotNull(doubleDefaultParam)
-        assertEquals(3.14, (doubleDefaultParam["schema"] as Map<*, *>)["default"], "doubleDefault should have default=3.14")
-    }
+            val nullableNoDefaultParam = mixedNullParams.find { it["name"] == "nullableNoDefault" }
+            assertNotNull(nullableNoDefaultParam)
+            assertEquals(false, (nullableNoDefaultParam["schema"] as Map<*, *>).containsKey("default"), "nullableNoDefault should not have default")
+            assertEquals(false, nullableNoDefaultParam["required"], "nullableNoDefault should not be required")
+        }
 
     @Test
-    fun `documents UUID parameter defaults`() = testApplication {
-        application { configureParameterDefaults() }
-        val paths = parameterPaths()
+    fun `documents primitive parameter defaults`() =
+        testApplication {
+            application { configureParameterDefaults() }
+            val paths = parameterPaths()
 
-        @Suppress("UNCHECKED_CAST")
-        val uuidPath = paths["/entities/{entityId}/uuid-test"] as Map<String, Any>
+            @Suppress("UNCHECKED_CAST")
+            val primitivePath = paths["/primitives"] as Map<String, Any>
 
-        @Suppress("UNCHECKED_CAST")
-        val uuidOp = uuidPath["get"] as Map<String, Any>
+            @Suppress("UNCHECKED_CAST")
+            val primitiveOp = primitivePath["get"] as Map<String, Any>
 
-        @Suppress("UNCHECKED_CAST")
-        val uuidParams = uuidOp["parameters"] as List<Map<String, Any>>
+            @Suppress("UNCHECKED_CAST")
+            val primitiveParams = primitiveOp["parameters"] as List<Map<String, Any>>
 
-        val optionalIdParam = uuidParams.find { it["name"] == "optionalId" }
-        assertNotNull(optionalIdParam)
-        assertEquals("12345678-1234-1234-1234-123456789012", (optionalIdParam["schema"] as Map<*, *>)["default"], "optionalId should have UUID default")
+            val stringDefaultParam = primitiveParams.find { it["name"] == "stringDefault" }
+            assertNotNull(stringDefaultParam)
+            assertEquals("default-text", (stringDefaultParam["schema"] as Map<*, *>)["default"], "stringDefault should have default='default-text'")
 
-        val uuidEntityIdParam = uuidParams.find { it["name"] == "entityId" }
-        assertNotNull(uuidEntityIdParam)
-        assertEquals(true, uuidEntityIdParam["required"], "entityId should be required")
-    }
+            val boolDefaultParam = primitiveParams.find { it["name"] == "boolDefault" }
+            assertNotNull(boolDefaultParam)
+            assertEquals(true, (boolDefaultParam["schema"] as Map<*, *>)["default"], "boolDefault should have default=true")
+
+            val doubleDefaultParam = primitiveParams.find { it["name"] == "doubleDefault" }
+            assertNotNull(doubleDefaultParam)
+            assertEquals(3.14, (doubleDefaultParam["schema"] as Map<*, *>)["default"], "doubleDefault should have default=3.14")
+        }
 
     @Test
-    fun `documents an all-optional parameter group`() = testApplication {
-        application { configureParameterDefaults() }
-        val paths = parameterPaths()
+    fun `documents UUID parameter defaults`() =
+        testApplication {
+            application { configureParameterDefaults() }
+            val paths = parameterPaths()
 
-        @Suppress("UNCHECKED_CAST")
-        val allOptionalPath = paths["/all-optional"] as Map<String, Any>
+            @Suppress("UNCHECKED_CAST")
+            val uuidPath = paths["/entities/{entityId}/uuid-test"] as Map<String, Any>
 
-        @Suppress("UNCHECKED_CAST")
-        val allOptionalOp = allOptionalPath["get"] as Map<String, Any>
+            @Suppress("UNCHECKED_CAST")
+            val uuidOp = uuidPath["get"] as Map<String, Any>
 
-        @Suppress("UNCHECKED_CAST")
-        val allOptionalParams = allOptionalOp["parameters"] as List<Map<String, Any>>
+            @Suppress("UNCHECKED_CAST")
+            val uuidParams = uuidOp["parameters"] as List<Map<String, Any>>
 
-        val pageParam = allOptionalParams.find { it["name"] == "page" }
-        assertNotNull(pageParam)
-        assertEquals(1, (pageParam["schema"] as Map<*, *>)["default"], "page should have default=1")
-        assertEquals(false, pageParam["required"], "page should not be required")
+            val optionalIdParam = uuidParams.find { it["name"] == "optionalId" }
+            assertNotNull(optionalIdParam)
+            assertEquals(
+                "12345678-1234-1234-1234-123456789012",
+                (optionalIdParam["schema"] as Map<*, *>)["default"],
+                "optionalId should have UUID default",
+            )
 
-        val sizeParam = allOptionalParams.find { it["name"] == "size" }
-        assertNotNull(sizeParam)
-        assertEquals(10, (sizeParam["schema"] as Map<*, *>)["default"], "size should have default=10")
+            val uuidEntityIdParam = uuidParams.find { it["name"] == "entityId" }
+            assertNotNull(uuidEntityIdParam)
+            assertEquals(true, uuidEntityIdParam["required"], "entityId should be required")
+        }
 
-        val directionParam = allOptionalParams.find { it["name"] == "direction" }
-        assertNotNull(directionParam)
-        assertEquals("asc", (directionParam["schema"] as Map<*, *>)["default"], "direction should have default='asc'")
-    }
+    @Test
+    fun `documents an all-optional parameter group`() =
+        testApplication {
+            application { configureParameterDefaults() }
+            val paths = parameterPaths()
+
+            @Suppress("UNCHECKED_CAST")
+            val allOptionalPath = paths["/all-optional"] as Map<String, Any>
+
+            @Suppress("UNCHECKED_CAST")
+            val allOptionalOp = allOptionalPath["get"] as Map<String, Any>
+
+            @Suppress("UNCHECKED_CAST")
+            val allOptionalParams = allOptionalOp["parameters"] as List<Map<String, Any>>
+
+            val pageParam = allOptionalParams.find { it["name"] == "page" }
+            assertNotNull(pageParam)
+            assertEquals(1, (pageParam["schema"] as Map<*, *>)["default"], "page should have default=1")
+            assertEquals(false, pageParam["required"], "page should not be required")
+
+            val sizeParam = allOptionalParams.find { it["name"] == "size" }
+            assertNotNull(sizeParam)
+            assertEquals(10, (sizeParam["schema"] as Map<*, *>)["default"], "size should have default=10")
+
+            val directionParam = allOptionalParams.find { it["name"] == "direction" }
+            assertNotNull(directionParam)
+            assertEquals("asc", (directionParam["schema"] as Map<*, *>)["default"], "direction should have default='asc'")
+        }
 
     private suspend fun ApplicationTestBuilder.parameterPaths(): Map<String, Any> {
         val client = createClient {

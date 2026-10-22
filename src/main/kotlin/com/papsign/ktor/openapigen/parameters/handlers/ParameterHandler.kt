@@ -5,5 +5,8 @@ import io.ktor.http.Headers
 import io.ktor.http.Parameters
 
 interface ParameterHandler<T> : ParameterProvider {
-    fun parse(parameters: Parameters, headers: Headers): T
+    fun parse(
+        parameters: Parameters,
+        headers: Headers,
+    ): T
 }

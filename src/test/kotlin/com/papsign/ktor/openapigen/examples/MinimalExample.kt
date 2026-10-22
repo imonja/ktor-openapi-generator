@@ -71,19 +71,33 @@ fun Application.minimalExample() {
 }
 
 @BinaryResponse(contentTypes = ["application/pdf"])
-data class DokumentResponsDTO(val stream: InputStream)
+data class DokumentResponsDTO(
+    val stream: InputStream,
+)
 
-data class SomeParams(@param:PathParam("who to say hello") val name: String)
-data class SomeRequest(val foo: String)
-data class SomeResponse(val bar: String)
+data class SomeParams(
+    @param:PathParam("who to say hello") val name: String,
+)
+
+data class SomeRequest(
+    val foo: String,
+)
+
+data class SomeResponse(
+    val bar: String,
+)
 
 enum class SomeSimpleEnum {
-    A, B, C
+    A,
+    B,
+    C,
 }
 
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
 enum class SomeComplexEnum(
-    @param:JsonProperty("proppen") val variable: String
+    @param:JsonProperty("proppen") val variable: String,
 ) {
-    A("a"), B("b"), C("c")
+    A("a"),
+    B("b"),
+    C("c"),
 }

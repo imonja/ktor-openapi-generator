@@ -48,19 +48,28 @@ import kotlin.reflect.full.withNullability
 import kotlin.reflect.jvm.jvmErasure
 
 object MultipartFormDataContentProvider : BodyParser, OpenAPIGenModuleExtension {
+    override fun <T : Any> getParseableContentTypes(
+        type: KType,
+    ): List<ContentType> = listOf(ContentType.MultiPart.FormData)
 
-    override fun <T : Any> getParseableContentTypes(type: KType): List<ContentType> {
-        return listOf(ContentType.MultiPart.FormData)
-    }
+    data class MultipartCVT<T>(
+        val default: T?,
+        val type: KType,
+        val clazz: KClass<*>,
+        val serializer: (T) -> String,
+        val parser: (String) -> T,
+    )
 
-    data class MultipartCVT<T>(val default: T?, val type: KType, val clazz: KClass<*>, val serializer: (T) -> String, val parser: (String) -> T)
-
-    inline fun <reified T> cvt(noinline serializer: (T) -> String, noinline parser: (String) -> T, default: T? = null) = MultipartCVT(
+    inline fun <reified T> cvt(
+        noinline serializer: (T) -> String,
+        noinline parser: (String) -> T,
+        default: T? = null,
+    ) = MultipartCVT(
         default,
         getKType<T>(),
         T::class,
         serializer,
-        parser
+        parser,
     )
 
     private val streamTypes = setOf(
@@ -69,7 +78,7 @@ object MultipartFormDataContentProvider : BodyParser, OpenAPIGenModuleExtension 
         getKType<NamedFileInputStream>(),
         getKType<InputStream?>(),
         getKType<ContentInputStream?>(),
-        getKType<NamedFileInputStream?>()
+        getKType<NamedFileInputStream?>(),
     )
 
     private val conversions = setOf(
@@ -79,12 +88,12 @@ object MultipartFormDataContentProvider : BodyParser, OpenAPIGenModuleExtension 
         cvt(Float::toString, String::toFloat, .0f),
         cvt(Double::toString, String::toDouble, .0),
         cvt(Instant::toString, Instant::parse),
-        cvt(Boolean::toString, String::toBoolean, false)
+        cvt(Boolean::toString, String::toBoolean, false),
     )
 
     private val conversionsByType = conversions.associateBy { it.type.withNullability(false) } + conversions.associateBy {
         it.type.withNullability(
-            true
+            true,
         )
     }
 
@@ -94,25 +103,37 @@ object MultipartFormDataContentProvider : BodyParser, OpenAPIGenModuleExtension 
 
     private val typeContentTypes = HashMap<KType, Map<String, MediaTypeEncodingModel>>()
 
-    private class FileConstraints(val size: FileSize?, val contentTypes: AllowedContentTypes?)
+    private class FileConstraints(
+        val size: FileSize?,
+        val contentTypes: AllowedContentTypes?,
+    )
 
     private val fileConstraintsByClass = ConcurrentHashMap<KClass<*>, Map<String, FileConstraints>>()
 
     /** Keyed by part name; only parts with file annotations are present. */
-    private fun fileConstraints(clazz: KClass<*>): Map<String, FileConstraints> = fileConstraintsByClass.getOrPut(clazz) {
-        val properties = clazz.memberProperties.associateBy { it.name }
-        clazz.primaryConstructor?.parameters.orEmpty().mapNotNull { param ->
-            val property = properties[param.name] ?: return@mapNotNull null
-            val constraints = FileConstraints(property.findAnnotation(), property.findAnnotation())
-            if (constraints.size == null && constraints.contentTypes == null) {
-                null
-            } else {
-                (param.openAPIName ?: return@mapNotNull null) to constraints
-            }
-        }.toMap()
-    }
+    private fun fileConstraints(
+        clazz: KClass<*>,
+    ): Map<String, FileConstraints> =
+        fileConstraintsByClass.getOrPut(clazz) {
+            val properties = clazz.memberProperties.associateBy { it.name }
+            clazz.primaryConstructor
+                ?.parameters
+                .orEmpty()
+                .mapNotNull { param ->
+                    val property = properties[param.name] ?: return@mapNotNull null
+                    val constraints = FileConstraints(property.findAnnotation(), property.findAnnotation())
+                    if (constraints.size == null && constraints.contentTypes == null) {
+                        null
+                    } else {
+                        (param.openAPIName ?: return@mapNotNull null) to constraints
+                    }
+                }.toMap()
+        }
 
-    override suspend fun <T : Any> parseBody(clazz: KType, request: RoutingContext): T {
+    override suspend fun <T : Any> parseBody(
+        clazz: KType,
+        request: RoutingContext,
+    ): T {
         @Suppress("UNCHECKED_CAST")
         val ctor = (clazz.classifier as KClass<T>).primaryConstructor!!
         val names = ctor.parameters.mapNotNullTo(HashSet()) { it.openAPIName }
@@ -130,14 +151,17 @@ object MultipartFormDataContentProvider : BodyParser, OpenAPIGenModuleExtension 
                             is PartData.FormItem -> {
                                 objectMap[name] = it.value
                             }
+
                             is PartData.FileItem -> {
                                 val channel = it.provider()
                                 objectMap[name] = receiveStream(request, it, constraints[name]) { buffer -> channel.readAvailable(buffer) }
                             }
+
                             is PartData.BinaryItem -> {
                                 val stream = it.provider().asStream()
                                 objectMap[name] = receiveStream(request, it, constraints[name]) { buffer -> stream.read(buffer) }
                             }
+
                             else -> {}
                         }
                     }
@@ -152,21 +176,36 @@ object MultipartFormDataContentProvider : BodyParser, OpenAPIGenModuleExtension 
             val name = param.openAPIName ?: param.name.orEmpty()
             val value = objectMap[name]?.let { convert(param, name, it) }
             when {
-                value != null -> args[param] = value
+                value != null -> {
+                    args[param] = value
+                }
+
                 param.isOptional -> {}
-                param.type.isMarkedNullable -> args[param] = null
-                else -> throw OpenAPIRequiredFieldException("The field $name is required")
+
+                param.type.isMarkedNullable -> {
+                    args[param] = null
+                }
+
+                else -> {
+                    throw OpenAPIRequiredFieldException("The field $name is required")
+                }
             }
         }
         return ctor.callBy(args)
     }
 
-    private fun convert(param: KParameter, name: String, raw: Any): Any? {
+    private fun convert(
+        param: KParameter,
+        name: String,
+        raw: Any,
+    ): Any? {
         if (param.type in streamTypes) {
             return when {
                 raw is InputStream -> raw
+
                 // Forms send an empty text part for an optional file that was not chosen.
                 raw == "" && param.type.isMarkedNullable -> null
+
                 else -> throw BadRequestException("The field $name must be a file part")
             }
         }
@@ -186,7 +225,12 @@ object MultipartFormDataContentProvider : BodyParser, OpenAPIGenModuleExtension 
      * Reads a stream part completely while it is still readable: Ktor disposes a part once the next one is requested,
      * and the parser cannot move past an unread part. [FileSize] stops reading one byte past its maximum.
      */
-    private suspend fun receiveStream(request: RoutingContext, part: PartData, constraints: FileConstraints?, read: suspend (buffer: ByteArray) -> Int): ContentInputStream {
+    private suspend fun receiveStream(
+        request: RoutingContext,
+        part: PartData,
+        constraints: FileConstraints?,
+        read: suspend (buffer: ByteArray) -> Int,
+    ): ContentInputStream {
         try {
             constraints?.contentTypes?.let { allowed ->
                 val actual = part.contentType
@@ -210,7 +254,11 @@ object MultipartFormDataContentProvider : BodyParser, OpenAPIGenModuleExtension 
         }
     }
 
-    private suspend fun spool(resources: CallResources, limit: Long, read: suspend (buffer: ByteArray) -> Int): Pair<Long, InputStream> {
+    private suspend fun spool(
+        resources: CallResources,
+        limit: Long,
+        read: suspend (buffer: ByteArray) -> Int,
+    ): Pair<Long, InputStream> {
         val memory = ByteArrayOutputStream()
         val buffer = ByteArray(8 * 1024)
         var file: Path? = null
@@ -248,7 +296,9 @@ object MultipartFormDataContentProvider : BodyParser, OpenAPIGenModuleExtension 
     private val contentTypeStreamTypes = setOf(getKType<ContentInputStream>(), getKType<NamedFileInputStream>())
 
     /** A misplaced file annotation would silently skip validation, so it fails route registration instead. */
-    private fun checkFileAnnotations(clazz: KClass<*>) {
+    private fun checkFileAnnotations(
+        clazz: KClass<*>,
+    ) {
         clazz.memberProperties.forEach { property ->
             val name = "${clazz.simpleName}.${property.name}"
             val type = property.returnType.withNullability(false)
@@ -281,10 +331,13 @@ object MultipartFormDataContentProvider : BodyParser, OpenAPIGenModuleExtension 
         apiGen: OpenAPIGen,
         provider: ModuleProvider<*>,
         example: T?,
-        usage: ContentTypeProvider.Usage
+        usage: ContentTypeProvider.Usage,
     ): Map<ContentType, MediaTypeModel<T>>? {
         if (type == unitKType) return null
-        val formContentType = type.jvmErasure.findAnnotation<FormDataRequest>()?.type?.contentType ?: return null
+        val formContentType = type.jvmErasure
+            .findAnnotation<FormDataRequest>()
+            ?.type
+            ?.contentType ?: return null
         val ctor = type.jvmErasure.primaryConstructor
         when (usage) {
             ContentTypeProvider.Usage.PARSE -> {
@@ -296,6 +349,7 @@ object MultipartFormDataContentProvider : BodyParser, OpenAPIGenModuleExtension 
                 }
                 checkFileAnnotations(type.jvmErasure)
             }
+
             ContentTypeProvider.Usage.SERIALIZE -> {
                 assertContent(allowedTypes.containsAll(ctor!!.parameters.map { it.type.withNullability(false) })) {
                     "${this::class.simpleName} only supports DTOs containing following types: ${allowedTypes.joinToString()}"
@@ -304,20 +358,20 @@ object MultipartFormDataContentProvider : BodyParser, OpenAPIGenModuleExtension 
         }
 
         val contentTypes = synchronized(typeContentTypes) {
-            typeContentTypes.getOrPut(type) {
-                type.jvmErasure.memberProperties
-                    .associateBy { it.name }
-                    .mapValues { (name, property) ->
-                        val encoding = property.findAnnotation<PartEncoding>()
-                        val allowed = property.findAnnotation<AllowedContentTypes>()
-                        assertContent(encoding == null || allowed == null) {
-                            "${type.jvmErasure.simpleName}.$name: ${PartEncoding::class.simpleName} and ${AllowedContentTypes::class.simpleName} cannot be combined"
-                        }
-                        encoding?.contentType ?: allowed?.value?.joinToString(", ")
-                    }
-                    .filterValues { it != null }
-                    .mapValues { MediaTypeEncodingModel(it.value!!) }
-            }.toMap()
+            typeContentTypes
+                .getOrPut(type) {
+                    type.jvmErasure.memberProperties
+                        .associateBy { it.name }
+                        .mapValues { (name, property) ->
+                            val encoding = property.findAnnotation<PartEncoding>()
+                            val allowed = property.findAnnotation<AllowedContentTypes>()
+                            assertContent(encoding == null || allowed == null) {
+                                "${type.jvmErasure.simpleName}.$name: ${PartEncoding::class.simpleName} and ${AllowedContentTypes::class.simpleName} cannot be combined"
+                            }
+                            encoding?.contentType ?: allowed?.value?.joinToString(", ")
+                        }.filterValues { it != null }
+                        .mapValues { MediaTypeEncodingModel(it.value!!) }
+                }.toMap()
         }
         val schemaBuilder = provider.ofType<FinalSchemaBuilderProviderModule>().last().provide(apiGen, provider)
         @Suppress("UNCHECKED_CAST")

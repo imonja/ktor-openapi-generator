@@ -11,7 +11,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class LibraryVersionCheckTest {
-
     @Test
     fun `no warning when versions match or library is not a module`() {
         assertNull(LibraryVersionCheck.mismatchWarning("0.4.0", "0.4.0"))
@@ -33,7 +32,9 @@ class LibraryVersionCheckTest {
     }
 
     @Test
-    fun `runner is found in jars and class directories`(@TempDir dir: File) {
+    fun `runner is found in jars and class directories`(
+        @TempDir dir: File,
+    ) {
         val runnerPath = "com/papsign/ktor/openapigen/spec/GenerateSpecMain.class"
         val jar = File(dir, "library.jar")
         ZipOutputStream(jar.outputStream()).use { it.putNextEntry(ZipEntry(runnerPath)) }

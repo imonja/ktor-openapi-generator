@@ -9,7 +9,9 @@ import org.gradle.jvm.toolchain.JavaToolchainService
 import java.util.Properties
 
 class KtorOpenApiPlugin : Plugin<Project> {
-    override fun apply(project: Project) {
+    override fun apply(
+        project: Project,
+    ) {
         val extension = project.extensions.create("ktorOpenApi", KtorOpenApiExtension::class.java).apply {
             outputFile.convention(project.layout.projectDirectory.file("src/main/resources/openapi/openapi.json"))
             generateOnBuild.convention(false)
@@ -19,7 +21,10 @@ class KtorOpenApiPlugin : Plugin<Project> {
         project.pluginManager.withPlugin("java") { configure(project, extension) }
     }
 
-    private fun configure(project: Project, extension: KtorOpenApiExtension) {
+    private fun configure(
+        project: Project,
+        extension: KtorOpenApiExtension,
+    ) {
         val pluginVersion = pluginVersion()
         val dependencies = project.dependencies
         project.configurations.named("implementation") {
@@ -30,7 +35,7 @@ class KtorOpenApiPlugin : Plugin<Project> {
                     } else {
                         emptyList()
                     }
-                }
+                },
             )
         }
 
@@ -72,7 +77,8 @@ class KtorOpenApiPlugin : Plugin<Project> {
 
     private fun pluginVersion(): String {
         val properties = Properties()
-        KtorOpenApiPlugin::class.java.classLoader.getResourceAsStream("ktor-openapi-gradle-plugin.properties")
+        KtorOpenApiPlugin::class.java.classLoader
+            .getResourceAsStream("ktor-openapi-gradle-plugin.properties")
             ?.use { properties.load(it) }
             ?: error("ktor-openapi-gradle-plugin.properties is missing from the plugin jar")
         return properties.getProperty("version")
