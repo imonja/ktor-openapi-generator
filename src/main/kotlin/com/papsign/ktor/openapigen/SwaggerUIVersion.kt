@@ -3,7 +3,6 @@ package com.papsign.ktor.openapigen
 import java.util.Properties
 
 object SwaggerUIVersion {
-
     private val log = classLogger()
 
     val version: String =
@@ -15,7 +14,10 @@ object SwaggerUIVersion {
                     ?: error("Swagger UI version is missing: neither the WebJar metadata nor swagger-ui.properties is on the classpath")
             }
 
-    private fun readVersion(resource: String): String? = this::class.java.getResourceAsStream(resource)?.use { stream ->
-        Properties().apply { load(stream) }.getProperty("version")
-    }
+    private fun readVersion(
+        resource: String,
+    ): String? =
+        this::class.java.getResourceAsStream(resource)?.use { stream ->
+            Properties().apply { load(stream) }.getProperty("version")
+        }
 }

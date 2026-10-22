@@ -64,9 +64,13 @@ abstract class AbstractOpenApiSpecTask : DefaultTask() {
     @get:Inject
     protected abstract val execOperations: ExecOperations
 
-    protected fun generate(target: File) {
+    protected fun generate(
+        target: File,
+    ) {
         if (!module.isPresent) {
-            throw GradleException("ktorOpenApi.module is not set. Point it at the Ktor module that installs OpenAPIGen, e.g. com.example.OpenApiModuleKt.openApiModule")
+            throw GradleException(
+                "ktorOpenApi.module is not set. Point it at the Ktor module that installs OpenAPIGen, e.g. com.example.OpenApiModuleKt.openApiModule",
+            )
         }
         val libraryVersion = LibraryVersionCheck.resolvedVersion(resolvedDependencies.get())
         LibraryVersionCheck.mismatchWarning(libraryVersion, pluginVersion.get())?.let { logger.warn("Warning: $it") }
@@ -75,7 +79,9 @@ abstract class AbstractOpenApiSpecTask : DefaultTask() {
         }
 
         val result = execOperations.javaexec {
-            executable = javaLauncher.get().executablePath.asFile.absolutePath
+            executable = javaLauncher
+                .get()
+                .executablePath.asFile.absolutePath
             classpath = runtimeClasspath
             mainClass.set(LibraryVersionCheck.RUNNER_MAIN_CLASS)
             args("--module", module.get(), "--output", target.absolutePath)

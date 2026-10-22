@@ -5,56 +5,77 @@ import com.papsign.ktor.openapigen.model.Described
 import java.util.*
 import kotlin.reflect.KProperty
 
-class FlowsModel<TScope> : MutableMap<String, FlowsModel.FlowModel<TScope>> by LinkedHashMap<String, FlowModel<TScope>>()
-        where TScope : Enum<TScope>, TScope : Described {
-
+class FlowsModel<TScope> :
+    MutableMap<String, FlowsModel.FlowModel<TScope>> by LinkedHashMap<String, FlowModel<TScope>>()
+    where TScope : Enum<TScope>, TScope : Described {
     private var implicit: FlowModel<TScope>? by this
     private var password: FlowModel<TScope>? by this
     private var clientCredentials: FlowModel<TScope>? by this
     private var authorizationCode: FlowModel<TScope>? by this
 
-    fun implicit(scopes: Iterable<TScope>, authorizationUrl: String, refreshUrl: String? = null): FlowsModel<TScope> {
+    fun implicit(
+        scopes: Iterable<TScope>,
+        authorizationUrl: String,
+        refreshUrl: String? = null,
+    ): FlowsModel<TScope> {
         implicit =
             FlowModel.implicit(
                 scopes,
                 authorizationUrl,
-                refreshUrl
+                refreshUrl,
             )
         return this
     }
 
-    fun password(scopes: Iterable<TScope>, tokenUrl: String, refreshUrl: String? = null): FlowsModel<TScope> {
+    fun password(
+        scopes: Iterable<TScope>,
+        tokenUrl: String,
+        refreshUrl: String? = null,
+    ): FlowsModel<TScope> {
         password =
             FlowModel.password(
                 scopes,
                 tokenUrl,
-                refreshUrl
+                refreshUrl,
             )
         return this
     }
 
-    fun clientCredentials(scopes: Iterable<TScope>, tokenUrl: String, refreshUrl: String? = null): FlowsModel<TScope> {
+    fun clientCredentials(
+        scopes: Iterable<TScope>,
+        tokenUrl: String,
+        refreshUrl: String? = null,
+    ): FlowsModel<TScope> {
         clientCredentials =
             FlowModel.clientCredentials(
                 scopes,
                 tokenUrl,
-                refreshUrl
+                refreshUrl,
             )
         return this
     }
 
-    fun authorizationCode(scopes: Iterable<TScope>, authorizationUrl: String, tokenUrl: String, refreshUrl: String? = null): FlowsModel<TScope> {
+    fun authorizationCode(
+        scopes: Iterable<TScope>,
+        authorizationUrl: String,
+        tokenUrl: String,
+        refreshUrl: String? = null,
+    ): FlowsModel<TScope> {
         authorizationCode =
             FlowModel.authorizationCode(
                 scopes,
                 authorizationUrl,
                 tokenUrl,
-                refreshUrl
+                refreshUrl,
             )
         return this
     }
 
-    private operator fun setValue(any: Any, property: KProperty<*>, any1: FlowModel<TScope>?) {
+    private operator fun setValue(
+        any: Any,
+        property: KProperty<*>,
+        any1: FlowModel<TScope>?,
+    ) {
         if (any1 == null) {
             this.remove(property.name)
         } else {
@@ -62,9 +83,10 @@ class FlowsModel<TScope> : MutableMap<String, FlowsModel.FlowModel<TScope>> by L
         }
     }
 
-    private operator fun getValue(any: Any, property: KProperty<*>): FlowModel<TScope>? {
-        return this[property.name]
-    }
+    private operator fun getValue(
+        any: Any,
+        property: KProperty<*>,
+    ): FlowModel<TScope>? = this[property.name]
 
     companion object {
         private val IMPLICIT = "implicit"
@@ -74,61 +96,77 @@ class FlowsModel<TScope> : MutableMap<String, FlowsModel.FlowModel<TScope>> by L
         private val REFRESH_TOKEN = "refresh_token"
     }
 
-    enum class FlowModelType(val value: String) {
+    enum class FlowModelType(
+        val value: String,
+    ) {
         implicit(IMPLICIT),
         password(PASSWORD),
         client_credentials(CLIENT_CREDENTIALS),
         authorization_code(AUTHORIZATION_CODE),
-        refresh_token(REFRESH_TOKEN);
+        refresh_token(REFRESH_TOKEN),
     }
 
     class FlowModel<T> private constructor(
         val authorizationUrl: String? = null,
         val tokenUrl: String? = null,
         val refreshUrl: String? = null,
-        val scopes: Map<T, String>
+        val scopes: Map<T, String>,
     ) : DataModel where T : Enum<T>, T : Described {
         // `scopes` is required in every OAuth flow, so an empty map is kept as `{}` instead of being dropped.
-        override fun serialize(): Map<String, Any?> = super.serialize().toMutableMap().apply {
-            putIfAbsent("scopes", emptyMap<String, String>())
-        }
+        override fun serialize(): Map<String, Any?> =
+            super.serialize().toMutableMap().apply {
+                putIfAbsent("scopes", emptyMap<String, String>())
+            }
 
         companion object {
-            fun <T> implicit(scopes: Iterable<T>, authorizationUrl: String, refreshUrl: String? = null): FlowModel<T> where T : Enum<T>, T : Described {
-                return FlowModel(
+            fun <T> implicit(
+                scopes: Iterable<T>,
+                authorizationUrl: String,
+                refreshUrl: String? = null,
+            ): FlowModel<T> where T : Enum<T>, T : Described =
+                FlowModel(
                     authorizationUrl,
                     null,
                     refreshUrl,
-                    scopes.associateWith { it.description }
+                    scopes.associateWith { it.description },
                 )
-            }
 
-            fun <T> password(scopes: Iterable<T>, tokenUrl: String, refreshUrl: String? = null): FlowModel<T> where T : Enum<T>, T : Described {
-                return FlowModel(
+            fun <T> password(
+                scopes: Iterable<T>,
+                tokenUrl: String,
+                refreshUrl: String? = null,
+            ): FlowModel<T> where T : Enum<T>, T : Described =
+                FlowModel(
                     null,
                     tokenUrl,
                     refreshUrl,
-                    scopes.associateWith { it.description }
+                    scopes.associateWith { it.description },
                 )
-            }
 
-            fun <T> clientCredentials(scopes: Iterable<T>, tokenUrl: String, refreshUrl: String? = null): FlowModel<T> where T : Enum<T>, T : Described {
-                return FlowModel(
+            fun <T> clientCredentials(
+                scopes: Iterable<T>,
+                tokenUrl: String,
+                refreshUrl: String? = null,
+            ): FlowModel<T> where T : Enum<T>, T : Described =
+                FlowModel(
                     null,
                     tokenUrl,
                     refreshUrl,
-                    scopes.associateWith { it.description }
+                    scopes.associateWith { it.description },
                 )
-            }
 
-            fun <T> authorizationCode(scopes: Iterable<T>, authorizationUrl: String, tokenUrl: String, refreshUrl: String? = null): FlowModel<T> where T : Enum<T>, T : Described {
-                return FlowModel(
+            fun <T> authorizationCode(
+                scopes: Iterable<T>,
+                authorizationUrl: String,
+                tokenUrl: String,
+                refreshUrl: String? = null,
+            ): FlowModel<T> where T : Enum<T>, T : Described =
+                FlowModel(
                     authorizationUrl,
                     tokenUrl,
                     refreshUrl,
-                    scopes.associateWith { it.description }
+                    scopes.associateWith { it.description },
                 )
-            }
         }
     }
 }

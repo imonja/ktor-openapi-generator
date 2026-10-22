@@ -12,7 +12,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class KtorOpenApiPluginFunctionalTest {
-
     @TempDir
     lateinit var projectDir: File
 
@@ -21,7 +20,7 @@ class KtorOpenApiPluginFunctionalTest {
     private fun setUpProject(
         extension: String = "",
         dependencies: String = "",
-        module: String = API_MODULE
+        module: String = API_MODULE,
     ) {
         File(projectDir, "settings.gradle.kts").writeText("rootProject.name = \"sample\"\n")
         File(projectDir, "gradle.properties").writeText("org.gradle.jvmargs=-Xmx1g\n")
@@ -46,21 +45,29 @@ class KtorOpenApiPluginFunctionalTest {
                 module.set("sample.ApiKt.api")
                 $extension
             }
-            """.trimIndent()
+            """.trimIndent(),
         )
         File(projectDir, "src/main/kotlin/sample/Api.kt").apply { parentFile.mkdirs() }.writeText(module)
     }
 
-    private fun runner(vararg arguments: String): GradleRunner = GradleRunner.create()
-        .withGradleVersion(gradleVersion)
-        .withProjectDir(projectDir)
-        .withPluginClasspath()
-        .withArguments(*arguments, "--stacktrace", "--configuration-cache")
-        .forwardOutput()
+    private fun runner(
+        vararg arguments: String,
+    ): GradleRunner =
+        GradleRunner
+            .create()
+            .withGradleVersion(gradleVersion)
+            .withProjectDir(projectDir)
+            .withPluginClasspath()
+            .withArguments(*arguments, "--stacktrace", "--configuration-cache")
+            .forwardOutput()
 
-    private fun build(vararg arguments: String): BuildResult = runner(*arguments).build()
+    private fun build(
+        vararg arguments: String,
+    ): BuildResult = runner(*arguments).build()
 
-    private fun buildAndFail(vararg arguments: String): BuildResult = runner(*arguments).buildAndFail()
+    private fun buildAndFail(
+        vararg arguments: String,
+    ): BuildResult = runner(*arguments).buildAndFail()
 
     @Test
     fun `generates the document using the library added by the plugin`() {
@@ -89,11 +96,12 @@ class KtorOpenApiPluginFunctionalTest {
     @Test
     fun `writes to a custom output file with system properties`() {
         setUpProject(
-            extension = """
+            extension =
+                """
                 outputFile.set(layout.projectDirectory.file("docs/api.json"))
                 systemProperties.put("sample.title", "From Gradle")
-            """.trimIndent(),
-            module = API_MODULE.replace("title = \"Sample API\"", "title = System.getProperty(\"sample.title\")")
+                """.trimIndent(),
+            module = API_MODULE.replace("title = \"Sample API\"", "title = System.getProperty(\"sample.title\")"),
         )
 
         build("generateOpenApiSpec")
@@ -170,7 +178,7 @@ class KtorOpenApiPluginFunctionalTest {
         setUpProject(
             extension = "addLibraryDependency.set(false)",
             dependencies = "implementation(\"io.github.imonja:ktor-openapi-generator:0.3.3\")",
-            module = PLAIN_MODULE
+            module = PLAIN_MODULE,
         )
 
         val failure = buildAndFail("generateOpenApiSpec")

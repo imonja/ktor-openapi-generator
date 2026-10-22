@@ -5,21 +5,22 @@ import com.papsign.ktor.openapigen.parameters.util.ListToArray
 import kotlin.reflect.KType
 import kotlin.reflect.jvm.jvmErasure
 
-class ArrayConverter(type: KType) : CollectionConverter(type) {
-
+class ArrayConverter(
+    type: KType,
+) : CollectionConverter(type) {
     private val converter = ListToArray(type)
 
-    override fun transform(lst: List<Any?>): Any? {
-        return converter.cvt(lst)
-    }
+    override fun transform(
+        lst: List<Any?>,
+    ): Any? = converter.cvt(lst)
 
     companion object : ConverterSelector {
-        override fun canHandle(type: KType): Boolean {
-            return type.jvmErasure.java.isArray
-        }
+        override fun canHandle(
+            type: KType,
+        ): Boolean = type.jvmErasure.java.isArray
 
-        override fun create(type: KType): CollectionConverter {
-            return ArrayConverter(type)
-        }
+        override fun create(
+            type: KType,
+        ): CollectionConverter = ArrayConverter(type)
     }
 }

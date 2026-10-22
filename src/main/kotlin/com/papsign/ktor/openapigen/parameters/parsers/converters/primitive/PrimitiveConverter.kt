@@ -17,12 +17,14 @@ import kotlin.reflect.KType
 
 @Suppress("RemoveExplicitTypeArguments")
 object PrimitiveConverter : ConverterSelector {
-
-    private inline fun <reified T> primitive(noinline cvt: (String) -> T): Pair<KType, Converter> {
-        return getKType<T>() to object : Converter {
-            override fun convert(value: String): Any? = cvt(value)
+    private inline fun <reified T> primitive(
+        noinline cvt: (String) -> T,
+    ): Pair<KType, Converter> =
+        getKType<T>() to object : Converter {
+            override fun convert(
+                value: String,
+            ): Any? = cvt(value)
         }
-    }
 
 //    private val dateFormat = SimpleDateFormat()
 
@@ -54,7 +56,6 @@ object PrimitiveConverter : ConverterSelector {
         primitive { it.toBoolean() },
         primitive<Boolean?> { it.toBoolean() },
         // removed temporarily because behavior may not be standard or expected
-
         primitive<LocalDate> {
             LocalDate.parse(it, DateTimeFormatter.ISO_DATE)
         },
@@ -65,7 +66,6 @@ object PrimitiveConverter : ConverterSelector {
                 null
             }
         },
-
         primitive<LocalTime> {
             LocalTime.parse(it, DateTimeFormatter.ISO_LOCAL_TIME)
         },
@@ -76,7 +76,6 @@ object PrimitiveConverter : ConverterSelector {
                 null
             }
         },
-
         primitive<OffsetTime> {
             OffsetTime.parse(it, DateTimeFormatter.ISO_OFFSET_TIME)
         },
@@ -87,7 +86,6 @@ object PrimitiveConverter : ConverterSelector {
                 null
             }
         },
-
         primitive<LocalDateTime> {
             LocalDateTime.parse(it, localDateTimeFormatter)
         },
@@ -98,7 +96,6 @@ object PrimitiveConverter : ConverterSelector {
                 null
             }
         },
-
         primitive<OffsetDateTime> {
             OffsetDateTime.parse(it, offsetDateTimeFormatter)
         },
@@ -109,7 +106,6 @@ object PrimitiveConverter : ConverterSelector {
                 null
             }
         },
-
         primitive<ZonedDateTime> {
             ZonedDateTime.parse(it, zonedDateTimeFormatter)
         },
@@ -120,7 +116,6 @@ object PrimitiveConverter : ConverterSelector {
                 null
             }
         },
-
         primitive<Instant> {
             it.toLongOrNull()?.let(Instant::ofEpochMilli) ?: Instant.from(offsetDateTimeFormatter.parse(it))
         },
@@ -131,7 +126,6 @@ object PrimitiveConverter : ConverterSelector {
                 null
             }
         },
-
         primitive<UUID> {
             UUID.fromString(it)
         },
@@ -143,14 +137,14 @@ object PrimitiveConverter : ConverterSelector {
             }
         },
         primitive { it },
-        primitive<String?> { it }
+        primitive<String?> { it },
     )
 
-    override fun canHandle(type: KType): Boolean {
-        return primitiveParsers.containsKey(type)
-    }
+    override fun canHandle(
+        type: KType,
+    ): Boolean = primitiveParsers.containsKey(type)
 
-    override fun create(type: KType): Converter {
-        return primitiveParsers[type] ?: error("could not find Converter for primitive type $type")
-    }
+    override fun create(
+        type: KType,
+    ): Converter = primitiveParsers[type] ?: error("could not find Converter for primitive type $type")
 }

@@ -17,14 +17,24 @@ import java.net.URL
 class SwaggerUi(
     private val basePath: String,
     private val version: String,
-    private val openApiJsonUrl: String?
+    private val openApiJsonUrl: String?,
 ) {
     private val notFound = mutableListOf<String>()
     private val content = mutableMapOf<String, ResourceContent>()
-    suspend fun serve(filename: String?, call: ApplicationCall) {
+
+    suspend fun serve(
+        filename: String?,
+        call: ApplicationCall,
+    ) {
         when (filename) {
-            in notFound -> return
-            null -> return
+            in notFound -> {
+                return
+            }
+
+            null -> {
+                return
+            }
+
             else -> {
                 val resource = this::class.java.getResource("/META-INF/resources/webjars/swagger-ui/$version/$filename")
                 if (resource == null) {
@@ -49,17 +59,18 @@ private val contentTypes = mapOf(
     "css" to CSS,
     "js" to JavaScript,
     "json" to ContentType.Application.Json.withCharset(Charsets.UTF_8),
-    "png" to PNG
+    "png" to PNG,
 )
 
 private class ResourceContent(
     val resource: URL,
     val address: String,
-    val openApiJsonUrl: String?
+    val openApiJsonUrl: String?,
 ) : OutgoingContent.ByteArrayContent() {
     private val bytes by lazy {
         if (contentType == JavaScript) {
-            resource.readText()
+            resource
+                .readText()
                 .replace("http://localhost:3200/oauth2-redirect.html", address + "oauth2-redirect.html")
                 .let {
                     if (openApiJsonUrl != null) {
@@ -67,8 +78,7 @@ private class ResourceContent(
                     } else {
                         it
                     }
-                }
-                .toByteArray()
+                }.toByteArray()
         } else {
             resource.readBytes()
         }
@@ -84,5 +94,6 @@ private class ResourceContent(
     }
 
     override fun bytes(): ByteArray = bytes
+
     override fun toString() = "ResourceContent \"$resource\""
 }

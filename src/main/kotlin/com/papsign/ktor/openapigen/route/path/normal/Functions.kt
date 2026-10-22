@@ -23,7 +23,7 @@ import kotlin.reflect.typeOf
 inline fun <reified TParams : Any, reified TResponse : Any> NormalOpenAPIRoute.get(
     vararg modules: RouteOpenAPIModule,
     example: TResponse? = null,
-    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams) -> Unit
+    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams) -> Unit,
 ) = route(HttpMethod.Get, modules, example, body)
 
 /**
@@ -43,7 +43,7 @@ inline fun <reified TParams : Any, reified TResponse : Any, reified TRequest : A
     vararg modules: RouteOpenAPIModule,
     exampleResponse: TResponse? = null,
     exampleRequest: TRequest? = null,
-    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams, TRequest) -> Unit
+    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams, TRequest) -> Unit,
 ) = route(HttpMethod.Post, modules, exampleResponse, exampleRequest, body)
 
 /**
@@ -63,7 +63,7 @@ inline fun <reified TParams : Any, reified TResponse : Any, reified TRequest : A
     vararg modules: RouteOpenAPIModule,
     exampleResponse: TResponse? = null,
     exampleRequest: TRequest? = null,
-    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams, TRequest) -> Unit
+    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams, TRequest) -> Unit,
 ) = route(HttpMethod.Put, modules, exampleResponse, exampleRequest, body)
 
 /**
@@ -83,7 +83,7 @@ inline fun <reified TParams : Any, reified TResponse : Any, reified TRequest : A
     vararg modules: RouteOpenAPIModule,
     exampleResponse: TResponse? = null,
     exampleRequest: TRequest? = null,
-    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams, TRequest) -> Unit
+    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams, TRequest) -> Unit,
 ) = route(HttpMethod.Patch, modules, exampleResponse, exampleRequest, body)
 
 /**
@@ -100,7 +100,7 @@ inline fun <reified TParams : Any, reified TResponse : Any, reified TRequest : A
 inline fun <reified TParams : Any, reified TResponse : Any> NormalOpenAPIRoute.delete(
     vararg modules: RouteOpenAPIModule,
     example: TResponse? = null,
-    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams) -> Unit
+    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams) -> Unit,
 ) = route(HttpMethod.Delete, modules, example, body)
 
 /**
@@ -117,7 +117,7 @@ inline fun <reified TParams : Any, reified TResponse : Any> NormalOpenAPIRoute.d
 inline fun <reified TParams : Any, reified TResponse : Any> NormalOpenAPIRoute.head(
     vararg modules: RouteOpenAPIModule,
     example: TResponse? = null,
-    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams) -> Unit
+    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams) -> Unit,
 ) = route(HttpMethod.Head, modules, example, body)
 
 /**
@@ -139,9 +139,10 @@ inline fun <reified TParams : Any, reified TResponse : Any, reified TRequest : A
     modules: Array<out RouteOpenAPIModule>,
     exampleResponse: TResponse? = null,
     exampleRequest: TRequest? = null,
-    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams, TRequest) -> Unit
+    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams, TRequest) -> Unit,
 ) {
-    method(method).apply { modules.forEach { provider.registerModule(it, it::class.starProjectedType) } }
+    method(method)
+        .apply { modules.forEach { provider.registerModule(it, it::class.starProjectedType) } }
         .handle(exampleResponse, exampleRequest, body)
 }
 
@@ -150,9 +151,10 @@ inline fun <reified TParams : Any, reified TResponse : Any> NormalOpenAPIRoute.r
     method: HttpMethod,
     modules: Array<out RouteOpenAPIModule>,
     exampleResponse: TResponse? = null,
-    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams) -> Unit
+    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams) -> Unit,
 ) {
-    method(method).apply { modules.forEach { provider.registerModule(it, it::class.starProjectedType) } }
+    method(method)
+        .apply { modules.forEach { provider.registerModule(it, it::class.starProjectedType) } }
         .handle(exampleResponse, body)
 }
 
@@ -160,7 +162,7 @@ inline fun <reified TParams : Any, reified TResponse : Any> NormalOpenAPIRoute.r
 inline fun <reified TParams : Any, reified TResponse : Any, reified TRequest : Any> NormalOpenAPIRoute.handle(
     exampleResponse: TResponse? = null,
     exampleRequest: TRequest? = null,
-    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams, TRequest) -> Unit
+    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams, TRequest) -> Unit,
 ) {
     val paramsType = typeOf<TParams>()
     val responseType = typeOf<TResponse>()
@@ -173,7 +175,7 @@ inline fun <reified TParams : Any, reified TResponse : Any, reified TRequest : A
 @KtorDsl
 inline fun <reified TParams : Any, reified TResponse : Any> NormalOpenAPIRoute.handle(
     exampleResponse: TResponse? = null,
-    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams) -> Unit
+    noinline body: suspend OpenAPIPipelineResponseContext<TResponse>.(TParams) -> Unit,
 ) {
     val paramsType = typeOf<TParams>()
     val responseType = typeOf<TResponse>()

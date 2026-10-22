@@ -26,44 +26,58 @@ import kotlin.io.path.name
 import kotlin.test.assertEquals
 
 internal class MultipartSpoolTest {
+    @FormDataRequest
+    data class PlainRequest(
+        val first: NamedFileInputStream,
+        val second: NamedFileInputStream?,
+    )
 
     @FormDataRequest
-    data class PlainRequest(val first: NamedFileInputStream, val second: NamedFileInputStream?)
-
-    @FormDataRequest
-    data class LimitedRequest(@FileSize(max = 1024 * 1024) val file: NamedFileInputStream)
+    data class LimitedRequest(
+        @FileSize(max = 1024 * 1024) val file: NamedFileInputStream,
+    )
 
     private val tmpDir = Path.of(System.getProperty("java.io.tmpdir"))
 
-    private fun spooledFiles(): Int = Files.list(tmpDir).use { files ->
-        files.filter { it.name.startsWith("openapigen-multipart-") }.count().toInt()
-    }
+    private fun spooledFiles(): Int =
+        Files.list(tmpDir).use { files ->
+            files.filter { it.name.startsWith("openapigen-multipart-") }.count().toInt()
+        }
 
-    private fun content(size: Int, seed: Int) = ByteArray(size) { ((it * 31 + seed) % 251).toByte() }
+    private fun content(
+        size: Int,
+        seed: Int,
+    ) = ByteArray(size) { ((it * 31 + seed) % 251).toByte() }
 
     private fun ByteArray.sha256() = MessageDigest.getInstance("SHA-256").digest(this).joinToString("") { "%02x".format(it) }
 
-    private suspend fun HttpClient.upload(path: String, vararg files: Pair<String, ByteArray>): HttpResponse = post(path) {
-        setBody(
-            MultiPartFormDataContent(
-                formData {
-                    files.forEach { (name, bytes) ->
-                        append(
-                            name,
-                            bytes,
-                            Headers.build {
-                                append(HttpHeaders.ContentType, "application/octet-stream")
-                                append(HttpHeaders.ContentDisposition, "filename=\"$name\"")
-                            }
-                        )
-                    }
-                }
+    private suspend fun HttpClient.upload(
+        path: String,
+        vararg files: Pair<String, ByteArray>,
+    ): HttpResponse =
+        post(path) {
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        files.forEach { (name, bytes) ->
+                            append(
+                                name,
+                                bytes,
+                                Headers.build {
+                                    append(HttpHeaders.ContentType, "application/octet-stream")
+                                    append(HttpHeaders.ContentDisposition, "filename=\"$name\"")
+                                },
+                            )
+                        }
+                    },
+                ),
             )
-        )
-    }
+        }
 
     // DELETE_ON_CLOSE unlinks the file right after opening on POSIX, so only leaks are observable.
-    private fun spoolTest(block: suspend HttpClient.() -> Unit) = testApplication {
+    private fun spoolTest(
+        block: suspend HttpClient.() -> Unit,
+    ) = testApplication {
         application {
             setupBaseTestServer()
             apiRouting {
@@ -90,45 +104,50 @@ internal class MultipartSpoolTest {
     }
 
     @Test
-    fun `small unannotated files are readable in any part position`() = spoolTest {
-        val first = content(4, 1)
-        val second = content(100, 2)
-        val response = upload("/plain", "first" to first, "second" to second)
-        assertEquals(HttpStatusCode.OK, response.status, response.bodyAsText())
-        assertEquals("${first.sha256()}|${second.sha256()}", response.bodyAsText())
-    }
+    fun `small unannotated files are readable in any part position`() =
+        spoolTest {
+            val first = content(4, 1)
+            val second = content(100, 2)
+            val response = upload("/plain", "first" to first, "second" to second)
+            assertEquals(HttpStatusCode.OK, response.status, response.bodyAsText())
+            assertEquals("${first.sha256()}|${second.sha256()}", response.bodyAsText())
+        }
 
     @Test
-    fun `large unannotated files are spooled to disk`() = spoolTest {
-        val first = content(3 * 1024 * 1024, 3)
-        val second = content(400 * 1024, 4)
-        val response = upload("/plain", "first" to first, "second" to second)
-        assertEquals(HttpStatusCode.OK, response.status, response.bodyAsText())
-        assertEquals("${first.sha256()}|${second.sha256()}", response.bodyAsText())
-    }
+    fun `large unannotated files are spooled to disk`() =
+        spoolTest {
+            val first = content(3 * 1024 * 1024, 3)
+            val second = content(400 * 1024, 4)
+            val response = upload("/plain", "first" to first, "second" to second)
+            assertEquals(HttpStatusCode.OK, response.status, response.bodyAsText())
+            assertEquals("${first.sha256()}|${second.sha256()}", response.bodyAsText())
+        }
 
     @Test
-    fun `spooled files are deleted when the handler fails`() = spoolTest {
-        val response = upload("/failing", "first" to content(1024 * 1024, 5))
-        assertEquals(HttpStatusCode.BadRequest, response.status)
-    }
+    fun `spooled files are deleted when the handler fails`() =
+        spoolTest {
+            val response = upload("/failing", "first" to content(1024 * 1024, 5))
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+        }
 
     @Test
-    fun `file size limit applies to spooled files`() = spoolTest {
-        val exact = content(1024 * 1024, 6)
-        val ok = upload("/limited", "file" to exact)
-        assertEquals(HttpStatusCode.OK, ok.status, ok.bodyAsText())
-        assertEquals(exact.sha256(), ok.bodyAsText())
+    fun `file size limit applies to spooled files`() =
+        spoolTest {
+            val exact = content(1024 * 1024, 6)
+            val ok = upload("/limited", "file" to exact)
+            assertEquals(HttpStatusCode.OK, ok.status, ok.bodyAsText())
+            assertEquals(exact.sha256(), ok.bodyAsText())
 
-        val tooLarge = upload("/limited", "file" to content(1024 * 1024 + 1, 7))
-        assertEquals(HttpStatusCode.BadRequest, tooLarge.status)
-    }
+            val tooLarge = upload("/limited", "file" to content(1024 * 1024 + 1, 7))
+            assertEquals(HttpStatusCode.BadRequest, tooLarge.status)
+        }
 
     @Test
-    fun `unknown parts are ignored`() = spoolTest {
-        val first = content(10, 8)
-        val response = upload("/plain", "unknown" to content(2 * 1024 * 1024, 9), "first" to first)
-        assertEquals(HttpStatusCode.OK, response.status, response.bodyAsText())
-        assertEquals("${first.sha256()}|none", response.bodyAsText())
-    }
+    fun `unknown parts are ignored`() =
+        spoolTest {
+            val first = content(10, 8)
+            val response = upload("/plain", "unknown" to content(2 * 1024 * 1024, 9), "first" to first)
+            assertEquals(HttpStatusCode.OK, response.status, response.bodyAsText())
+            assertEquals("${first.sha256()}|none", response.bodyAsText())
+        }
 }

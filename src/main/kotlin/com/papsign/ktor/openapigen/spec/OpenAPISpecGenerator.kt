@@ -27,7 +27,6 @@ import java.nio.file.StandardCopyOption
  * The module must install [OpenAPIGen] and register all documented routes before it returns.
  */
 object OpenAPISpecGenerator {
-
     private const val STARTUP_TIMEOUT_MILLIS = 5 * 60 * 1000L
 
     /** Default mapper: pretty-printed JSON with two-space indentation and `"key": value` separators. */
@@ -37,30 +36,47 @@ object OpenAPISpecGenerator {
         .setDefaultPrettyPrinter(
             DefaultPrettyPrinter(Separators.createDefaultInstance().withObjectFieldValueSpacing(Separators.Spacing.AFTER))
                 .withObjectIndenter(DefaultIndenter("  ", "\n"))
-                .withArrayIndenter(DefaultIndenter("  ", "\n"))
-        )
-        .enable(SerializationFeature.INDENT_OUTPUT)
+                .withArrayIndenter(DefaultIndenter("  ", "\n")),
+        ).enable(SerializationFeature.INDENT_OUTPUT)
 
     /** Runs [module] and returns the OpenAPI document as JSON. */
-    fun generate(module: Application.() -> Unit, objectMapper: ObjectMapper = defaultObjectMapper): String = render(objectMapper, moduleName = null) { module(module) }
+    fun generate(
+        module: Application.() -> Unit,
+        objectMapper: ObjectMapper = defaultObjectMapper,
+    ): String = render(objectMapper, moduleName = null) { module(module) }
 
     /**
      * Runs the module referenced by [moduleFqName] (Ktor `ktor.application.modules` format, e.g.
      * `com.example.ApplicationKt.module`) and returns the OpenAPI document as JSON.
      */
-    fun generate(moduleFqName: String, objectMapper: ObjectMapper = defaultObjectMapper): String = render(objectMapper, moduleName = moduleFqName) {}
+    fun generate(
+        moduleFqName: String,
+        objectMapper: ObjectMapper = defaultObjectMapper,
+    ): String = render(objectMapper, moduleName = moduleFqName) {}
 
     /** Runs [module] and writes the OpenAPI document to [output]; an existing file is replaced only on success. */
-    fun generateTo(output: Path, module: Application.() -> Unit, objectMapper: ObjectMapper = defaultObjectMapper) {
+    fun generateTo(
+        output: Path,
+        module: Application.() -> Unit,
+        objectMapper: ObjectMapper = defaultObjectMapper,
+    ) {
         writeAtomically(output, generate(module, objectMapper))
     }
 
     /** Runs the module referenced by [moduleFqName] and writes the OpenAPI document to [output]. */
-    fun generateTo(output: Path, moduleFqName: String, objectMapper: ObjectMapper = defaultObjectMapper) {
+    fun generateTo(
+        output: Path,
+        moduleFqName: String,
+        objectMapper: ObjectMapper = defaultObjectMapper,
+    ) {
         writeAtomically(output, generate(moduleFqName, objectMapper))
     }
 
-    private fun render(objectMapper: ObjectMapper, moduleName: String?, configure: ServerConfigBuilder.() -> Unit): String {
+    private fun render(
+        objectMapper: ObjectMapper,
+        moduleName: String?,
+        configure: ServerConfigBuilder.() -> Unit,
+    ): String {
         val environment = applicationEnvironment {
             config = MapApplicationConfig().apply {
                 put("ktor.application.startupTimeoutMillis", STARTUP_TIMEOUT_MILLIS.toString())
@@ -80,14 +96,19 @@ object OpenAPISpecGenerator {
                 throw e.targetException
             }
             val openApiGen = server.application.pluginOrNull(OpenAPIGen)
-                ?: error("Module ${moduleName ?: "<lambda>"} did not install OpenAPIGen; install(OpenAPIGen) is required to generate the OpenAPI document")
+                ?: error(
+                    "Module ${moduleName ?: "<lambda>"} did not install OpenAPIGen; install(OpenAPIGen) is required to generate the OpenAPI document",
+                )
             return objectMapper.writeValueAsString(openApiGen.api.serialize()) + "\n"
         } finally {
             server.stop(0, 0)
         }
     }
 
-    private fun writeAtomically(output: Path, content: String) {
+    private fun writeAtomically(
+        output: Path,
+        content: String,
+    ) {
         val target = output.toAbsolutePath()
         Files.createDirectories(target.parent)
         val temp = Files.createTempFile(target.parent, ".${target.fileName}", ".tmp")

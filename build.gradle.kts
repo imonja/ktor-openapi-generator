@@ -7,7 +7,7 @@ plugins {
     kotlin("jvm") version "2.4.21"
     id("net.nemerosa.versioning") version "3.1.0"
     id("org.jetbrains.dokka") version "2.2.0"
-    id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
+    id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
     id("com.vanniktech.maven.publish") version "0.37.0"
 }
 
@@ -204,12 +204,21 @@ mavenPublishing {
 }
 
 ktlint {
+    // Same ktlint engine and style as the letycohq services (ls.ktlint-rules); the style lives in .editorconfig
+    version.set("1.8.0")
     verbose.set(true)
     outputToConsole.set(true)
     enableExperimentalRules.set(true)
     filter {
         exclude { it.file.toString().contains("build") }
     }
+}
+
+// ktlintFormat must always rewrite the sources: an up-to-date or cached result would skip formatting,
+// for example after a file was reverted in the IDE or .editorconfig changed
+tasks.matching { task -> task.name.startsWith("runKtlintFormatOver") }.configureEach {
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
 }
 
 tasks {

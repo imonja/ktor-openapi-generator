@@ -19,35 +19,48 @@ import com.papsign.ktor.openapigen.unitKType
 
 object ThrowOperationHandler : OperationModule {
     private val log = classLogger()
-    override fun configure(apiGen: OpenAPIGen, provider: ModuleProvider<*>, operation: OperationModel) {
+
+    override fun configure(
+        apiGen: OpenAPIGen,
+        provider: ModuleProvider<*>,
+        operation: OperationModel,
+    ) {
         provider
             .ofType<ThrowInfoProvider>()
             .flatMap { it.exceptions }
             .groupBy { it.status }
             .forEach { exceptions ->
-                val map: MutableMap<String, MediaTypeModel<*>> = exceptions.value.flatMap { ex ->
-                    provider.ofType<ResponseSerializer>().mapNotNull {
-                        if (ex.contentType == unitKType) return@mapNotNull null
-                        val mediaType = it.getMediaType(ex.contentType, apiGen, provider, ex.example, ContentTypeProvider.Usage.SERIALIZE) ?: return@mapNotNull null
-                        provider.registerModule(SelectedExceptionSerializer(it))
-                        mediaType.map { Pair(it.key.toString(), it.value) }
-                    }
-                }.flatten().groupBy { it.first }.mapValues {
-                    val schemas = it.value.mapNotNull { it.second.schema }.distinct()
-                    val schema = when {
-                        schemas.isEmpty() -> null
-                        schemas.size == 1 -> schemas.first()
-                        else -> SchemaModel.OneSchemaModelOf(schemas)
-                    }
-                    val examples = it.value.mapNotNull { (_, second) ->
-                        second.example
-                    }.withIndex().associate { (idx, value) -> "Example $idx" to ExampleModel<Any?>(value) }.toMutableMap()
-                    if (examples.size <= 1) {
-                        MediaTypeModel(schema as SchemaModel<Any?>?, example = examples.values.firstOrNull()?.value)
-                    } else {
-                        MediaTypeModel(schema as SchemaModel<Any?>?, examples = examples)
-                    }
-                }.toMutableMap()
+                val map: MutableMap<String, MediaTypeModel<*>> = exceptions.value
+                    .flatMap { ex ->
+                        provider.ofType<ResponseSerializer>().mapNotNull {
+                            if (ex.contentType == unitKType) return@mapNotNull null
+                            val mediaType =
+                                it.getMediaType(ex.contentType, apiGen, provider, ex.example, ContentTypeProvider.Usage.SERIALIZE)
+                                    ?: return@mapNotNull null
+                            provider.registerModule(SelectedExceptionSerializer(it))
+                            mediaType.map { Pair(it.key.toString(), it.value) }
+                        }
+                    }.flatten()
+                    .groupBy { it.first }
+                    .mapValues {
+                        val schemas = it.value.mapNotNull { it.second.schema }.distinct()
+                        val schema = when {
+                            schemas.isEmpty() -> null
+                            schemas.size == 1 -> schemas.first()
+                            else -> SchemaModel.OneSchemaModelOf(schemas)
+                        }
+                        val examples = it.value
+                            .mapNotNull { (_, second) ->
+                                second.example
+                            }.withIndex()
+                            .associate { (idx, value) -> "Example $idx" to ExampleModel<Any?>(value) }
+                            .toMutableMap()
+                        if (examples.size <= 1) {
+                            MediaTypeModel(schema as SchemaModel<Any?>?, example = examples.values.firstOrNull()?.value)
+                        } else {
+                            MediaTypeModel(schema as SchemaModel<Any?>?, examples = examples)
+                        }
+                    }.toMutableMap()
                 val statusCode = exceptions.key
                 val status = statusCode.value.toString()
                 operation.responses[status] = operation.responses[status]?.apply {
@@ -56,8 +69,8 @@ object ThrowOperationHandler : OperationModule {
                             if (value != it) {
                                 log.warn(
                                     "Cannot map Exception handler on $status with type $key, it is already in use by ${statusCode.description(
-                                        description
-                                    )}"
+                                        description,
+                                    )}",
                                 )
                             }
                         }

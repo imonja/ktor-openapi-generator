@@ -5,7 +5,6 @@ import com.papsign.ktor.openapigen.model.DataModel
 import com.papsign.ktor.openapigen.model.base.RefModel
 
 sealed class SchemaModel<T> : DataModel {
-
     abstract var example: T?
     abstract var examples: List<T>?
     abstract var description: String?
@@ -20,7 +19,7 @@ sealed class SchemaModel<T> : DataModel {
         var type: DataType = DataType.`object`,
         override var description: String? = null,
         var discriminator: Discriminator<T>? = null,
-        override var deprecated: Boolean? = null
+        override var deprecated: Boolean? = null,
     ) : SchemaModel<T>()
 
     data class SchemaModelMap<T : Map<String, U>, U>(
@@ -30,7 +29,7 @@ sealed class SchemaModel<T> : DataModel {
         override var examples: List<T>? = null,
         var type: DataType = DataType.`object`,
         override var description: String? = null,
-        override var deprecated: Boolean? = null
+        override var deprecated: Boolean? = null,
     ) : SchemaModel<T>()
 
     data class SchemaModelEnum<T>(
@@ -40,7 +39,7 @@ sealed class SchemaModel<T> : DataModel {
         override var examples: List<T>? = null,
         var type: DataType = DataType.string,
         override var description: String? = null,
-        override var deprecated: Boolean? = null
+        override var deprecated: Boolean? = null,
     ) : SchemaModel<T>()
 
     data class SchemaModelArr<T>(
@@ -53,7 +52,7 @@ sealed class SchemaModel<T> : DataModel {
         var maxItems: Int? = null,
         var type: DataType = DataType.array,
         override var description: String? = null,
-        override var deprecated: Boolean? = null
+        override var deprecated: Boolean? = null,
     ) : SchemaModel<T>()
 
     data class SchemaModelLitteral<T>(
@@ -72,12 +71,16 @@ sealed class SchemaModel<T> : DataModel {
         // OpenAPI 3.1+ only, dropped for 3.0
         var contentMediaType: String? = null,
         // `x-` keywords, inlined into the schema
-        var extensions: Map<String, Any?>? = null
+        var extensions: Map<String, Any?>? = null,
     ) : SchemaModel<T>() {
         override fun serialize(): Map<String, Any?> = super.serialize() - "extensions" + extensions.orEmpty().mapValues { convertToValue(it.value) }
     }
 
-    data class SchemaModelRef<T>(override val `$ref`: String, val nullable: Boolean? = null) : SchemaModel<T>(), RefModel<SchemaModel<T>> {
+    data class SchemaModelRef<T>(
+        override val `$ref`: String,
+        val nullable: Boolean? = null,
+    ) : SchemaModel<T>(),
+        RefModel<SchemaModel<T>> {
         override var example: T? = null
         override var examples: List<T>? = null
         override var description: String? = null
@@ -85,7 +88,7 @@ sealed class SchemaModel<T> : DataModel {
     }
 
     data class AllOfSchemaModel<T>(
-        val allOf: List<SchemaModel<out T>>
+        val allOf: List<SchemaModel<out T>>,
     ) : SchemaModel<T>() {
         override var example: T? = null
         override var examples: List<T>? = null
@@ -96,9 +99,8 @@ sealed class SchemaModel<T> : DataModel {
     data class OneSchemaModelOf<T>(
         val oneOf: List<SchemaModel<out T>>,
         var properties: Map<String, SchemaModel<*>>? = null,
-        val discriminator: Discriminator<T>? = null
-    ) :
-        SchemaModel<T>() {
+        val discriminator: Discriminator<T>? = null,
+    ) : SchemaModel<T>() {
         override var example: T? = null
         override var examples: List<T>? = null
         override var description: String? = null

@@ -10,25 +10,31 @@ import io.ktor.server.engine.BaseApplicationEngine
 internal class NoopApplicationEngine(
     environment: ApplicationEnvironment,
     monitor: Events,
-    developmentMode: Boolean
+    developmentMode: Boolean,
 ) : BaseApplicationEngine(environment, monitor, developmentMode) {
-
-    override fun start(wait: Boolean): NoopApplicationEngine {
+    override fun start(
+        wait: Boolean,
+    ): NoopApplicationEngine {
         resolvedConnectorsDeferred.complete(emptyList())
         return this
     }
 
-    override fun stop(gracePeriodMillis: Long, timeoutMillis: Long) = Unit
+    override fun stop(
+        gracePeriodMillis: Long,
+        timeoutMillis: Long,
+    ) = Unit
 
     object Factory : ApplicationEngineFactory<NoopApplicationEngine, Configuration> {
-        override fun configuration(configure: Configuration.() -> Unit): Configuration = Configuration().apply(configure)
+        override fun configuration(
+            configure: Configuration.() -> Unit,
+        ): Configuration = Configuration().apply(configure)
 
         override fun create(
             environment: ApplicationEnvironment,
             monitor: Events,
             developmentMode: Boolean,
             configuration: Configuration,
-            applicationProvider: () -> Application
+            applicationProvider: () -> Application,
         ): NoopApplicationEngine = NoopApplicationEngine(environment, monitor, developmentMode)
     }
 }

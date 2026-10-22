@@ -17,81 +17,94 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 internal class FormOpenAPITest {
-
     @Test
-    fun formDataTestRequest() = testApplication {
-        application {
-            setupBaseTestServer()
-            apiRouting {
-                route("form-data") {
-                    post<Unit, FormResponse, FormData> { _, _ ->
-                        respond(FormResponse("result"))
+    fun formDataTestRequest() =
+        testApplication {
+            application {
+                setupBaseTestServer()
+                apiRouting {
+                    route("form-data") {
+                        post<Unit, FormResponse, FormData> { _, _ ->
+                            respond(FormResponse("result"))
+                        }
                     }
                 }
             }
+            client.get("http://localhost/openapi.json").apply {
+                assertEquals(HttpStatusCode.OK, status)
+                val responseText = bodyAsText()
+                assertTrue(responseText.contains("\"requestBody\""))
+                assertTrue(responseText.contains("\"required\" : true"))
+                assertTrue(responseText.contains("application/x-www-form-urlencoded"))
+                assertTrue(responseText.contains("FormData"))
+            }
         }
-        client.get("http://localhost/openapi.json").apply {
-            assertEquals(HttpStatusCode.OK, status)
-            val responseText = bodyAsText()
-            assertTrue(responseText.contains("\"requestBody\""))
-            assertTrue(responseText.contains("\"required\" : true"))
-            assertTrue(responseText.contains("application/x-www-form-urlencoded"))
-            assertTrue(responseText.contains("FormData"))
-        }
-    }
 
     @Test
-    fun multipartFormDataTestRequest() = testApplication {
-        application {
-            setupBaseTestServer()
-            apiRouting {
-                route("multipart-data") {
-                    post<Unit, FormResponse, MultiPartForm> { _, _ ->
-                        respond(FormResponse("result"))
+    fun multipartFormDataTestRequest() =
+        testApplication {
+            application {
+                setupBaseTestServer()
+                apiRouting {
+                    route("multipart-data") {
+                        post<Unit, FormResponse, MultiPartForm> { _, _ ->
+                            respond(FormResponse("result"))
+                        }
                     }
                 }
             }
+            client.get("http://localhost/openapi.json").apply {
+                assertEquals(HttpStatusCode.OK, status)
+                val responseText = bodyAsText()
+                assertTrue(responseText.contains("\"requestBody\""))
+                assertTrue(responseText.contains("\"required\" : true"))
+                assertTrue(responseText.contains("multipart/form-data"))
+                assertTrue(responseText.contains("MultiPartForm"))
+            }
         }
-        client.get("http://localhost/openapi.json").apply {
-            assertEquals(HttpStatusCode.OK, status)
-            val responseText = bodyAsText()
-            assertTrue(responseText.contains("\"requestBody\""))
-            assertTrue(responseText.contains("\"required\" : true"))
-            assertTrue(responseText.contains("multipart/form-data"))
-            assertTrue(responseText.contains("MultiPartForm"))
-        }
-    }
 
     @Test
-    fun defaultFormDataTestRequest() = testApplication {
-        application {
-            setupBaseTestServer()
-            apiRouting {
-                route("default-form-data") {
-                    post<Unit, FormResponse, DefaultFormData> { _, _ ->
-                        respond(FormResponse("result"))
+    fun defaultFormDataTestRequest() =
+        testApplication {
+            application {
+                setupBaseTestServer()
+                apiRouting {
+                    route("default-form-data") {
+                        post<Unit, FormResponse, DefaultFormData> { _, _ ->
+                            respond(FormResponse("result"))
+                        }
                     }
                 }
             }
+            client.get("http://localhost/openapi.json").apply {
+                assertEquals(HttpStatusCode.OK, status)
+                val responseText = bodyAsText()
+                assertTrue(responseText.contains("\"requestBody\""))
+                assertTrue(responseText.contains("\"required\" : true"))
+                assertTrue(responseText.contains("multipart/form-data"))
+                assertTrue(responseText.contains("DefaultFormData"))
+            }
         }
-        client.get("http://localhost/openapi.json").apply {
-            assertEquals(HttpStatusCode.OK, status)
-            val responseText = bodyAsText()
-            assertTrue(responseText.contains("\"requestBody\""))
-            assertTrue(responseText.contains("\"required\" : true"))
-            assertTrue(responseText.contains("multipart/form-data"))
-            assertTrue(responseText.contains("DefaultFormData"))
-        }
-    }
 }
 
 @FormDataRequest(type = FormDataRequestType.MULTIPART)
-data class MultiPartForm(val userId: String, val file: NamedFileInputStream)
+data class MultiPartForm(
+    val userId: String,
+    val file: NamedFileInputStream,
+)
 
 @FormDataRequest(type = FormDataRequestType.URL_ENCODED)
-data class FormData(val login: String, val password: String)
+data class FormData(
+    val login: String,
+    val password: String,
+)
 
 @FormDataRequest
-data class DefaultFormData(val login: String, val password: String)
+data class DefaultFormData(
+    val login: String,
+    val password: String,
+)
 
-data class FormResponse(val str: String)
+data class FormResponse(
+    val str: String,
+)

@@ -4,5 +4,5 @@ package com.papsign.ktor.openapigen.annotations
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Request(
     val description: String = "",
-    val required: Boolean = true
+    val required: Boolean = true,
 )

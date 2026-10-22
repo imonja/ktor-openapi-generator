@@ -26,20 +26,27 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.withNullability
 
-class ModularParameterHandler<T>(val parsers: Map<KParameter, Builder<*>>, val constructor: KFunction<T>) :
-    ParameterHandler<T> {
-
-    override fun parse(parameters: Parameters, headers: Headers): T {
-        val allParams = parameters.toMap() + headers.toMap().entries.groupBy {
-            it.key.lowercase(Locale.getDefault())
-        }.mapValues { it.value.flatMap { it.value } }
+class ModularParameterHandler<T>(
+    val parsers: Map<KParameter, Builder<*>>,
+    val constructor: KFunction<T>,
+) : ParameterHandler<T> {
+    override fun parse(
+        parameters: Parameters,
+        headers: Headers,
+    ): T {
+        val allParams = parameters.toMap() + headers
+            .toMap()
+            .entries
+            .groupBy {
+                it.key.lowercase(Locale.getDefault())
+            }.mapValues { it.value.flatMap { it.value } }
 
         val parsedValues = mutableMapOf<KParameter, Any?>()
 
         for ((param, parser) in parsers) {
             val value = parser.build(
                 param.name.toString(),
-                param.remapOpenAPINames(allParams)
+                param.remapOpenAPINames(allParams),
             )
 
             if (value != null) {
@@ -63,45 +70,69 @@ class ModularParameterHandler<T>(val parsers: Map<KParameter, Builder<*>>, val c
         return constructor.callBy(parsedValues)
     }
 
-    private fun extractDefaultValue(param: KParameter): Any? {
+    private fun extractDefaultValue(
+        param: KParameter,
+    ): Any? {
         return try {
             // Check if parameter has a default value (both optional nullable and non-nullable with defaults)
             if (!param.isOptional && !param.type.isMarkedNullable) return null
 
             // Create a minimal parameter map with all required parameters (except the one we're extracting)
-            val minimalParams = constructor.parameters.mapNotNull { p ->
-                if (!p.isOptional && p != param) {
-                    // For required parameters, we need to provide dummy values
-                    val dummyValue = if (p.type.isMarkedNullable) {
-                        // For nullable required parameters, use null
-                        null
-                    } else {
-                        // For non-nullable required parameters, create dummy values
-                        when (p.type.classifier) {
-                            String::class -> ""
-                            Int::class -> 0
-                            Long::class -> 0L
-                            Boolean::class -> false
-                            Double::class -> 0.0
-                            Float::class -> 0.0f
-                            java.util.UUID::class -> java.util.UUID.fromString("00000000-0000-0000-0000-000000000000")
-                            else -> {
-                                // Try to create a default instance for other types
-                                try {
-                                    val kclass = p.type.classifier as? kotlin.reflect.KClass<*>
-                                    kclass?.objectInstance ?: kclass?.constructors?.firstOrNull { it.parameters.isEmpty() }?.call()
-                                } catch (e: Exception) {
-                                    // If we can't create a dummy value, skip this parameter approach
-                                    return@extractDefaultValue null
+            val minimalParams = constructor.parameters
+                .mapNotNull { p ->
+                    if (!p.isOptional && p != param) {
+                        // For required parameters, we need to provide dummy values
+                        val dummyValue = if (p.type.isMarkedNullable) {
+                            // For nullable required parameters, use null
+                            null
+                        } else {
+                            // For non-nullable required parameters, create dummy values
+                            when (p.type.classifier) {
+                                String::class -> {
+                                    ""
+                                }
+
+                                Int::class -> {
+                                    0
+                                }
+
+                                Long::class -> {
+                                    0L
+                                }
+
+                                Boolean::class -> {
+                                    false
+                                }
+
+                                Double::class -> {
+                                    0.0
+                                }
+
+                                Float::class -> {
+                                    0.0f
+                                }
+
+                                java.util.UUID::class -> {
+                                    java.util.UUID.fromString("00000000-0000-0000-0000-000000000000")
+                                }
+
+                                else -> {
+                                    // Try to create a default instance for other types
+                                    try {
+                                        val kclass = p.type.classifier as? kotlin.reflect.KClass<*>
+                                        kclass?.objectInstance ?: kclass?.constructors?.firstOrNull { it.parameters.isEmpty() }?.call()
+                                    } catch (e: Exception) {
+                                        // If we can't create a dummy value, skip this parameter approach
+                                        return@extractDefaultValue null
+                                    }
                                 }
                             }
                         }
+                        p to dummyValue
+                    } else {
+                        null
                     }
-                    p to dummyValue
-                } else {
-                    null
-                }
-            }.toMap()
+                }.toMap()
 
             // Try to create an instance with minimal parameters to get the default value
             val instance = constructor.callBy(minimalParams)
@@ -118,26 +149,37 @@ class ModularParameterHandler<T>(val parsers: Map<KParameter, Builder<*>>, val c
         }
     }
 
-    override fun getParameters(apiGen: OpenAPIGen, provider: ModuleProvider<*>): List<ParameterModel<*>> {
+    override fun getParameters(
+        apiGen: OpenAPIGen,
+        provider: ModuleProvider<*>,
+    ): List<ParameterModel<*>> {
         val schemaBuilder = provider.ofType<FinalSchemaBuilderProviderModule>().last().provide(apiGen, provider)
         val ktype = constructor.returnType
 
-        fun createParam(param: KParameter, `in`: ParameterLocation, config: (ParameterModel<*>) -> Unit): ParameterModel<*> {
-            return ParameterModel<Any>(
+        fun createParam(
+            param: KParameter,
+            `in`: ParameterLocation,
+            config: (ParameterModel<*>) -> Unit,
+        ): ParameterModel<*> =
+            ParameterModel<Any>(
                 param.openAPIName.toString(),
                 `in`,
-                !param.type.isMarkedNullable && !param.isOptional
+                !param.type.isMarkedNullable && !param.isOptional,
             ).also {
                 @Suppress("UNCHECKED_CAST")
                 it.schema = schemaBuilder.build(
                     param.type.withNullability(false),
-                    ktype.memberProperties.find { it.name == param.name }?.source?.annotations ?: listOf()
+                    ktype.memberProperties
+                        .find { it.name == param.name }
+                        ?.source
+                        ?.annotations ?: listOf(),
                 ) as SchemaModel<Any>
                 config(it)
             }
-        }
 
-        fun HeaderParam.createParam(param: KParameter): ParameterModel<*> {
+        fun HeaderParam.createParam(
+            param: KParameter,
+        ): ParameterModel<*> {
             val parser = parsers[param]!!
             return createParam(param, apiParam.`in`) {
                 it.description = description
@@ -155,7 +197,9 @@ class ModularParameterHandler<T>(val parsers: Map<KParameter, Builder<*>>, val c
             }
         }
 
-        fun QueryParam.createParam(param: KParameter): ParameterModel<*> {
+        fun QueryParam.createParam(
+            param: KParameter,
+        ): ParameterModel<*> {
             val parser = parsers[param]!!
             return createParam(param, apiParam.`in`) {
                 it.description = description
@@ -173,7 +217,9 @@ class ModularParameterHandler<T>(val parsers: Map<KParameter, Builder<*>>, val c
             }
         }
 
-        fun PathParam.createParam(param: KParameter): ParameterModel<*> {
+        fun PathParam.createParam(
+            param: KParameter,
+        ): ParameterModel<*> {
             val parser = parsers[param]!!
             return createParam(param, apiParam.`in`) {
                 it.description = description
@@ -188,7 +234,9 @@ class ModularParameterHandler<T>(val parsers: Map<KParameter, Builder<*>>, val c
                 ?: it.findAnnotation<PathParam>()?.createParam(it)
                 ?: it.findAnnotation<QueryParam>()?.createParam(it)
                 ?: error(
-                    "API routes with ${constructor.returnType} must have parameters annotated with one of ${paramAnnotationClasses.map { it.simpleName }}"
+                    "API routes with ${constructor.returnType} must have parameters annotated with one of ${paramAnnotationClasses.map {
+                        it.simpleName
+                    }}",
                 )
         }
     }

@@ -6,6 +6,6 @@ import com.papsign.ktor.openapigen.model.base.RefModel
 data class StatusResponseModel(
     var description: String,
     var headers: MutableMap<String, RefModel<HeaderModel<*>>> = mutableMapOf(),
-    var content: MutableMap<String, MediaTypeModel<*>> = mutableMapOf()
+    var content: MutableMap<String, MediaTypeModel<*>> = mutableMapOf(),
     // links
 ) : DataModel

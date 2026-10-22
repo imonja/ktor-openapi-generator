@@ -35,7 +35,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class GenericRoutesTest {
-
     @Test
     fun genericRoutesTest() {
         testApplication {
@@ -76,76 +75,94 @@ class GenericRoutesTest {
                 assertEquals(HttpStatusCode.OK, status)
                 assertTrue { contentType()?.match(Application.Json) == true }
             }
-            client.post("http://localhost/objects") {
-                header(HttpHeaders.ContentType, "application/json")
-                header(HttpHeaders.Accept, "application/json")
-                setBody(""" { "name": "test" } """)
-            }.apply {
-                assertEquals(HttpStatusCode.OK, status)
-                assertTrue { contentType()?.match(Application.Json) == true }
-            }
+            client
+                .post("http://localhost/objects") {
+                    header(HttpHeaders.ContentType, "application/json")
+                    header(HttpHeaders.Accept, "application/json")
+                    setBody(""" { "name": "test" } """)
+                }.apply {
+                    assertEquals(HttpStatusCode.OK, status)
+                    assertTrue { contentType()?.match(Application.Json) == true }
+                }
 
             client.get("http://localhost/private/objects").apply {
                 assertEquals(HttpStatusCode.Unauthorized, status)
             }
-            client.get("http://localhost/private/objects") {
-                val up = Base64.getEncoder().encodeToString("jetbrains:foobar".toByteArray())
-                header(HttpHeaders.Authorization, "Basic $up")
-            }.apply {
-                assertEquals(HttpStatusCode.OK, status)
-                assertTrue { contentType()?.match(Application.Json) == true }
-            }
-            client.get("http://localhost/private/objects/1") {
-                val up = Base64.getEncoder().encodeToString("jetbrains:foobar".toByteArray())
-                header(HttpHeaders.Authorization, "Basic $up")
-            }.apply {
-                assertEquals(HttpStatusCode.OK, status)
-                assertTrue { contentType()?.match(Application.Json) == true }
-            }
-            client.post("http://localhost/private/objects") {
-                val up = Base64.getEncoder().encodeToString("jetbrains:foobar".toByteArray())
-                header(HttpHeaders.Authorization, "Basic $up")
-                header(HttpHeaders.ContentType, "application/json")
-                header(HttpHeaders.Accept, "application/json")
-                setBody(""" { "name": "test" } """)
-            }.apply {
-                assertEquals(HttpStatusCode.OK, status)
-                assertTrue { contentType()?.match(Application.Json) == true }
-            }
+            client
+                .get("http://localhost/private/objects") {
+                    val up = Base64.getEncoder().encodeToString("jetbrains:foobar".toByteArray())
+                    header(HttpHeaders.Authorization, "Basic $up")
+                }.apply {
+                    assertEquals(HttpStatusCode.OK, status)
+                    assertTrue { contentType()?.match(Application.Json) == true }
+                }
+            client
+                .get("http://localhost/private/objects/1") {
+                    val up = Base64.getEncoder().encodeToString("jetbrains:foobar".toByteArray())
+                    header(HttpHeaders.Authorization, "Basic $up")
+                }.apply {
+                    assertEquals(HttpStatusCode.OK, status)
+                    assertTrue { contentType()?.match(Application.Json) == true }
+                }
+            client
+                .post("http://localhost/private/objects") {
+                    val up = Base64.getEncoder().encodeToString("jetbrains:foobar".toByteArray())
+                    header(HttpHeaders.Authorization, "Basic $up")
+                    header(HttpHeaders.ContentType, "application/json")
+                    header(HttpHeaders.Accept, "application/json")
+                    setBody(""" { "name": "test" } """)
+                }.apply {
+                    assertEquals(HttpStatusCode.OK, status)
+                    assertTrue { contentType()?.match(Application.Json) == true }
+                }
         }
     }
 
-    data class ObjectNewDto(override val name: String, override val parentId: Long?) : TreeNodeNew
+    data class ObjectNewDto(
+        override val name: String,
+        override val parentId: Long?,
+    ) : TreeNodeNew
 
-    data class ObjectDto(override val name: String, override val parentId: Long?, override val id: Long) : TreeNodeBase
+    data class ObjectDto(
+        override val name: String,
+        override val parentId: Long?,
+        override val id: Long,
+    ) : TreeNodeBase
 
     object ObjectService : TreeNodeService<ObjectNewDto, ObjectDto> {
-        override fun listNodes(parentId: Long?): List<ObjectDto> {
+        override fun listNodes(
+            parentId: Long?,
+        ): List<ObjectDto> {
             if (parentId == 1L) {
                 return listOf(
                     ObjectDto("Node 3", null, 3),
-                    ObjectDto("Node 4", null, 4)
+                    ObjectDto("Node 4", null, 4),
                 )
             }
             return listOf(
                 ObjectDto("Node 1", null, 1),
-                ObjectDto("Node 2", null, 2)
+                ObjectDto("Node 2", null, 2),
             )
         }
 
-        override fun createNode(dto: ObjectNewDto): ObjectDto {
-            return ObjectDto(
+        override fun createNode(
+            dto: ObjectNewDto,
+        ): ObjectDto =
+            ObjectDto(
                 dto.name,
                 dto.parentId,
-                123
+                123,
             )
-        }
 
-        override fun updateNode(dto: ObjectDto) {
+        override fun updateNode(
+            dto: ObjectDto,
+        ) {
             println("updateNode $dto")
         }
 
-        override fun removeNode(nodeId: Long) {
+        override fun removeNode(
+            nodeId: Long,
+        ) {
             println("delete $nodeId")
         }
     }
@@ -164,15 +181,30 @@ class GenericRoutesTest {
     }
 
     interface TreeNodeService<TNodeNew : TreeNodeNew, TNode : TreeNodeBase> {
-        fun listNodes(parentId: Long?): List<TNode>
-        fun createNode(dto: TNodeNew): TNode
-        fun updateNode(dto: TNode)
-        fun removeNode(nodeId: Long)
+        fun listNodes(
+            parentId: Long?,
+        ): List<TNode>
+
+        fun createNode(
+            dto: TNodeNew,
+        ): TNode
+
+        fun updateNode(
+            dto: TNode,
+        )
+
+        fun removeNode(
+            nodeId: Long,
+        )
     }
 
-    data class PathId(@PathParam("Id") val id: Long)
+    data class PathId(
+        @PathParam("Id") val id: Long,
+    )
 
-    private inline fun <reified TNodeNew : TreeNodeNew, reified TNode : TreeNodeBase> NormalOpenAPIRoute.treeNodeRoute(service: TreeNodeService<TNodeNew, TNode>) {
+    private inline fun <reified TNodeNew : TreeNodeNew, reified TNode : TreeNodeBase> NormalOpenAPIRoute.treeNodeRoute(
+        service: TreeNodeService<TNodeNew, TNode>,
+    ) {
         route("{id}").get<PathId, List<TNode>> { params ->
             respond(service.listNodes(params.id))
         }
@@ -193,7 +225,7 @@ class GenericRoutesTest {
     }
 
     private inline fun <reified TNodeNew : TreeNodeNew, reified TNode : TreeNodeBase> OpenAPIAuthenticatedRoute<UserIdPrincipal>.treeNodeRoutePrivate(
-        service: TreeNodeService<TNodeNew, TNode>
+        service: TreeNodeService<TNodeNew, TNode>,
     ) {
         route("{id}").get<PathId, List<TNode>, UserIdPrincipal> { params ->
             respond(service.listNodes(params.id))
@@ -214,26 +246,34 @@ class GenericRoutesTest {
         }
     }
 
-    inline fun NormalOpenAPIRoute.auth(route: OpenAPIAuthenticatedRoute<UserIdPrincipal>.() -> Unit): OpenAPIAuthenticatedRoute<UserIdPrincipal> {
-        return BasicAuthProvider.apply(this).apply(route)
-    }
+    inline fun NormalOpenAPIRoute.auth(
+        route: OpenAPIAuthenticatedRoute<UserIdPrincipal>.() -> Unit,
+    ): OpenAPIAuthenticatedRoute<UserIdPrincipal> = BasicAuthProvider.apply(this).apply(route)
 
-    class UnauthorizedException(message: String) : RuntimeException(message)
-    class ForbiddenException(message: String) : RuntimeException(message)
+    class UnauthorizedException(
+        message: String,
+    ) : RuntimeException(message)
+
+    class ForbiddenException(
+        message: String,
+    ) : RuntimeException(message)
 
     // even if we don't need scopes at all, an empty enum has to be there, see https://github.com/papsign/Ktor-OpenAPI-Generator/issues/65
     enum class Scopes : Described
 
-    data class ResponseError(val code: Int, val description: String, val message: String? = null) {
+    data class ResponseError(
+        val code: Int,
+        val description: String,
+        val message: String? = null,
+    ) {
         constructor(statusCode: HttpStatusCode, message: String? = null) : this(
             statusCode.value,
             statusCode.description,
-            message
+            message,
         )
     }
 
     object BasicAuthProvider : AuthProvider<UserIdPrincipal> {
-
         // description for OpenAPI model
         override val security =
             listOf(
@@ -242,34 +282,36 @@ class GenericRoutesTest {
                         SecuritySchemeModel(
                             referenceName = "basicAuth",
                             type = SecuritySchemeType.http,
-                            scheme = HttpSecurityScheme.basic
+                            scheme = HttpSecurityScheme.basic,
                         ),
-                        emptyList<Scopes>()
-                    )
-                )
+                        emptyList<Scopes>(),
+                    ),
+                ),
             )
 
         // gets auth information at runtime
-        override suspend fun getAuth(pipeline: RoutingContext): UserIdPrincipal {
-            return pipeline.call.authentication.principal()
+        override suspend fun getAuth(
+            pipeline: RoutingContext,
+        ): UserIdPrincipal =
+            pipeline.call.authentication.principal()
                 ?: throw UnauthorizedException("Unable to verify given credentials, or credentials are missing.")
-        }
 
         // convert normal route to authenticated route including OpenAPI meta information
-        override fun apply(route: NormalOpenAPIRoute): OpenAPIAuthenticatedRoute<UserIdPrincipal> {
+        override fun apply(
+            route: NormalOpenAPIRoute,
+        ): OpenAPIAuthenticatedRoute<UserIdPrincipal> {
             return OpenAPIAuthenticatedRoute(route.ktorRoute.authenticate { }, route.provider.child(), this)
                 .throws(
                     status = HttpStatusCode.Unauthorized.description("Your identity could not be verified."),
                     gen = { e: UnauthorizedException ->
                         return@throws ResponseError(
                             HttpStatusCode.Unauthorized,
-                            e.message
+                            e.message,
                         )
-                    }
-                )
-                .throws(
+                    },
+                ).throws(
                     status = HttpStatusCode.Forbidden.description("Your access rights are insufficient."),
-                    gen = { e: ForbiddenException -> return@throws ResponseError(HttpStatusCode.Forbidden, e.message) }
+                    gen = { e: ForbiddenException -> return@throws ResponseError(HttpStatusCode.Forbidden, e.message) },
                 )
         }
     }

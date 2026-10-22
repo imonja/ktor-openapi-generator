@@ -11,5 +11,5 @@ annotation class HeaderParam(
     val style: HeaderParamStyle = HeaderParamStyle.simple,
     val explode: Boolean = true,
     val allowEmptyValues: Boolean = false,
-    val deprecated: Boolean = false
+    val deprecated: Boolean = false,
 )

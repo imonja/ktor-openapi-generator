@@ -9,13 +9,17 @@ import kotlin.reflect.KType
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.jvm.jvmErasure
 
-class EnumConverter(val type: KType) : Converter {
-
+class EnumConverter(
+    val type: KType,
+) : Converter {
     private val isStrictParsing = (type.classifier as? KClass<*>)?.findAnnotation<StrictEnumParsing>() != null
 
-    private val enumMap = type.jvmErasure.java.enumConstants.associateBy { value -> (value as Enum<*>).name }
+    private val enumMap = type.jvmErasure.java.enumConstants
+        .associateBy { value -> (value as Enum<*>).name }
 
-    override fun convert(value: String): Any? {
+    override fun convert(
+        value: String,
+    ): Any? {
         if (!isStrictParsing) {
             return enumMap[value]
         }
@@ -25,21 +29,22 @@ class EnumConverter(val type: KType) : Converter {
         } else {
             throw OpenAPIBadContentException(
                 "Invalid value [$value] for enum parameter of type ${type.jvmErasure.simpleName}. Expected: [${
-                enumMap.values.joinToString(",")
-                }]"
+                    enumMap.values.joinToString(",")
+                }]",
             )
         }
     }
 
     companion object : ConverterSelector {
-        override fun canHandle(type: KType): Boolean {
-            return type.jvmErasure.java.isEnum
-        }
+        override fun canHandle(
+            type: KType,
+        ): Boolean = type.jvmErasure.java.isEnum
 
-        override fun create(type: KType): EnumConverter {
-            return EnumConverter(
-                type
+        override fun create(
+            type: KType,
+        ): EnumConverter =
+            EnumConverter(
+                type,
             )
-        }
     }
 }

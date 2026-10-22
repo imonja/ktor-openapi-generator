@@ -31,7 +31,10 @@ import io.ktor.server.response.respond
  * @param api the installed instance of [OpenAPIGen] in the [io.ktor.application.Application]
  * @param cfg the block that loads the configuration, see [OpenAPIGenStatusPagesInterop]
  */
-inline fun StatusPagesConfig.withAPI(api: OpenAPIGen, crossinline cfg: OpenAPIGenStatusPagesInterop.() -> Unit = {}) {
+inline fun StatusPagesConfig.withAPI(
+    api: OpenAPIGen,
+    crossinline cfg: OpenAPIGenStatusPagesInterop.() -> Unit = {},
+) {
     OpenAPIGenStatusPagesInterop(api, this).cfg()
 }
 
@@ -39,12 +42,16 @@ inline fun StatusPagesConfig.withAPI(api: OpenAPIGen, crossinline cfg: OpenAPIGe
  * Wrapper for Status pages that handles exceptions and generates documentation in OpenAPI.
  * This is useful for default error pages.
  */
-class OpenAPIGenStatusPagesInterop(val api: OpenAPIGen, val statusCfg: StatusPagesConfig) {
-
+class OpenAPIGenStatusPagesInterop(
+    val api: OpenAPIGen,
+    val statusCfg: StatusPagesConfig,
+) {
     /**
      * Registers a handler for exception type [TThrowable] and returns a [status] page
      */
-    inline fun <reified TThrowable : Throwable> exception(status: HttpStatusCode) {
+    inline fun <reified TThrowable : Throwable> exception(
+        status: HttpStatusCode,
+    ) {
         val ex = apiException<TThrowable>(status)
         api.globalModuleProvider.registerModule(ThrowsInfo(listOf(ex)))
         statusCfg.exception<TThrowable> { call, _ ->
@@ -59,7 +66,11 @@ class OpenAPIGenStatusPagesInterop(val api: OpenAPIGen, val statusCfg: StatusPag
      * @param example An example of the response body
      * @param gen handler for [TThrowable] that should return an instance of [TResponse]
      */
-    inline fun <reified TThrowable : Throwable, reified TResponse> exception(status: HttpStatusCode, example: TResponse? = null, noinline gen: (TThrowable) -> TResponse) {
+    inline fun <reified TThrowable : Throwable, reified TResponse> exception(
+        status: HttpStatusCode,
+        example: TResponse? = null,
+        noinline gen: (TThrowable) -> TResponse,
+    ) {
         val ex = apiException(status, example, gen)
         api.globalModuleProvider.registerModule(ThrowsInfo(listOf(ex)))
         statusCfg.exception<TThrowable> { call, cause ->

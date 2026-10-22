@@ -20,7 +20,6 @@ import kotlin.reflect.full.declaredMemberProperties
 import kotlin.test.assertEquals
 
 class MultipartFormDataContentProviderTest {
-
     @FormDataRequest
     data class SimpleRequest(
         val str: String,
@@ -30,7 +29,7 @@ class MultipartFormDataContentProviderTest {
         val strn: String?,
         val intn: Int?,
         val fltn: Float?,
-        val bln: Boolean?
+        val bln: Boolean?,
     ) {
         fun toParts(): List<PartData> {
             return this::class.declaredMemberProperties.mapNotNull {
@@ -43,8 +42,8 @@ class MultipartFormDataContentProviderTest {
                         HttpHeaders.ContentDisposition,
                         ContentDisposition.Inline
                             .withParameter(ContentDisposition.Parameters.Name, it.name)
-                            .toString()
-                    )
+                            .toString(),
+                    ),
                 )
             }
         }
@@ -54,7 +53,7 @@ class MultipartFormDataContentProviderTest {
     fun testMultipartParsing() {
         val requests = mapOf(
             "/1" to SimpleRequest("Test", 300, 26.95f, true, null, null, null, null).let { Pair(it, it.toParts()) },
-            "/2" to SimpleRequest("Test", 300, 26.95f, true, "Test", 300, 26.95f, true).let { Pair(it, it.toParts()) }
+            "/2" to SimpleRequest("Test", 300, 26.95f, true, "Test", 300, 26.95f, true).let { Pair(it, it.toParts()) },
         )
         // Missing required parts are covered by MultipartPartRulesTest.
         testApplication {
@@ -75,24 +74,27 @@ class MultipartFormDataContentProviderTest {
             requests.forEach { (t, u) ->
                 println("Test: $t")
                 val boundary = "***bbb***"
-                client.post("http://localhost" + t) {
-                    header(
-                        HttpHeaders.ContentType,
-                        ContentType.MultiPart.FormData.withParameter("boundary", boundary).toString()
-                    )
-                    setBody(
-                        MultiPartFormDataContent(
-                            u.second,
-                            boundary,
-                            ContentType.MultiPart.FormData.withParameter("boundary", boundary)
+                client
+                    .post("http://localhost" + t) {
+                        header(
+                            HttpHeaders.ContentType,
+                            ContentType.MultiPart.FormData
+                                .withParameter("boundary", boundary)
+                                .toString(),
                         )
-                    )
-                }.apply {
-                    assertEquals(
-                        true,
-                        bodyAsText().toBoolean()
-                    )
-                }
+                        setBody(
+                            MultiPartFormDataContent(
+                                u.second,
+                                boundary,
+                                ContentType.MultiPart.FormData.withParameter("boundary", boundary),
+                            ),
+                        )
+                    }.apply {
+                        assertEquals(
+                            true,
+                            bodyAsText().toBoolean(),
+                        )
+                    }
                 println("Test: $t success")
             }
         }

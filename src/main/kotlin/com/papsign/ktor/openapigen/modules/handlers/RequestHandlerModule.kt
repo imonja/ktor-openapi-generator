@@ -19,18 +19,24 @@ import kotlin.reflect.jvm.jvmErasure
 
 class RequestHandlerModule<T : Any>(
     val requestType: KType,
-    val requestExample: T? = null
+    val requestExample: T? = null,
 ) : OperationModule {
-
     private val log = classLogger()
 
-    override fun configure(apiGen: OpenAPIGen, provider: ModuleProvider<*>, operation: OperationModel) {
-        val map = provider.ofType<BodyParser>().mapNotNull {
-            val mediaType = it.getMediaType(requestType, apiGen, provider, requestExample, ContentTypeProvider.Usage.PARSE)
-                ?: return@mapNotNull null
-            provider.registerModule(SelectedParser(it))
-            mediaType.map { Pair(it.key.toString(), it.value) }
-        }.flatten().associate { it }
+    override fun configure(
+        apiGen: OpenAPIGen,
+        provider: ModuleProvider<*>,
+        operation: OperationModel,
+    ) {
+        val map = provider
+            .ofType<BodyParser>()
+            .mapNotNull {
+                val mediaType = it.getMediaType(requestType, apiGen, provider, requestExample, ContentTypeProvider.Usage.PARSE)
+                    ?: return@mapNotNull null
+                provider.registerModule(SelectedParser(it))
+                mediaType.map { Pair(it.key.toString(), it.value) }
+            }.flatten()
+            .associate { it }
 
         val requestMeta = requestType.jvmErasure.findAnnotation<Request>()
 
@@ -41,7 +47,7 @@ class RequestHandlerModule<T : Any>(
                 content.putIfAbsent(key, value)?.let {
                     if (value != it) {
                         log.warn(
-                            "ContentType of $requestType request $key already registered, ignoring $value"
+                            "ContentType of $requestType request $key already registered, ignoring $value",
                         )
                     }
                 }
@@ -67,7 +73,7 @@ class RequestHandlerModule<T : Any>(
                     requestMeta != null -> requestMeta.required
                     requestType.jvmErasure != Unit::class -> true
                     else -> null
-                }
+                },
             )
         } else {
             null
@@ -75,6 +81,9 @@ class RequestHandlerModule<T : Any>(
     }
 
     companion object {
-        fun <T : Any> create(tType: KType, requestExample: T? = null) = RequestHandlerModule(tType, requestExample)
+        fun <T : Any> create(
+            tType: KType,
+            requestExample: T? = null,
+        ) = RequestHandlerModule(tType, requestExample)
     }
 }

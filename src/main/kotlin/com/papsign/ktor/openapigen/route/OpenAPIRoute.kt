@@ -26,16 +26,21 @@ import kotlin.reflect.KTypeProjection
 import kotlin.reflect.KVariance
 import kotlin.reflect.full.createType
 
-abstract class OpenAPIRoute<T : OpenAPIRoute<T>>(val ktorRoute: Route, val provider: CachingModuleProvider) {
+abstract class OpenAPIRoute<T : OpenAPIRoute<T>>(
+    val ktorRoute: Route,
+    val provider: CachingModuleProvider,
+) {
     private val log = classLogger()
 
-    abstract fun child(route: Route = this.ktorRoute): T
+    abstract fun child(
+        route: Route = this.ktorRoute,
+    ): T
 
     fun <P : Any, R : Any, B : Any> handle(
         paramsType: KType,
         responseType: KType,
         bodyType: KType,
-        pass: suspend OpenAPIRoute<*>.(pipeline: RoutingContext, responder: Responder, P, B) -> Unit
+        pass: suspend OpenAPIRoute<*>.(pipeline: RoutingContext, responder: Responder, P, B) -> Unit,
     ) {
         val parameterHandler = buildParameterHandler<P>(paramsType)
         provider.registerModule(parameterHandler, ParameterHandler::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, paramsType))))
@@ -45,92 +50,112 @@ abstract class OpenAPIRoute<T : OpenAPIRoute<T>>(val ktorRoute: Route, val provi
             it.configure(apiGen, provider)
         }
 
-        val BHandler = ValidationHandler.build(bodyType)
-        val PHandler = ValidationHandler.build(paramsType)
+        val bodyHandler = ValidationHandler.build(bodyType)
+        val paramsHandler = ValidationHandler.build(paramsType)
 
         ktorRoute.apply {
-            getAcceptMap<R>(responseType).let {
-                if (it.isNotEmpty()) it else listOf(ContentType.Any to listOf(SelectedSerializer(KtorContentProvider)))
-            }.forEach { (acceptType, serializers) ->
-                val responder = ContentTypeResponder(serializers.getResponseSerializer(acceptType), acceptType)
-                accept(acceptType) {
-                    if (bodyType.classifier == Unit::class) {
-                        handle {
-                            @Suppress("UNCHECKED_CAST")
-                            val params: P = if (paramsType.classifier == Unit::class) {
-                                Unit as P
-                            } else {
-                                parameterHandler.parse(
-                                    call.parameters,
-                                    call.request.headers
-                                )
+            getAcceptMap<R>(responseType)
+                .let {
+                    if (it.isNotEmpty()) it else listOf(ContentType.Any to listOf(SelectedSerializer(KtorContentProvider)))
+                }.forEach { (acceptType, serializers) ->
+                    val responder = ContentTypeResponder(serializers.getResponseSerializer(acceptType), acceptType)
+                    accept(acceptType) {
+                        if (bodyType.classifier == Unit::class) {
+                            handle {
+                                @Suppress("UNCHECKED_CAST")
+                                val params: P = if (paramsType.classifier == Unit::class) {
+                                    Unit as P
+                                } else {
+                                    parameterHandler.parse(
+                                        call.parameters,
+                                        call.request.headers,
+                                    )
+                                }
+                                @Suppress("UNCHECKED_CAST")
+                                pass(this, responder, paramsHandler.handle(params), Unit as B)
                             }
-                            @Suppress("UNCHECKED_CAST")
-                            pass(this, responder, PHandler.handle(params), Unit as B)
-                        }
-                    } else {
-                        getContentTypesMap<B>(bodyType).forEach { (contentType, parsers) ->
-                            contentType(contentType) {
-                                handle {
-                                    try {
-                                        val receive: B = parsers.getBodyParser(call.request.contentType()).parseBody(bodyType, this)
+                        } else {
+                            getContentTypesMap<B>(bodyType).forEach { (contentType, parsers) ->
+                                contentType(contentType) {
+                                    handle {
+                                        try {
+                                            val receive: B = parsers.getBodyParser(call.request.contentType()).parseBody(bodyType, this)
 
-                                        @Suppress("UNCHECKED_CAST")
-                                        val params: P = if (paramsType.classifier == Unit::class) {
-                                            Unit as P
-                                        } else {
-                                            parameterHandler.parse(
-                                                call.parameters,
-                                                call.request.headers
-                                            )
+                                            @Suppress("UNCHECKED_CAST")
+                                            val params: P = if (paramsType.classifier == Unit::class) {
+                                                Unit as P
+                                            } else {
+                                                parameterHandler.parse(
+                                                    call.parameters,
+                                                    call.request.headers,
+                                                )
+                                            }
+                                            pass(this, responder, paramsHandler.handle(params), bodyHandler.handle(receive))
+                                        } finally {
+                                            CallResources.release(call)
                                         }
-                                        pass(this, responder, PHandler.handle(params), BHandler.handle(receive))
-                                    } finally {
-                                        CallResources.release(call)
                                     }
                                 }
                             }
                         }
                     }
                 }
-            }
         }
     }
 
-    fun List<SelectedSerializer>.getResponseSerializer(contentType: ContentType): ResponseSerializer {
+    fun List<SelectedSerializer>.getResponseSerializer(
+        contentType: ContentType,
+    ): ResponseSerializer {
         if (size > 1) {
             log.warn(
-                "Multiple equal serializers for Accept $contentType: ${map { it.module::class.simpleName }}, selecting first ${first().module::class.simpleName}"
+                "Multiple equal serializers for Accept $contentType: ${map {
+                    it.module::class.simpleName
+                }}, selecting first ${first().module::class.simpleName}",
             )
         }
         return firstOrNull()?.module ?: throw OpenAPINoSerializerException(contentType)
     }
 
-    fun List<SelectedParser>.getBodyParser(contentType: ContentType): BodyParser {
+    fun List<SelectedParser>.getBodyParser(
+        contentType: ContentType,
+    ): BodyParser {
         if (size > 1) {
             log.warn(
-                "Multiple equal parsers for Content-Type $contentType: ${map { it.module::class.simpleName }}, selecting first ${first().module::class.simpleName}"
+                "Multiple equal parsers for Content-Type $contentType: ${map {
+                    it.module::class.simpleName
+                }}, selecting first ${first().module::class.simpleName}",
             )
         }
         return firstOrNull()?.module ?: throw OpenAPINoParserException(contentType)
     }
 
-    fun <B : Any> getContentTypesMap(type: KType) = mapContentTypes<SelectedParser> { module.getParseableContentTypes<B>(type) }
+    fun <B : Any> getContentTypesMap(
+        type: KType,
+    ) = mapContentTypes<SelectedParser> { module.getParseableContentTypes<B>(type) }
 
-    fun <R : Any> getAcceptMap(type: KType) = mapContentTypes<SelectedSerializer> { module.getSerializableContentTypes<R>(type) }
+    fun <R : Any> getAcceptMap(
+        type: KType,
+    ) = mapContentTypes<SelectedSerializer> { module.getSerializableContentTypes<R>(type) }
 
-    inline fun <reified T : OpenAPIModule> mapContentTypes(noinline fn: T.() -> List<ContentType>): List<Pair<ContentType, List<T>>> {
-        return provider.ofType<T>().flatMap { parser ->
-            parser.fn().map { Pair(it, parser) }
-        }.groupBy { it.first }.mapValues { it.value.map { it.second } }.map { Pair(it.key, it.value) }.sortedBy {
-            val ct = it.first
-            when {
-                ct.contentSubtype != "*" -> 1000
-                ct.contentType != "*" -> 10000
-                else -> 100000
-            } - ct.parameters.size // edge case already, no need to sort by potential wildcards too, if you do this you are already looking for problems
-        }
-    }
+    inline fun <reified T : OpenAPIModule> mapContentTypes(
+        noinline fn: T.() -> List<ContentType>,
+    ): List<Pair<ContentType, List<T>>> =
+        provider
+            .ofType<T>()
+            .flatMap { parser ->
+                parser.fn().map { Pair(it, parser) }
+            }.groupBy { it.first }
+            .mapValues { it.value.map { it.second } }
+            .map { Pair(it.key, it.value) }
+            .sortedBy {
+                val ct = it.first
+                // Subtracting the parameter count is already an edge case; sorting by potential wildcards as well is not worth it
+                when {
+                    ct.contentSubtype != "*" -> 1000
+                    ct.contentType != "*" -> 10000
+                    else -> 100000
+                } - ct.parameters.size
+            }
 }
 
 val OpenAPIRoute<*>.application get() = ktorRoute.application

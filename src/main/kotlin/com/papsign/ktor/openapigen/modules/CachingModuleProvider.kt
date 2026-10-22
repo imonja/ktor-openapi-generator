@@ -4,12 +4,15 @@ import java.util.Collections
 import kotlin.reflect.KType
 import kotlin.reflect.full.isSubtypeOf
 
-class CachingModuleProvider(previous: Iterable<Pair<KType, OpenAPIModule>> = listOf()) : ModuleProvider<CachingModuleProvider> {
-
+class CachingModuleProvider(
+    previous: Iterable<Pair<KType, OpenAPIModule>> = listOf(),
+) : ModuleProvider<CachingModuleProvider> {
     private val modules: MutableList<Pair<KType, OpenAPIModule>> =
         Collections.synchronizedList(synchronized(previous) { previous.toMutableList() })
 
-    override fun ofType(type: KType): Collection<OpenAPIModule> {
+    override fun ofType(
+        type: KType,
+    ): Collection<OpenAPIModule> {
         val set = LinkedHashSet<OpenAPIModule>()
         synchronized(modules) {
             modules.filter {
@@ -22,7 +25,10 @@ class CachingModuleProvider(previous: Iterable<Pair<KType, OpenAPIModule>> = lis
         return set
     }
 
-    override fun registerModule(module: OpenAPIModule, type: KType) {
+    override fun registerModule(
+        module: OpenAPIModule,
+        type: KType,
+    ) {
         if (module is DependentModule) {
             module.handlers.forEach { (depType, depModule) ->
                 if (synchronized(modules) { modules.find { it.second == depModule } } == null) {
@@ -33,11 +39,11 @@ class CachingModuleProvider(previous: Iterable<Pair<KType, OpenAPIModule>> = lis
         modules.add(type to module)
     }
 
-    override fun unRegisterModule(module: OpenAPIModule) {
+    override fun unRegisterModule(
+        module: OpenAPIModule,
+    ) {
         synchronized(modules) { modules.removeIf { it.second == module } }
     }
 
-    override fun child(): CachingModuleProvider {
-        return CachingModuleProvider(modules)
-    }
+    override fun child(): CachingModuleProvider = CachingModuleProvider(modules)
 }

@@ -7,4 +7,6 @@ import com.papsign.ktor.openapigen.schema.processor.SchemaProcessorAnnotation
  */
 @Target(AnnotationTarget.PROPERTY, AnnotationTarget.VALUE_PARAMETER)
 @SchemaProcessorAnnotation(DescriptionProcessor::class)
-annotation class Description(val value: String)
+annotation class Description(
+    val value: String,
+)

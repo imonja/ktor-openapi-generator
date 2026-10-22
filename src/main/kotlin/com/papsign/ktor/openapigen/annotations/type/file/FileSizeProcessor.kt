@@ -7,10 +7,13 @@ import com.papsign.ktor.openapigen.schema.processor.SchemaProcessor
 import kotlin.reflect.KType
 
 object FileSizeProcessor : SchemaProcessor<FileSize> {
-
     private val log = classLogger()
 
-    override fun process(model: SchemaModel<*>, type: KType, annotation: FileSize): SchemaModel<*> {
+    override fun process(
+        model: SchemaModel<*>,
+        type: KType,
+        annotation: FileSize,
+    ): SchemaModel<*> {
         if (model !is SchemaModel.SchemaModelLitteral<*> || model.format != DataFormat.binary) {
             log.warn("${FileSize::class} can only be used on binary stream types, ignoring it on $type")
             return model
@@ -35,7 +38,9 @@ object FileSizeProcessor : SchemaProcessor<FileSize> {
         }
     }
 
-    internal fun formatBytes(bytes: Long): String {
+    internal fun formatBytes(
+        bytes: Long,
+    ): String {
         val kb = 1024L
         val mb = kb * kb
         return when {

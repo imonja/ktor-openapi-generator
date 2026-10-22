@@ -26,9 +26,10 @@ import io.ktor.server.routing.routing
 import kotlin.reflect.KType
 
 object Basic {
-
     @JvmStatic
-    fun main(args: Array<String>) {
+    fun main(
+        args: Array<String>,
+    ) {
         embeddedServer(Netty, 8080, "localhost") {
             // define basic OpenAPI info
             install(OpenAPIGen) {
@@ -51,10 +52,11 @@ object Basic {
                     DefaultSchemaNamer,
                     object : SchemaNamer {
                         val regex = Regex("[A-Za-z0-9_.]+")
-                        override fun get(type: KType): String {
-                            return type.toString().replace(regex) { it.value.split(".").last() }.replace(Regex(">|<|, "), "_")
-                        }
-                    }
+
+                        override fun get(
+                            type: KType,
+                        ): String = type.toString().replace(regex) { it.value.split(".").last() }.replace(Regex(">|<|, "), "_")
+                    },
                 )
             }
 
@@ -79,9 +81,9 @@ object Basic {
                 route("inine").get<StringParam, StringResponse>(
                     info(
                         "String Param Endpoint",
-                        "This is a String Param Endpoint"
+                        "This is a String Param Endpoint",
                     ), // A Route module that describes an endpoint, it is optional
-                    example = StringResponse("Hi")
+                    example = StringResponse("Hi"),
                 ) { params ->
                     respond(StringResponse(params.a))
                 }
@@ -91,7 +93,7 @@ object Basic {
                     post<Unit, StringUsable, Set<StringUsable>>(
                         info("String Post Endpoint", "This is a String Post Endpoint"),
                         exampleRequest = setOf(StringUsable("Ho")),
-                        exampleResponse = StringUsable("Ho")
+                        exampleResponse = StringUsable("Ho"),
                     ) { _, body ->
                         respond(body.first())
                     }
@@ -110,20 +112,28 @@ object Basic {
     @Path("string/{a}")
     data class StringParam(
         @param:PathParam("A simple String Param", style = PathParamStyle.matrix) val a: String,
-        @param:QueryParam("Optional String") val optional: A? // Nullable Types are optional
+        @param:QueryParam("Optional String") val optional: A?, // Nullable Types are optional
     )
 
-    data class A(val b: String)
+    data class A(
+        val b: String,
+    )
 
     @Request
-    data class GenericTest<T>(val value: T)
+    data class GenericTest<T>(
+        val value: T,
+    )
 
     // A response can be any class, but a description will be generated from the annotation
     @Response("A String Response")
-    data class StringResponse(val str: String)
+    data class StringResponse(
+        val str: String,
+    )
 
     // DTOs can be requests and responses, annotations are optional
     @Response("A String Response")
     @Request("A String Request")
-    data class StringUsable(val str: String)
+    data class StringUsable(
+        val str: String,
+    )
 }

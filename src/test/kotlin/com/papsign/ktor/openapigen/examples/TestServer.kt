@@ -48,14 +48,13 @@ import java.time.OffsetTime
 import java.time.ZonedDateTime
 
 object TestServer {
-
     fun Application.testServer() {
         setupBaseTestServer()
         routing { }
         apiRouting {
             get<StringParam, StringResponse>(
                 info("String Param Endpoint", "This is a String Param Endpoint"),
-                example = StringResponse("Hi")
+                example = StringResponse("Hi"),
             ) { params ->
                 respond(StringResponse(params.a))
             }
@@ -63,7 +62,7 @@ object TestServer {
             route("header") {
                 get<NameParam, NameGreetingResponse>(
                     info("Header Param Endpoint", "This is a Header Param Endpoint"),
-                    example = NameGreetingResponse("Hi, openapi!")
+                    example = NameGreetingResponse("Hi, openapi!"),
                 ) { params ->
                     respond(NameGreetingResponse("Hi, ${params.name}!"))
                 }
@@ -72,7 +71,7 @@ object TestServer {
             route("list") {
                 get<StringParam, List<StringResponse>>(
                     info("String Param Endpoint", "This is a String Param Endpoint"),
-                    example = listOf(StringResponse("Hi"))
+                    example = listOf(StringResponse("Hi")),
                 ) { params ->
                     respond(listOf(StringResponse(params.a)))
                 }
@@ -82,7 +81,7 @@ object TestServer {
 
             route("long").get<LongParam, LongResponse>(
                 info("Long Param Endpoint", "This is a String Param Endpoint"),
-                example = LongResponse(Long.MAX_VALUE)
+                example = LongResponse(Long.MAX_VALUE),
             ) { params ->
                 respond(LongResponse(params.a))
             }
@@ -90,15 +89,15 @@ object TestServer {
             route("validate-string").post<Unit, StringResponse, StringValidatorsExample>(
                 info(
                     "This endpoint demonstrates the usage of String validators",
-                    "This endpoint demonstrates the usage of String validators"
+                    "This endpoint demonstrates the usage of String validators",
                 ),
                 exampleRequest = StringValidatorsExample(
                     "A string that is at least 2 characters long",
                     "A short string",
                     "Between 2 and 20",
-                    "5a21be2"
+                    "5a21be2",
                 ),
-                exampleResponse = StringResponse("All of the fields were valid")
+                exampleResponse = StringResponse("All of the fields were valid"),
             ) { params, body ->
                 respond(StringResponse("All of the fields were valid"))
             }
@@ -106,15 +105,15 @@ object TestServer {
             route("validate-number").post<Unit, StringResponse, NumberValidatorsExample>(
                 info(
                     "This endpoint demonstrates the usage of number validators",
-                    "This endpoint demonstrates the usage of number validators"
+                    "This endpoint demonstrates the usage of number validators",
                 ),
                 exampleRequest = NumberValidatorsExample(
                     1,
                     56,
                     15.02f,
-                    0.023f
+                    0.023f,
                 ),
-                exampleResponse = StringResponse("All of the fields were valid")
+                exampleResponse = StringResponse("All of the fields were valid"),
             ) { params, body ->
                 respond(StringResponse("All of the fields were valid"))
             }
@@ -126,9 +125,9 @@ object TestServer {
                     get<StringParam, StringResponse>(
                         info(
                             "201 String Param Endpoint",
-                            "This is a String Param Endpoint that has a 201 status code"
+                            "This is a String Param Endpoint that has a 201 status code",
                         ),
-                        example = StringResponse("Hi")
+                        example = StringResponse("Hi"),
                     ) { params ->
                         respond(StringResponse(params.a))
                     }
@@ -136,10 +135,10 @@ object TestServer {
                     route("reset").get<StringParam, StringResponse>(
                         info(
                             "String Param Endpoint with @response based status code",
-                            "This is a String Param Endpoint that resets the status code back to the one provided by @Response"
+                            "This is a String Param Endpoint that resets the status code back to the one provided by @Response",
                         ),
                         responseAnnotationStatus(),
-                        example = StringResponse("Hi")
+                        example = StringResponse("Hi"),
                     ) { params ->
                         respond(StringResponse(params.a))
                     }
@@ -148,10 +147,10 @@ object TestServer {
                 route("202").get<StringParam, StringResponse>(
                     info(
                         "String Param Endpoint with inline 202 response",
-                        "This is a String Param Endpoint that has a 202 response code"
+                        "This is a String Param Endpoint that has a 202 response code",
                     ),
                     status(HttpStatusCode.Accepted),
-                    example = StringResponse("Hi")
+                    example = StringResponse("Hi"),
                 ) { params ->
                     respond(StringResponse(params.a))
                 }
@@ -162,7 +161,7 @@ object TestServer {
                     route("exception").throws(HttpStatusCode.ExpectationFailed, "example", CustomException::class) {
                         get<StringParam, StringResponse>(
                             info("String Param Endpoint", "This is a String Param Endpoint"),
-                            example = StringResponse("Hi")
+                            example = StringResponse("Hi"),
                         ) { params ->
                             throw CustomException()
                         }
@@ -170,14 +169,14 @@ object TestServer {
 
                     get<StringParam, StringResponse>(
                         info("String Param Endpoint", "This is a String Param Endpoint"),
-                        example = StringResponse("Hi")
+                        example = StringResponse("Hi"),
                     ) { params ->
                         respond(StringResponse(params.a))
                     }
 
                     route("long").get<LongParam, LongResponse>(
                         info("Long Param Endpoint", "This is a String Param Endpoint"),
-                        example = LongResponse(Long.MAX_VALUE)
+                        example = LongResponse(Long.MAX_VALUE),
                     ) { params ->
                         respond(LongResponse(params.a))
                     }
@@ -239,26 +238,34 @@ object TestServer {
     }
 
     @JvmStatic
-    fun main(args: Array<String>) {
+    fun main(
+        args: Array<String>,
+    ) {
         embeddedServer(Netty, 8080, "localhost") { testServer() }.start(true)
     }
 
     class CustomException : Exception()
 
     @Path("string/{a}")
-    data class StringParam(@param:PathParam("A simple String Param") val a: String)
+    data class StringParam(
+        @param:PathParam("A simple String Param") val a: String,
+    )
 
     @Response("A String Response")
-    data class StringResponse(@param:Description("The string value") val str: String)
+    data class StringResponse(
+        @param:Description("The string value") val str: String,
+    )
 
     data class NameParam(
         @param:HeaderParam("A simple Header Param")
         @OpenAPIName("X-NAME")
-        val name: String
+        val name: String,
     )
 
     @Response("A Response for header param example")
-    data class NameGreetingResponse(@StringExample("Hi, John!") val str: String)
+    data class NameGreetingResponse(
+        @StringExample("Hi, John!") val str: String,
+    )
 
     @Request("A Request with String fields validated for length or pattern")
     data class StringValidatorsExample(
@@ -267,8 +274,8 @@ object TestServer {
         @Length(2, 20) val strWithLength: String,
         @RegularExpression(
             "^[0-9a-fA-F]*$",
-            "The field strHexaDec should only contain hexadecimal digits"
-        ) val strHexaDec: String
+            "The field strHexaDec should only contain hexadecimal digits",
+        ) val strHexaDec: String,
     )
 
     @Request("A Request with validated number fields")
@@ -276,47 +283,103 @@ object TestServer {
         @Min(0, "The value of field intWithMin should be a positive integer") val intWithMin: Int,
         @Clamp(1, 90) val intBetween: Int,
         @FMax(100.0) val floatMax: Float,
-        @FClamp(0.0, 1.0, "The value of field floatBetween should be a between 0 and 1") val floatBetween: Float
+        @FClamp(0.0, 1.0, "The value of field floatBetween should be a between 0 and 1") val floatBetween: Float,
     )
 
     @Response("A String Response")
     @Request("A String Request")
-    data class StringUsable(val str: String)
+    data class StringUsable(
+        val str: String,
+    )
 
     @Path("{a}")
-    data class LongParam(@param:PathParam("A simple Long Param") val a: Long)
+    data class LongParam(
+        @param:PathParam("A simple Long Param") val a: Long,
+    )
 
     @Response("A Long Response")
-    data class LongResponse(val str: Long)
+    data class LongResponse(
+        val str: Long,
+    )
 
-    enum class Tags(override val description: String) : APITag {
-        EXAMPLE("Wow this is a tag?!")
+    enum class Tags(
+        override val description: String,
+    ) : APITag {
+        EXAMPLE("Wow this is a tag?!"),
     }
 
-    enum class Scopes(override val description: String) : Described {
-        profile("Basic Profile scope"), email("Email scope")
+    enum class Scopes(
+        override val description: String,
+    ) : Described {
+        profile("Basic Profile scope"),
+        email("Email scope"),
     }
 
-    data class APIPrincipal(val a: String, val b: String)
+    data class APIPrincipal(
+        val a: String,
+        val b: String,
+    )
 
     @Request("A LocalDate Request")
-    data class LocalDateQuery(@param:QueryParam("LocalDate") val date: LocalDate)
-    data class LocalDateOptionalQuery(@param:QueryParam("LocalDate") val date: LocalDate?)
-    data class LocalDateTimeQuery(@param:QueryParam("LocalDateTime") val date: LocalDateTime)
-    data class OffsetDateTimeQuery(@param:QueryParam("OffsetDateTime") val date: OffsetDateTime)
-    data class ZonedDateTimeQuery(@param:QueryParam("OffsetDateTime") val date: ZonedDateTime)
-    data class InstantQuery(@param:QueryParam("Instant") val date: Instant)
+    data class LocalDateQuery(
+        @param:QueryParam("LocalDate") val date: LocalDate,
+    )
 
-    data class LocalTimeQuery(@param:QueryParam("LocalTime") val time: LocalTime)
-    data class OffsetTimeQuery(@param:QueryParam("OffsetTime") val time: OffsetTime)
+    data class LocalDateOptionalQuery(
+        @param:QueryParam("LocalDate") val date: LocalDate?,
+    )
 
-    data class LocalDateResponse(val date: LocalDate?)
-    data class LocalDateTimeResponse(val date: LocalDateTime?)
-    data class OffsetDateTimeResponse(val date: OffsetDateTime?)
-    data class ZonedDateTimeResponse(val date: ZonedDateTime?)
-    data class InstantResponse(val instant: Instant)
-    data class LocalTimeResponse(val time: LocalTime?)
-    data class OffsetTimeResponse(val time: OffsetTime?)
+    data class LocalDateTimeQuery(
+        @param:QueryParam("LocalDateTime") val date: LocalDateTime,
+    )
+
+    data class OffsetDateTimeQuery(
+        @param:QueryParam("OffsetDateTime") val date: OffsetDateTime,
+    )
+
+    data class ZonedDateTimeQuery(
+        @param:QueryParam("OffsetDateTime") val date: ZonedDateTime,
+    )
+
+    data class InstantQuery(
+        @param:QueryParam("Instant") val date: Instant,
+    )
+
+    data class LocalTimeQuery(
+        @param:QueryParam("LocalTime") val time: LocalTime,
+    )
+
+    data class OffsetTimeQuery(
+        @param:QueryParam("OffsetTime") val time: OffsetTime,
+    )
+
+    data class LocalDateResponse(
+        val date: LocalDate?,
+    )
+
+    data class LocalDateTimeResponse(
+        val date: LocalDateTime?,
+    )
+
+    data class OffsetDateTimeResponse(
+        val date: OffsetDateTime?,
+    )
+
+    data class ZonedDateTimeResponse(
+        val date: ZonedDateTime?,
+    )
+
+    data class InstantResponse(
+        val instant: Instant,
+    )
+
+    data class LocalTimeResponse(
+        val time: LocalTime?,
+    )
+
+    data class OffsetTimeResponse(
+        val time: OffsetTime?,
+    )
 
     data class FilterQuery(
         @param:QueryParam("Vendor Code") @Trim
@@ -355,10 +418,8 @@ object TestServer {
         val inStock: Boolean? = null,
         @param:QueryParam("active")
         val active: Boolean? = null,
-
         @param:QueryParam("employeeName") @Trim
         val employeeName: String? = null,
-
         @param:QueryParam("sortToken")
         @StringExample("fullName")
         @Trim
@@ -368,6 +429,6 @@ object TestServer {
         val pageSize: Int? = null,
         @param:QueryParam("page")
         @Min(0)
-        val page: Long? = 0
+        val page: Long? = 0,
     )
 }

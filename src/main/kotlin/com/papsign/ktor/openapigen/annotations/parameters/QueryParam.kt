@@ -11,5 +11,5 @@ annotation class QueryParam(
     val style: QueryParamStyle = QueryParamStyle.form,
     val explode: Boolean = true,
     val allowEmptyValues: Boolean = false,
-    val deprecated: Boolean = false
+    val deprecated: Boolean = false,
 )

@@ -10,10 +10,16 @@ import com.papsign.ktor.openapigen.parameters.parsers.converters.primitive.Primi
 import kotlin.reflect.KType
 
 interface ConverterFactory {
-    fun buildConverter(type: KType): Converter?
-    fun buildConverterForced(type: KType): Converter = buildConverter(type) ?: error(
-        "No ${this.javaClass.declaringClass?.simpleName ?: this.javaClass.simpleName} Converter exists for type $type"
-    )
+    fun buildConverter(
+        type: KType,
+    ): Converter?
+
+    fun buildConverterForced(
+        type: KType,
+    ): Converter =
+        buildConverter(type) ?: error(
+            "No ${this.javaClass.declaringClass?.simpleName ?: this.javaClass.simpleName} Converter exists for type $type",
+        )
 
     companion object : ConverterSelectorFactory(
         PrimitiveConverter,
@@ -22,6 +28,6 @@ interface ConverterFactory {
         ArrayConverter,
         MapConverter,
         OptionalConverter,
-        ObjectConverter
+        ObjectConverter,
     )
 }

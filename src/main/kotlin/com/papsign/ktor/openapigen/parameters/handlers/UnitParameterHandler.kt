@@ -8,8 +8,13 @@ import io.ktor.http.Parameters
 
 object UnitParameterHandler :
     ParameterHandler<Unit> {
-    override fun parse(parameters: Parameters, headers: Headers) = Unit
-    override fun getParameters(apiGen: OpenAPIGen, provider: ModuleProvider<*>): List<ParameterModel<*>> {
-        return listOf()
-    }
+    override fun parse(
+        parameters: Parameters,
+        headers: Headers,
+    ) = Unit
+
+    override fun getParameters(
+        apiGen: OpenAPIGen,
+        provider: ModuleProvider<*>,
+    ): List<ParameterModel<*>> = listOf()
 }

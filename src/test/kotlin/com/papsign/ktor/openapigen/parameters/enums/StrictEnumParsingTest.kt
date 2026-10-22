@@ -23,17 +23,20 @@ import kotlin.test.assertTrue
 @StrictEnumParsing
 enum class StrictTestEnum {
     VALID,
-    ALSO_VALID
+    ALSO_VALID,
 }
 
 @Path("/")
-data class NullableStrictEnumParams(@param:QueryParam("") val type: StrictTestEnum? = null)
+data class NullableStrictEnumParams(
+    @param:QueryParam("") val type: StrictTestEnum? = null,
+)
 
 @Path("/")
-data class NonNullableStrictEnumParams(@param:QueryParam("") val type: StrictTestEnum)
+data class NonNullableStrictEnumParams(
+    @param:QueryParam("") val type: StrictTestEnum,
+)
 
 class StrictEnumParsingTest {
-
     companion object {
         // test server for nullable enums
         private fun Application.nullableEnum() {
@@ -113,14 +116,14 @@ class StrictEnumParsingTest {
                 assertEquals(HttpStatusCode.BadRequest, status)
                 assertEquals(
                     "Invalid value [valid] for enum parameter of type StrictTestEnum. Expected: [VALID,ALSO_VALID]",
-                    bodyAsText()
+                    bodyAsText(),
                 )
             }
             client.get("http://localhost/?type=also_valid").apply {
                 assertEquals(HttpStatusCode.BadRequest, status)
                 assertEquals(
                     "Invalid value [also_valid] for enum parameter of type StrictTestEnum. Expected: [VALID,ALSO_VALID]",
-                    bodyAsText()
+                    bodyAsText(),
                 )
             }
         }
@@ -136,7 +139,7 @@ class StrictEnumParsingTest {
                 assertEquals(HttpStatusCode.BadRequest, status)
                 assertEquals(
                     "Invalid value [what] for enum parameter of type StrictTestEnum. Expected: [VALID,ALSO_VALID]",
-                    bodyAsText()
+                    bodyAsText(),
                 )
             }
         }
@@ -182,14 +185,14 @@ class StrictEnumParsingTest {
                 assertEquals(HttpStatusCode.BadRequest, status)
                 assertEquals(
                     "Invalid value [valid] for enum parameter of type StrictTestEnum. Expected: [VALID,ALSO_VALID]",
-                    bodyAsText()
+                    bodyAsText(),
                 )
             }
             client.get("http://localhost/?type=also_valid").apply {
                 assertEquals(HttpStatusCode.BadRequest, status)
                 assertEquals(
                     "Invalid value [also_valid] for enum parameter of type StrictTestEnum. Expected: [VALID,ALSO_VALID]",
-                    bodyAsText()
+                    bodyAsText(),
                 )
             }
         }
@@ -205,7 +208,7 @@ class StrictEnumParsingTest {
                 assertEquals(HttpStatusCode.BadRequest, status)
                 assertEquals(
                     "Invalid value [what] for enum parameter of type StrictTestEnum. Expected: [VALID,ALSO_VALID]",
-                    bodyAsText()
+                    bodyAsText(),
                 )
             }
         }

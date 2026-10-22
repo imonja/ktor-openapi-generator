@@ -35,18 +35,21 @@ import kotlin.reflect.jvm.jvmErasure
  * default content provider using the ktor pipeline to handle the serialization and deserialization
  */
 object KtorContentProvider : ContentTypeProvider, BodyParser, ResponseSerializer, OpenAPIGenModuleExtension {
-
     //    private var contentNegotiation: ContentNegotiation? = null
     private var contentTypes: Set<ContentType>? = null
 
-    private fun initContentTypes(apiGen: OpenAPIGen): Set<ContentType>? {
-        val reflectedContentTypes = apiGen.pipeline.pluginOrNull(ContentNegotiation)
+    private fun initContentTypes(
+        apiGen: OpenAPIGen,
+    ): Set<ContentType>? {
+        val reflectedContentTypes = apiGen.pipeline
+            .pluginOrNull(ContentNegotiation)
             ?.getPrivateProperty<PluginInstance, PluginBuilder<ContentNegotiationConfig>>("builder")
             ?.pluginConfig
             ?.getPrivateProperty<ContentNegotiationConfig, ArrayList<*>>("registrations")
             ?.mapNotNull { it }
             ?.mapNotNull { record ->
-                Class.forName("io.ktor.server.plugins.contentnegotiation.ConverterRegistration")
+                Class
+                    .forName("io.ktor.server.plugins.contentnegotiation.ConverterRegistration")
                     .kotlin
                     .memberProperties
                     .firstOrNull { it.name == "contentType" }
@@ -54,10 +57,8 @@ object KtorContentProvider : ContentTypeProvider, BodyParser, ResponseSerializer
                     ?.let {
                         @Suppress("UNCHECKED_CAST")
                         it as KProperty1<Any, ContentType>
-                    }
-                    ?.get(record)
-            }
-            ?.toSet()
+                    }?.get(record)
+            }?.toSet()
             ?: emptySet()
 
         contentTypes = reflectedContentTypes
@@ -65,17 +66,21 @@ object KtorContentProvider : ContentTypeProvider, BodyParser, ResponseSerializer
     }
 
     @Suppress("UNCHECKED_CAST")
-    private inline fun <reified T : Any, R> T.getPrivateProperty(name: String): R? = T::class.memberProperties
-        .firstOrNull { it.name == name }
-        ?.apply { isAccessible = true }
-        ?.get(this) as? R
+    private inline fun <reified T : Any, R> T.getPrivateProperty(
+        name: String,
+    ): R? =
+        T::class
+            .memberProperties
+            .firstOrNull { it.name == name }
+            ?.apply { isAccessible = true }
+            ?.get(this) as? R
 
     override fun <T> getMediaType(
         type: KType,
         apiGen: OpenAPIGen,
         provider: ModuleProvider<*>,
         example: T?,
-        usage: ContentTypeProvider.Usage
+        usage: ContentTypeProvider.Usage,
     ): Map<ContentType, MediaTypeModel<T>>? {
         if (type == unitKType) return null
         val clazz = type.jvmErasure
@@ -83,16 +88,25 @@ object KtorContentProvider : ContentTypeProvider, BodyParser, ResponseSerializer
             ContentTypeProvider.Usage.PARSE -> when {
                 clazz.findAnnotation<KtorRequest>() != null -> {
                 }
+
                 clazz.annotations.none { it.annotationClass.findAnnotation<APIRequestFormat>() != null } -> {
                 }
-                else -> return null
+
+                else -> {
+                    return null
+                }
             }
+
             ContentTypeProvider.Usage.SERIALIZE -> when {
                 clazz.findAnnotation<KtorResponse>() != null -> {
                 }
+
                 clazz.annotations.none { it.annotationClass.findAnnotation<APIResponseFormat>() != null } -> {
                 }
-                else -> return null
+
+                else -> {
+                    return null
+                }
             }
         }
         val contentTypes = initContentTypes(apiGen) ?: return null
@@ -103,27 +117,39 @@ object KtorContentProvider : ContentTypeProvider, BodyParser, ResponseSerializer
         return contentTypes.associateWith { media.copy() }
     }
 
-    override fun <T : Any> getParseableContentTypes(type: KType): List<ContentType> {
-        return contentTypes!!.toList()
-    }
+    override fun <T : Any> getParseableContentTypes(
+        type: KType,
+    ): List<ContentType> = contentTypes!!.toList()
 
-    override suspend fun <T : Any> parseBody(clazz: KType, request: RoutingContext): T {
+    override suspend fun <T : Any> parseBody(
+        clazz: KType,
+        request: RoutingContext,
+    ): T {
         val info = TypeInfo(
             type = clazz.jvmErasure,
-            kotlinType = clazz
+            kotlinType = clazz,
         )
         return request.call.receive(info)
     }
 
-    override fun <T : Any> getSerializableContentTypes(type: KType): List<ContentType> {
-        return contentTypes!!.toList()
-    }
+    override fun <T : Any> getSerializableContentTypes(
+        type: KType,
+    ): List<ContentType> = contentTypes!!.toList()
 
-    override suspend fun <T : Any> respond(response: T, request: RoutingContext, contentType: ContentType) {
+    override suspend fun <T : Any> respond(
+        response: T,
+        request: RoutingContext,
+        contentType: ContentType,
+    ) {
         request.call.respond(response as Any)
     }
 
-    override suspend fun <T : Any> respond(statusCode: HttpStatusCode, response: T, request: RoutingContext, contentType: ContentType) {
+    override suspend fun <T : Any> respond(
+        statusCode: HttpStatusCode,
+        response: T,
+        request: RoutingContext,
+        contentType: ContentType,
+    ) {
         request.call.respond(statusCode, response as Any)
     }
 }

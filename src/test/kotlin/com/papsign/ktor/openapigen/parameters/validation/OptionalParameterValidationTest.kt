@@ -9,31 +9,33 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class OptionalParameterValidationTest {
+    @Test
+    fun `accepts an omitted optional parameter`() =
+        testApplication {
+            application { configureParameterValidation() }
+
+            client.get("http://localhost/validated?count=50&name=ValidName").apply {
+                assertEquals(HttpStatusCode.OK, status)
+            }
+        }
 
     @Test
-    fun `accepts an omitted optional parameter`() = testApplication {
-        application { configureParameterValidation() }
+    fun `accepts a valid optional parameter`() =
+        testApplication {
+            application { configureParameterValidation() }
 
-        client.get("http://localhost/validated?count=50&name=ValidName").apply {
-            assertEquals(HttpStatusCode.OK, status)
+            client.get("http://localhost/validated?count=50&name=ValidName&tag=ValidTag").apply {
+                assertEquals(HttpStatusCode.OK, status)
+            }
         }
-    }
 
     @Test
-    fun `accepts a valid optional parameter`() = testApplication {
-        application { configureParameterValidation() }
+    fun `rejects a short optional parameter`() =
+        testApplication {
+            application { configureParameterValidation() }
 
-        client.get("http://localhost/validated?count=50&name=ValidName&tag=ValidTag").apply {
-            assertEquals(HttpStatusCode.OK, status)
+            client.get("http://localhost/validated?count=50&name=ValidName&tag=A").apply {
+                assertTrue(status.value >= 400, "Should return error for optional tag length < 2")
+            }
         }
-    }
-
-    @Test
-    fun `rejects a short optional parameter`() = testApplication {
-        application { configureParameterValidation() }
-
-        client.get("http://localhost/validated?count=50&name=ValidName&tag=A").apply {
-            assertTrue(status.value >= 400, "Should return error for optional tag length < 2")
-        }
-    }
 }

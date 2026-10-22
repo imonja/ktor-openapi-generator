@@ -13,7 +13,9 @@ internal object LibraryVersionCheck {
     private const val RUNNER_CLASS_FILE = "com/papsign/ktor/openapigen/spec/GenerateSpecMain.class"
 
     /** Version of the library selected on the classpath, or `null` when it is not a resolved module (absent, project or file dependency). */
-    fun resolvedVersion(root: ResolvedComponentResult): String? {
+    fun resolvedVersion(
+        root: ResolvedComponentResult,
+    ): String? {
         val seen = HashSet<ResolvedComponentResult>()
         val queue = ArrayDeque(listOf(root))
         while (queue.isNotEmpty()) {
@@ -26,14 +28,20 @@ internal object LibraryVersionCheck {
         return null
     }
 
-    fun mismatchWarning(resolvedVersion: String?, pluginVersion: String): String? {
+    fun mismatchWarning(
+        resolvedVersion: String?,
+        pluginVersion: String,
+    ): String? {
         if (resolvedVersion == null || resolvedVersion == pluginVersion) return null
         return "$GROUP:$NAME $resolvedVersion is used on the runtime classpath, but the ktor-openapi plugin version is $pluginVersion. " +
             "Gradle selects the highest requested version, so a lower declared version is overridden by the plugin. " +
             "Use the same version for the plugin and the library."
     }
 
-    fun missingRunnerMessage(resolvedVersion: String?, pluginVersion: String): String =
+    fun missingRunnerMessage(
+        resolvedVersion: String?,
+        pluginVersion: String,
+    ): String =
         if (resolvedVersion == null) {
             "$GROUP:$NAME is not on the runtime classpath. Add implementation(\"$GROUP:$NAME:$pluginVersion\") " +
                 "or enable ktorOpenApi { addLibraryDependency.set(true) }."
@@ -41,11 +49,14 @@ internal object LibraryVersionCheck {
             "$GROUP:$NAME $resolvedVersion does not support standalone OpenAPI generation. Use version $pluginVersion."
         }
 
-    fun runnerOnClasspath(classpath: Iterable<File>): Boolean = classpath.any { entry ->
-        when {
-            entry.isDirectory -> File(entry, RUNNER_CLASS_FILE).isFile
-            entry.isFile && entry.name.endsWith(".jar") -> ZipFile(entry).use { it.getEntry(RUNNER_CLASS_FILE) != null }
-            else -> false
+    fun runnerOnClasspath(
+        classpath: Iterable<File>,
+    ): Boolean =
+        classpath.any { entry ->
+            when {
+                entry.isDirectory -> File(entry, RUNNER_CLASS_FILE).isFile
+                entry.isFile && entry.name.endsWith(".jar") -> ZipFile(entry).use { it.getEntry(RUNNER_CLASS_FILE) != null }
+                else -> false
+            }
         }
-    }
 }

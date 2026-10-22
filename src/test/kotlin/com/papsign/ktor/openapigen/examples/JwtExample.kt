@@ -6,7 +6,9 @@ import io.ktor.server.netty.Netty
 
 object JwtExample {
     @JvmStatic
-    fun main(args: Array<String>) {
+    fun main(
+        args: Array<String>,
+    ) {
         embeddedServer(Netty, 8080, "localhost") { testServerWithJwtAuth() }.start(true)
     }
 }

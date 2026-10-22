@@ -6,4 +6,7 @@ import com.papsign.ktor.openapigen.validation.ValidatorAnnotation
 @Target(AnnotationTarget.TYPE, AnnotationTarget.PROPERTY)
 @SchemaProcessorAnnotation(MinProcessor::class)
 @ValidatorAnnotation(MinProcessor::class)
-annotation class Min(val value: Long, val errorMessage: String = "")
+annotation class Min(
+    val value: Long,
+    val errorMessage: String = "",
+)

@@ -53,19 +53,19 @@ internal class FileConstraintsTest {
         @FileSize(max = 8)
         @AllowedContentTypes("image/png", "image/jpeg")
         val file: NamedFileInputStream,
-        val title: String?
+        val title: String?,
     )
 
     @FormDataRequest
     data class WildcardRequest(
         @AllowedContentTypes("image/*")
-        val file: NamedFileInputStream?
+        val file: NamedFileInputStream?,
     )
 
     @FormDataRequest
     data class TwoFilesRequest(
         @FileSize(max = 8) val first: NamedFileInputStream,
-        @FileSize(min = 0, max = 8) val second: InputStream
+        @FileSize(min = 0, max = 8) val second: InputStream,
     )
 
     @FormDataRequest
@@ -77,49 +77,65 @@ internal class FileConstraintsTest {
         @AllowedContentTypes("application/pdf")
         val document: ContentInputStream?,
         @PartEncoding("text/plain")
-        val notes: InputStream?
+        val notes: InputStream?,
     )
 
     @FormDataRequest
-    data class SizeOnString(@FileSize(max = 1) val text: String)
+    data class SizeOnString(
+        @FileSize(max = 1) val text: String,
+    )
 
     @FormDataRequest
-    data class TypesOnPlainStream(@AllowedContentTypes("image/png") val file: InputStream)
+    data class TypesOnPlainStream(
+        @AllowedContentTypes("image/png") val file: InputStream,
+    )
 
     @FormDataRequest
     data class TypesWithEncoding(
         @AllowedContentTypes("image/png")
         @PartEncoding("image/png")
-        val file: NamedFileInputStream
+        val file: NamedFileInputStream,
     )
 
     @FormDataRequest
-    data class InvertedSize(@FileSize(min = 10, max = 1) val file: NamedFileInputStream)
+    data class InvertedSize(
+        @FileSize(min = 10, max = 1) val file: NamedFileInputStream,
+    )
 
-    data class Uploaded(val name: String?, val contentType: String?, val content: String)
+    data class Uploaded(
+        val name: String?,
+        val contentType: String?,
+        val content: String,
+    )
 
     private fun NamedFileInputStream.uploaded() = Uploaded(name, contentType?.toString(), use { String(it.readBytes()) })
 
-    private suspend fun HttpClient.upload(path: String, vararg files: Triple<String, String?, ByteArray>): HttpResponse = post(path) {
-        setBody(
-            MultiPartFormDataContent(
-                formData {
-                    files.forEach { (name, contentType, bytes) ->
-                        append(
-                            name,
-                            bytes,
-                            Headers.build {
-                                contentType?.let { append(HttpHeaders.ContentType, it) }
-                                append(HttpHeaders.ContentDisposition, "filename=\"$name.bin\"")
-                            }
-                        )
-                    }
-                }
+    private suspend fun HttpClient.upload(
+        path: String,
+        vararg files: Triple<String, String?, ByteArray>,
+    ): HttpResponse =
+        post(path) {
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        files.forEach { (name, contentType, bytes) ->
+                            append(
+                                name,
+                                bytes,
+                                Headers.build {
+                                    contentType?.let { append(HttpHeaders.ContentType, it) }
+                                    append(HttpHeaders.ContentDisposition, "filename=\"$name.bin\"")
+                                },
+                            )
+                        }
+                    },
+                ),
             )
-        )
-    }
+        }
 
-    private fun runtimeTest(block: suspend HttpClient.() -> Unit) = testApplication {
+    private fun runtimeTest(
+        block: suspend HttpClient.() -> Unit,
+    ) = testApplication {
         application {
             setupBaseTestServer()
             apiRouting {
@@ -142,76 +158,91 @@ internal class FileConstraintsTest {
     }
 
     @Test
-    fun `valid file is passed to the handler with its name and content type`() = runtimeTest {
-        val response = upload("/avatar", Triple("file", "image/png; foo=bar", "12345678".toByteArray()))
-        assertEquals(HttpStatusCode.OK, response.status, response.bodyAsText())
-        val body = mapper.readTree(response.bodyAsText())
-        assertEquals("file.bin", body["name"].asText())
-        assertEquals("image/png; foo=bar", body["contentType"].asText())
-        assertEquals("12345678", body["content"].asText())
-    }
-
-    @Test
-    fun `file larger than max is rejected`() = runtimeTest {
-        val response = upload("/avatar", Triple("file", "image/png", "123456789".toByteArray()))
-        assertEquals(HttpStatusCode.BadRequest, response.status)
-        assertContains(response.bodyAsText(), "at most 8 bytes")
-    }
-
-    @Test
-    fun `empty file is rejected by default`() = runtimeTest {
-        val response = upload("/avatar", Triple("file", "image/png", ByteArray(0)))
-        assertEquals(HttpStatusCode.BadRequest, response.status)
-        assertContains(response.bodyAsText(), "at least 1 bytes, but it is 0")
-    }
-
-    @Test
-    fun `disallowed content type is rejected`() = runtimeTest {
-        val response = upload("/avatar", Triple("file", "image/gif", "GIF".toByteArray()))
-        assertEquals(HttpStatusCode.BadRequest, response.status)
-        assertContains(response.bodyAsText(), "should be one of image/png, image/jpeg, but it is image/gif")
-    }
-
-    @Test
-    fun `missing content type is rejected`() = runtimeTest {
-        val response = upload("/avatar", Triple("file", null, "1".toByteArray()))
-        assertEquals(HttpStatusCode.BadRequest, response.status)
-        assertContains(response.bodyAsText(), "but it is missing")
-    }
-
-    @Test
-    fun `wildcard content type matches any subtype and absent optional file is null`() = runtimeTest {
-        val webp = upload("/wildcard", Triple("file", "IMAGE/WEBP", "webp".toByteArray()))
-        assertEquals(HttpStatusCode.OK, webp.status, webp.bodyAsText())
-        assertEquals("webp", mapper.readTree(webp.bodyAsText())["content"].asText())
-
-        assertEquals(HttpStatusCode.BadRequest, upload("/wildcard", Triple("file", "text/plain", "x".toByteArray())).status)
-
-        val none = upload("/wildcard", Triple("other", "text/plain", "x".toByteArray()))
-        assertEquals("none", mapper.readTree(none.bodyAsText())["content"].asText())
-    }
-
-    @Test
-    fun `annotated files stay readable when they are not the last part`() = runtimeTest {
-        val response = upload(
-            "/two-files",
-            Triple("first", "image/png", "first".toByteArray()),
-            Triple("second", "image/png", ByteArray(0))
-        )
-        assertEquals(HttpStatusCode.OK, response.status, response.bodyAsText())
-        assertEquals("first|", response.bodyAsText())
-    }
-
-    @Test
-    fun `malformed multipart body is a bad request`() = runtimeTest {
-        val response = post("/avatar") {
-            header(HttpHeaders.ContentType, ContentType.MultiPart.FormData.withParameter("boundary", "xyz").toString())
-            setBody("--xyz\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a\"\r\n\r\ntruncated")
+    fun `valid file is passed to the handler with its name and content type`() =
+        runtimeTest {
+            val response = upload("/avatar", Triple("file", "image/png; foo=bar", "12345678".toByteArray()))
+            assertEquals(HttpStatusCode.OK, response.status, response.bodyAsText())
+            val body = mapper.readTree(response.bodyAsText())
+            assertEquals("file.bin", body["name"].asText())
+            assertEquals("image/png; foo=bar", body["contentType"].asText())
+            assertEquals("12345678", body["content"].asText())
         }
-        assertEquals(HttpStatusCode.BadRequest, response.status)
-    }
 
-    private fun registrationError(register: NormalOpenAPIRoute.() -> Unit): String {
+    @Test
+    fun `file larger than max is rejected`() =
+        runtimeTest {
+            val response = upload("/avatar", Triple("file", "image/png", "123456789".toByteArray()))
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertContains(response.bodyAsText(), "at most 8 bytes")
+        }
+
+    @Test
+    fun `empty file is rejected by default`() =
+        runtimeTest {
+            val response = upload("/avatar", Triple("file", "image/png", ByteArray(0)))
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertContains(response.bodyAsText(), "at least 1 bytes, but it is 0")
+        }
+
+    @Test
+    fun `disallowed content type is rejected`() =
+        runtimeTest {
+            val response = upload("/avatar", Triple("file", "image/gif", "GIF".toByteArray()))
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertContains(response.bodyAsText(), "should be one of image/png, image/jpeg, but it is image/gif")
+        }
+
+    @Test
+    fun `missing content type is rejected`() =
+        runtimeTest {
+            val response = upload("/avatar", Triple("file", null, "1".toByteArray()))
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertContains(response.bodyAsText(), "but it is missing")
+        }
+
+    @Test
+    fun `wildcard content type matches any subtype and absent optional file is null`() =
+        runtimeTest {
+            val webp = upload("/wildcard", Triple("file", "IMAGE/WEBP", "webp".toByteArray()))
+            assertEquals(HttpStatusCode.OK, webp.status, webp.bodyAsText())
+            assertEquals("webp", mapper.readTree(webp.bodyAsText())["content"].asText())
+
+            assertEquals(HttpStatusCode.BadRequest, upload("/wildcard", Triple("file", "text/plain", "x".toByteArray())).status)
+
+            val none = upload("/wildcard", Triple("other", "text/plain", "x".toByteArray()))
+            assertEquals("none", mapper.readTree(none.bodyAsText())["content"].asText())
+        }
+
+    @Test
+    fun `annotated files stay readable when they are not the last part`() =
+        runtimeTest {
+            val response = upload(
+                "/two-files",
+                Triple("first", "image/png", "first".toByteArray()),
+                Triple("second", "image/png", ByteArray(0)),
+            )
+            assertEquals(HttpStatusCode.OK, response.status, response.bodyAsText())
+            assertEquals("first|", response.bodyAsText())
+        }
+
+    @Test
+    fun `malformed multipart body is a bad request`() =
+        runtimeTest {
+            val response = post("/avatar") {
+                header(
+                    HttpHeaders.ContentType,
+                    ContentType.MultiPart.FormData
+                        .withParameter("boundary", "xyz")
+                        .toString(),
+                )
+                setBody("--xyz\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a\"\r\n\r\ntruncated")
+            }
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+        }
+
+    private fun registrationError(
+        register: NormalOpenAPIRoute.() -> Unit,
+    ): String {
         val error = assertFails {
             testApplication {
                 application {
@@ -228,25 +259,27 @@ internal class FileConstraintsTest {
     fun `misplaced file annotations fail route registration`() {
         assertContains(
             registrationError { post<Unit, String, SizeOnString> { _, _ -> respond("") } },
-            "SizeOnString.text: FileSize can only be used on types"
+            "SizeOnString.text: FileSize can only be used on types",
         )
         assertContains(
             registrationError { post<Unit, String, TypesOnPlainStream> { _, _ -> respond("") } },
-            "TypesOnPlainStream.file: AllowedContentTypes can only be used on types"
+            "TypesOnPlainStream.file: AllowedContentTypes can only be used on types",
         )
         assertContains(
             registrationError { post<Unit, String, TypesWithEncoding> { _, _ -> respond("") } },
-            "TypesWithEncoding.file: PartEncoding and AllowedContentTypes cannot be combined"
+            "TypesWithEncoding.file: PartEncoding and AllowedContentTypes cannot be combined",
         )
         assertContains(
             registrationError { post<Unit, String, InvertedSize> { _, _ -> respond("") } },
-            "InvertedSize.file: FileSize requires 0 <= min <= max"
+            "InvertedSize.file: FileSize requires 0 <= min <= max",
         )
     }
 
     @ParameterizedTest
     @EnumSource(OpenAPIVersion::class)
-    fun `constraints are documented in the spec`(version: OpenAPIVersion) = testApplication {
+    fun `constraints are documented in the spec`(
+        version: OpenAPIVersion,
+    ) = testApplication {
         application {
             installJackson()
             install(OpenAPIGen) {
@@ -254,8 +287,10 @@ internal class FileConstraintsTest {
                 replaceModule(
                     DefaultSchemaNamer,
                     object : SchemaNamer {
-                        override fun get(type: KType): String = type.jvmErasure.simpleName!!
-                    }
+                        override fun get(
+                            type: KType,
+                        ): String = type.jvmErasure.simpleName!!
+                    },
                 )
             }
             apiRouting {
@@ -301,7 +336,10 @@ internal class FileConstraintsTest {
         assertEquals("5 MB", FileSizeProcessor.formatBytes(5 * 1024 * 1024))
     }
 
-    private fun assertValidDocument(document: JsonNode, version: OpenAPIVersion) {
+    private fun assertValidDocument(
+        document: JsonNode,
+        version: OpenAPIVersion,
+    ) {
         val dialect = if (version == OpenAPIVersion.V3_0) SpecVersion.VersionFlag.V4 else SpecVersion.VersionFlag.V202012
         val resource = "/openapi/${version.shortValue}.schema.json"
         val schema = javaClass.getResourceAsStream(resource)!!.use { JsonSchemaFactory.getInstance(dialect).getSchema(it) }

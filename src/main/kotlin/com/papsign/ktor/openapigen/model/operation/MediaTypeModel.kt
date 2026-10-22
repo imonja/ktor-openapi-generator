@@ -8,5 +8,5 @@ data class MediaTypeModel<T>(
     val schema: SchemaModel<T>? = null,
     val example: T? = null,
     val examples: MutableMap<String, ExampleModel<T>>? = null,
-    val encoding: Map<String, MediaTypeEncodingModel>? = null
+    val encoding: Map<String, MediaTypeEncodingModel>? = null,
 ) : DataModel

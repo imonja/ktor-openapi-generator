@@ -31,11 +31,13 @@ class OperationIdOpenAPITest {
 
     data class PostParams(
         @PathParam("User ID") val userId: String,
-        @PathParam("Post ID") val postId: String
+        @PathParam("Post ID") val postId: String,
     )
 
     @Paths("/v1/users/{userId}", "/v2/users/{userId}")
-    data class UserAliases(@PathParam("User ID") val userId: String)
+    data class UserAliases(
+        @PathParam("User ID") val userId: String,
+    )
 
     @Test
     fun `operation ID is generated from method and path`() {
@@ -45,7 +47,15 @@ class OperationIdOpenAPITest {
             }
         }
 
-        assertEquals("getUsers", document.path("paths").path("/users").path("get").path("operationId").asText())
+        assertEquals(
+            "getUsers",
+            document
+                .path("paths")
+                .path("/users")
+                .path("get")
+                .path("operationId")
+                .asText(),
+        )
     }
 
     @ParameterizedTest
@@ -55,16 +65,28 @@ class OperationIdOpenAPITest {
         "GET, /, getRoot",
         "GET, /user-profile, getUserProfile",
         "GET, /user_profile, getUserProfile",
-        "GET, /user.profile, getUserProfile"
+        "GET, /user.profile, getUserProfile",
     )
-    fun `automatic IDs use camel case for the method and path`(method: String, path: String, expected: String) {
+    fun `automatic IDs use camel case for the method and path`(
+        method: String,
+        path: String,
+        expected: String,
+    ) {
         val document = generate {
             route(path) {
                 route<Unit, String>(HttpMethod(method), emptyArray()) { respond("users") }
             }
         }
 
-        assertEquals(expected, document.path("paths").path(path).path(method.lowercase()).path("operationId").asText())
+        assertEquals(
+            expected,
+            document
+                .path("paths")
+                .path(path)
+                .path(method.lowercase())
+                .path("operationId")
+                .asText(),
+        )
     }
 
     @Test
@@ -79,7 +101,12 @@ class OperationIdOpenAPITest {
 
         assertEquals(
             "getUsersByUserIdPostsByPostId",
-            document.path("paths").path("/users/{userId}/posts/{postId}").path("get").path("operationId").asText()
+            document
+                .path("paths")
+                .path("/users/{userId}/posts/{postId}")
+                .path("get")
+                .path("operationId")
+                .asText(),
         )
     }
 
@@ -91,12 +118,22 @@ class OperationIdOpenAPITest {
             }
         }
 
-        assertEquals("listUsers", document.path("paths").path("/users").path("get").path("operationId").asText())
+        assertEquals(
+            "listUsers",
+            document
+                .path("paths")
+                .path("/users")
+                .path("get")
+                .path("operationId")
+                .asText(),
+        )
     }
 
     @ParameterizedTest
     @ValueSource(strings = ["", " ", "\t", "\n"])
-    fun `blank explicit operation IDs fail with an explanation`(id: String) {
+    fun `blank explicit operation IDs fail with an explanation`(
+        id: String,
+    ) {
         val error = assertFailsWith<IllegalArgumentException> {
             generate {
                 route("/users") {
@@ -113,9 +150,15 @@ class OperationIdOpenAPITest {
         "/user-profile, , /user_profile, , getUserProfile",
         "/users, listUsers, /posts, listUsers, listUsers",
         "/users, , /posts, getUsers, getUsers",
-        "/posts, getUsers, /users, , getUsers"
+        "/posts, getUsers, /users, , getUsers",
     )
-    fun `duplicate IDs fail with the ID and both operations`(firstPath: String, firstId: String?, secondPath: String, secondId: String?, duplicateId: String) {
+    fun `duplicate IDs fail with the ID and both operations`(
+        firstPath: String,
+        firstId: String?,
+        secondPath: String,
+        secondId: String?,
+        duplicateId: String,
+    ) {
         val error = assertFailsWith<IllegalStateException> {
             generate {
                 route(firstPath) {
@@ -143,8 +186,24 @@ class OperationIdOpenAPITest {
             }
         }
 
-        assertEquals("readProfile", document.path("paths").path("/user-profile").path("get").path("operationId").asText())
-        assertEquals("getUserProfile", document.path("paths").path("/user_profile").path("get").path("operationId").asText())
+        assertEquals(
+            "readProfile",
+            document
+                .path("paths")
+                .path("/user-profile")
+                .path("get")
+                .path("operationId")
+                .asText(),
+        )
+        assertEquals(
+            "getUserProfile",
+            document
+                .path("paths")
+                .path("/user_profile")
+                .path("get")
+                .path("operationId")
+                .asText(),
+        )
     }
 
     @Test
@@ -171,8 +230,24 @@ class OperationIdOpenAPITest {
             }
         }
 
-        assertEquals("getV1Users", document.path("paths").path("/v1/users").path("get").path("operationId").asText())
-        assertEquals("getV2Users", document.path("paths").path("/v2/users").path("get").path("operationId").asText())
+        assertEquals(
+            "getV1Users",
+            document
+                .path("paths")
+                .path("/v1/users")
+                .path("get")
+                .path("operationId")
+                .asText(),
+        )
+        assertEquals(
+            "getV2Users",
+            document
+                .path("paths")
+                .path("/v2/users")
+                .path("get")
+                .path("operationId")
+                .asText(),
+        )
     }
 
     @Test
@@ -181,8 +256,24 @@ class OperationIdOpenAPITest {
             get<UserAliases, String> { respond(it.userId) }
         }
 
-        assertEquals("getV1UsersByUserId", document.path("paths").path("/v1/users/{userId}").path("get").path("operationId").asText())
-        assertEquals("getV2UsersByUserId", document.path("paths").path("/v2/users/{userId}").path("get").path("operationId").asText())
+        assertEquals(
+            "getV1UsersByUserId",
+            document
+                .path("paths")
+                .path("/v1/users/{userId}")
+                .path("get")
+                .path("operationId")
+                .asText(),
+        )
+        assertEquals(
+            "getV2UsersByUserId",
+            document
+                .path("paths")
+                .path("/v2/users/{userId}")
+                .path("get")
+                .path("operationId")
+                .asText(),
+        )
     }
 
     @Test
@@ -297,13 +388,22 @@ class OperationIdOpenAPITest {
         assertTrue(error.message.orEmpty().contains("GET /c"), error.message)
     }
 
-    private fun generate(routes: NormalOpenAPIRoute.() -> Unit) = mapper.readTree(
+    private fun generate(
+        routes: NormalOpenAPIRoute.() -> Unit,
+    ) = mapper.readTree(
         OpenAPISpecGenerator.generate({
             installOpenAPI()
             installJackson()
             apiRouting(routes)
-        })
+        }),
     )
 
-    private fun JsonNode.operationId(path: String, method: String) = path("paths").path(path).path(method).path("operationId").asText()
+    private fun JsonNode.operationId(
+        path: String,
+        method: String,
+    ) = path("paths")
+        .path(path)
+        .path(method)
+        .path("operationId")
+        .asText()
 }

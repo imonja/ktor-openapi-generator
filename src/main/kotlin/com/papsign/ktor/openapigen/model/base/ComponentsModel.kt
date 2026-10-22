@@ -13,7 +13,7 @@ data class ComponentsModel(
     var examples: MutableMap<String, ExampleModel<*>> = sortedMapOf(),
     var requestBodies: MutableMap<String, RequestBodyModel> = sortedMapOf(),
     var headers: MutableMap<String, HeaderModel<*>> = sortedMapOf(),
-    var securitySchemes: MutableMap<String, SecuritySchemeModel<*>> = sortedMapOf()
+    var securitySchemes: MutableMap<String, SecuritySchemeModel<*>> = sortedMapOf(),
     // links
     // callbacks
 ) : DataModel

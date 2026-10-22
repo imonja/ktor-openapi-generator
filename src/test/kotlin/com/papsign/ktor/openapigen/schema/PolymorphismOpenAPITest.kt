@@ -14,20 +14,21 @@ private val ref = "\$ref"
 
 internal class PolymorphismOpenAPITest {
     @Test
-    fun willDiscriminatorsBePresent() = testApplication {
-        application {
-            setupBaseTestServer()
-            apiRouting {
-                sealedRoute()
+    fun willDiscriminatorsBePresent() =
+        testApplication {
+            application {
+                setupBaseTestServer()
+                apiRouting {
+                    sealedRoute()
+                }
             }
-        }
 
-        client.get("http://localhost/openapi.json").apply {
-            assertEquals(HttpStatusCode.OK, status)
-            val bodyAsText = bodyAsText()
-            assertTrue(
-                bodyAsText.contains(
-                    """"Base" : {
+            client.get("http://localhost/openapi.json").apply {
+                assertEquals(HttpStatusCode.OK, status)
+                val bodyAsText = bodyAsText()
+                assertTrue(
+                    bodyAsText.contains(
+                        """"Base" : {
         "title" : "Base",
         "discriminator" : {
           "propertyName" : "type"
@@ -43,12 +44,12 @@ internal class PolymorphismOpenAPITest {
           "type" : {
             "type" : "string"
           }
-        }"""
+        }""",
+                    ),
                 )
-            )
-            assertTrue(
-                bodyAsText.contains(
-                    """"A" : {
+                assertTrue(
+                    bodyAsText.contains(
+                        """"A" : {
         "title" : "A",
         "properties" : {
           "str" : {
@@ -60,9 +61,9 @@ internal class PolymorphismOpenAPITest {
         },
         "required" : [ "str" ],
         "type" : "object"
-      }"""
+      }""",
+                    ),
                 )
-            )
+            }
         }
-    }
 }

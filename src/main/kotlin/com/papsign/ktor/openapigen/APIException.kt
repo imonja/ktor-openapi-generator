@@ -20,21 +20,24 @@ interface APIException<EX : Throwable, B> {
             override val exceptionClass: KClass<EX>,
             override val example: B? = null,
             override val contentType: KType = unitKType,
-            override val contentGen: ((EX) -> B)? = null
+            override val contentGen: ((EX) -> B)? = null,
         ) : APIException<EX, B>
 
-        inline fun <reified EX : Throwable> apiException(status: HttpStatusCode): APIException<EX, Unit> {
-            return apiException(status, null as Unit?)
-        }
+        inline fun <reified EX : Throwable> apiException(
+            status: HttpStatusCode,
+        ): APIException<EX, Unit> = apiException(status, null as Unit?)
 
-        inline fun <reified EX : Throwable, reified B> apiException(status: HttpStatusCode, example: B? = null, noinline gen: ((EX) -> B)? = null): APIException<EX, B> {
-            return APIExceptionProxy(
+        inline fun <reified EX : Throwable, reified B> apiException(
+            status: HttpStatusCode,
+            example: B? = null,
+            noinline gen: ((EX) -> B)? = null,
+        ): APIException<EX, B> =
+            APIExceptionProxy(
                 status,
                 EX::class,
                 example,
                 getKType<B>(),
-                gen
+                gen,
             )
-        }
     }
 }

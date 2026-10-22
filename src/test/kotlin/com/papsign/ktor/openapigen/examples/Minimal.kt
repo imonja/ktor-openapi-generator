@@ -24,9 +24,10 @@ import io.ktor.server.routing.*
 import kotlin.reflect.KType
 
 object Minimal {
-
     @JvmStatic
-    fun main(args: Array<String>) {
+    fun main(
+        args: Array<String>,
+    ) {
         embeddedServer(Netty, 8080, "localhost") {
             // define basic OpenAPI info
             install(OpenAPIGen) {
@@ -49,10 +50,11 @@ object Minimal {
                     DefaultSchemaNamer,
                     object : SchemaNamer {
                         val regex = Regex("[A-Za-z0-9_.]+")
-                        override fun get(type: KType): String {
-                            return type.toString().replace(regex) { it.value.split(".").last() }.replace(Regex(">|<|, "), "_")
-                        }
-                    }
+
+                        override fun get(
+                            type: KType,
+                        ): String = type.toString().replace(regex) { it.value.split(".").last() }.replace(Regex(">|<|, "), "_")
+                    },
                 )
             }
 
@@ -76,7 +78,7 @@ object Minimal {
 
                 route("inine").get<StringParam, StringResponse>(
                     info("String Param Endpoint", "This is a String Param Endpoint"), // A Route module that describes an endpoint, it is optional
-                    example = StringResponse("Hi")
+                    example = StringResponse("Hi"),
                 ) { params ->
                     respond(StringResponse(params.a))
                 }
@@ -86,7 +88,7 @@ object Minimal {
                     post<Unit, StringUsable, StringUsable>(
                         info("String Post Endpoint", "This is a String Post Endpoint"),
                         exampleRequest = StringUsable("Ho"),
-                        exampleResponse = StringUsable("Ho")
+                        exampleResponse = StringUsable("Ho"),
                     ) { _, body ->
                         respond(body)
                     }
@@ -99,15 +101,19 @@ object Minimal {
     @Path("string/{a}")
     data class StringParam(
         @param:PathParam("A simple String Param") val a: String,
-        @param:QueryParam("Optional String") val optional: String? // Nullable Types are optional
+        @param:QueryParam("Optional String") val optional: String?, // Nullable Types are optional
     )
 
     // A response can be any class, but a description will be generated from the annotation
     @Response("A String Response")
-    data class StringResponse(val str: String)
+    data class StringResponse(
+        val str: String,
+    )
 
     // DTOs can be requests and responses, annotations are optional
     @Response("A String Response")
     @Request("A String Request")
-    data class StringUsable(val str: String)
+    data class StringUsable(
+        val str: String,
+    )
 }

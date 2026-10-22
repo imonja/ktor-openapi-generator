@@ -13,7 +13,7 @@ import kotlin.reflect.typeOf
 inline fun <reified TParams : Any, reified TResponse : Any, TAuth> OpenAPIAuthenticatedRoute<TAuth>.get(
     vararg modules: RouteOpenAPIModule,
     example: TResponse? = null,
-    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams) -> Unit
+    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams) -> Unit,
 ) = route(HttpMethod.Get, modules, example, body)
 
 @KtorDsl
@@ -21,7 +21,7 @@ inline fun <reified TParams : Any, reified TResponse : Any, reified TRequest : A
     vararg modules: RouteOpenAPIModule,
     exampleResponse: TResponse? = null,
     exampleRequest: TRequest? = null,
-    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams, TRequest) -> Unit
+    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams, TRequest) -> Unit,
 ) = route(HttpMethod.Post, modules, exampleResponse, exampleRequest, body)
 
 @KtorDsl
@@ -29,7 +29,7 @@ inline fun <reified TParams : Any, reified TResponse : Any, reified TRequest : A
     vararg modules: RouteOpenAPIModule,
     exampleResponse: TResponse? = null,
     exampleRequest: TRequest? = null,
-    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams, TRequest) -> Unit
+    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams, TRequest) -> Unit,
 ) = route(HttpMethod.Put, modules, exampleResponse, exampleRequest, body)
 
 @KtorDsl
@@ -37,21 +37,21 @@ inline fun <reified TParams : Any, reified TResponse : Any, reified TRequest : A
     vararg modules: RouteOpenAPIModule,
     exampleResponse: TResponse? = null,
     exampleRequest: TRequest? = null,
-    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams, TRequest) -> Unit
+    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams, TRequest) -> Unit,
 ) = route(HttpMethod.Patch, modules, exampleResponse, exampleRequest, body)
 
 @KtorDsl
 inline fun <reified TParams : Any, reified TResponse : Any, TAuth> OpenAPIAuthenticatedRoute<TAuth>.delete(
     vararg modules: RouteOpenAPIModule,
     example: TResponse? = null,
-    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams) -> Unit
+    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams) -> Unit,
 ) = route(HttpMethod.Delete, modules, example, body)
 
 @KtorDsl
 inline fun <reified TParams : Any, reified TResponse : Any, TAuth> OpenAPIAuthenticatedRoute<TAuth>.head(
     vararg modules: RouteOpenAPIModule,
     example: TResponse? = null,
-    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams) -> Unit
+    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams) -> Unit,
 ) = route(HttpMethod.Head, modules, example, body)
 
 @KtorDsl
@@ -60,9 +60,10 @@ inline fun <reified TParams : Any, reified TResponse : Any, reified TRequest : A
     modules: Array<out RouteOpenAPIModule>,
     exampleResponse: TResponse? = null,
     exampleRequest: TRequest? = null,
-    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams, TRequest) -> Unit
+    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams, TRequest) -> Unit,
 ) {
-    method(method).apply { modules.forEach { provider.registerModule(it, it::class.starProjectedType) } }
+    method(method)
+        .apply { modules.forEach { provider.registerModule(it, it::class.starProjectedType) } }
         .handle(exampleResponse, exampleRequest, body)
 }
 
@@ -71,9 +72,10 @@ inline fun <reified TParams : Any, reified TResponse : Any, TAuth> OpenAPIAuthen
     method: HttpMethod,
     modules: Array<out RouteOpenAPIModule>,
     exampleResponse: TResponse? = null,
-    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams) -> Unit
+    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams) -> Unit,
 ) {
-    method(method).apply { modules.forEach { provider.registerModule(it, it::class.starProjectedType) } }
+    method(method)
+        .apply { modules.forEach { provider.registerModule(it, it::class.starProjectedType) } }
         .handle(exampleResponse, body)
 }
 
@@ -81,7 +83,7 @@ inline fun <reified TParams : Any, reified TResponse : Any, TAuth> OpenAPIAuthen
 inline fun <reified TParams : Any, reified TResponse : Any, reified TRequest : Any, TAuth> OpenAPIAuthenticatedRoute<TAuth>.handle(
     exampleResponse: TResponse? = null,
     exampleRequest: TRequest? = null,
-    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams, TRequest) -> Unit
+    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams, TRequest) -> Unit,
 ) {
     val paramsType = typeOf<TParams>()
     val responseType = typeOf<TResponse>()
@@ -94,7 +96,7 @@ inline fun <reified TParams : Any, reified TResponse : Any, reified TRequest : A
 @KtorDsl
 inline fun <reified TParams : Any, reified TResponse : Any, TAuth> OpenAPIAuthenticatedRoute<TAuth>.handle(
     exampleResponse: TResponse? = null,
-    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams) -> Unit
+    noinline body: suspend OpenAPIPipelineAuthContext<TAuth, TResponse>.(TParams) -> Unit,
 ) {
     val paramsType = typeOf<TParams>()
     val responseType = typeOf<TResponse>()

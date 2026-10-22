@@ -7,25 +7,29 @@ import kotlin.reflect.jvm.jvmErasure
 
 val unitKType = getKType<Unit>()
 
-internal inline fun <reified T> isNullable(): Boolean {
-    return null is T
-}
+internal inline fun <reified T> isNullable(): Boolean = null is T
 
 @PublishedApi
 internal inline fun <reified T> getKType() = typeOf<T>()
 
-internal fun KType.strip(nullable: Boolean = isMarkedNullable): KType {
-    return jvmErasure.createType(arguments, nullable)
-}
+internal fun KType.strip(
+    nullable: Boolean = isMarkedNullable,
+): KType = jvmErasure.createType(arguments, nullable)
 
-internal fun KType.deepStrip(nullable: Boolean = isMarkedNullable): KType {
-    return jvmErasure.createType(arguments.map { it.copy(type = it.type?.deepStrip()) }, nullable)
-}
+internal fun KType.deepStrip(
+    nullable: Boolean = isMarkedNullable,
+): KType =
+    jvmErasure.createType(
+        arguments.map {
+            it.copy(type = it.type?.deepStrip())
+        },
+        nullable,
+    )
 
 data class KTypeProperty(
     val name: String,
     val type: KType,
-    val source: KProperty1<*, *>
+    val source: KProperty1<*, *>,
 )
 
 val KType.memberProperties: List<KTypeProperty>

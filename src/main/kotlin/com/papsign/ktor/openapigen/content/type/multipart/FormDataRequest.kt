@@ -5,4 +5,6 @@ import com.papsign.ktor.openapigen.annotations.encodings.APIRequestFormat
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
 @APIRequestFormat
-annotation class FormDataRequest(val type: FormDataRequestType = FormDataRequestType.MULTIPART)
+annotation class FormDataRequest(
+    val type: FormDataRequestType = FormDataRequestType.MULTIPART,
+)

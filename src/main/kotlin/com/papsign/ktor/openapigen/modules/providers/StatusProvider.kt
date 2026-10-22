@@ -5,5 +5,7 @@ import io.ktor.http.HttpStatusCode
 import kotlin.reflect.KType
 
 interface StatusProvider : OpenAPIModule {
-    fun getStatusForType(responseType: KType): HttpStatusCode
+    fun getStatusForType(
+        responseType: KType,
+    ): HttpStatusCode
 }

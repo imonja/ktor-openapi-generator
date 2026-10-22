@@ -30,9 +30,15 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import kotlin.reflect.KType
 
-data class Error(val id: String, val msg: String)
+data class Error(
+    val id: String,
+    val msg: String,
+)
 
-class ProperException(msg: String, val id: String = "proper.exception") : Exception(msg)
+class ProperException(
+    msg: String,
+    val id: String = "proper.exception",
+) : Exception(msg)
 
 fun Application.setupBaseTestServer() {
     // define basic OpenAPI info
@@ -53,11 +59,15 @@ fun Application.setupBaseTestServer() {
             DefaultSchemaNamer,
             object : SchemaNamer {
                 val regex = Regex("[A-Za-z0-9_.]+")
-                override fun get(type: KType): String {
-                    return type.toString().replace(regex) { it.value.split(".").last() }
+
+                override fun get(
+                    type: KType,
+                ): String =
+                    type
+                        .toString()
+                        .replace(regex) { it.value.split(".").last() }
                         .replace(Regex(">|<|, "), "_")
-                }
-            }
+            },
         )
     }
 
@@ -66,7 +76,7 @@ fun Application.setupBaseTestServer() {
             enable(
                 DeserializationFeature.WRAP_EXCEPTIONS,
                 DeserializationFeature.USE_BIG_INTEGER_FOR_INTS,
-                DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS
+                DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS,
             )
 
             enable(SerializationFeature.WRAP_EXCEPTIONS, SerializationFeature.INDENT_OUTPUT)
@@ -80,7 +90,7 @@ fun Application.setupBaseTestServer() {
                 DefaultPrettyPrinter().apply {
                     indentArraysWith(DefaultPrettyPrinter.FixedSpaceIndenter.instance)
                     indentObjectsWith(DefaultIndenter("  ", "\n"))
-                }
+                },
             )
 
             registerModule(JavaTimeModule())
@@ -113,17 +123,22 @@ fun Application.setupBaseTestServer() {
             val host = ServerModel(
                 call.request.origin.scheme + "://" + call.request.host() + if (setOf(
                         80,
-                        443
+                        443,
                     ).contains(call.request.port())
                 ) {
                     ""
                 } else {
                     ":${call.request.port()}"
-                }
+                },
             )
-            this.call.application.openAPIGen.api.servers.add(0, host)
-            call.respond(call.application.openAPIGen.api.serialize())
-            call.application.openAPIGen.api.servers.remove(host)
+            this.call.application.openAPIGen.api.servers
+                .add(0, host)
+            call.respond(
+                call.application.openAPIGen.api
+                    .serialize(),
+            )
+            call.application.openAPIGen.api.servers
+                .remove(host)
         }
 
         get("/") {

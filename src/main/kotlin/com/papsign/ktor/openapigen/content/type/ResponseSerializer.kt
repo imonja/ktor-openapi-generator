@@ -9,7 +9,20 @@ interface ResponseSerializer : ContentTypeProvider {
     /**
      * used to determine which registered response serializer is used, based on the accept header
      */
-    fun <T : Any> getSerializableContentTypes(type: KType): List<ContentType>
-    suspend fun <T : Any> respond(response: T, request: RoutingContext, contentType: ContentType)
-    suspend fun <T : Any> respond(statusCode: HttpStatusCode, response: T, request: RoutingContext, contentType: ContentType)
+    fun <T : Any> getSerializableContentTypes(
+        type: KType,
+    ): List<ContentType>
+
+    suspend fun <T : Any> respond(
+        response: T,
+        request: RoutingContext,
+        contentType: ContentType,
+    )
+
+    suspend fun <T : Any> respond(
+        statusCode: HttpStatusCode,
+        response: T,
+        request: RoutingContext,
+        contentType: ContentType,
+    )
 }

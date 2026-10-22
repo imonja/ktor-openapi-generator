@@ -14,11 +14,13 @@ import io.ktor.utils.io.KtorDsl
  * documentation at the same time.
  */
 @KtorDsl
-fun Application.apiRouting(config: NormalOpenAPIRoute.() -> Unit) {
+fun Application.apiRouting(
+    config: NormalOpenAPIRoute.() -> Unit,
+) {
     routing {
         NormalOpenAPIRoute(
             this,
-            application.plugin(OpenAPIGen).globalModuleProvider
+            application.plugin(OpenAPIGen).globalModuleProvider,
         ).apply(config)
     }
 }
@@ -30,9 +32,11 @@ fun Application.apiRouting(config: NormalOpenAPIRoute.() -> Unit) {
  * @param config
  */
 @KtorDsl
-fun Route.apiRouting(config: NormalOpenAPIRoute.() -> Unit) {
+fun Route.apiRouting(
+    config: NormalOpenAPIRoute.() -> Unit,
+) {
     NormalOpenAPIRoute(
         this,
-        application.plugin(OpenAPIGen).globalModuleProvider
+        application.plugin(OpenAPIGen).globalModuleProvider,
     ).apply(config)
 }

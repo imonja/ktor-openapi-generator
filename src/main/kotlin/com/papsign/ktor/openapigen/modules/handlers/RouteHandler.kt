@@ -16,10 +16,12 @@ import org.slf4j.LoggerFactory
 import java.util.Locale
 
 object RouteHandler : HandlerModule {
-
     private val log: Logger = LoggerFactory.getLogger(this::class.java)
 
-    override fun configure(apiGen: OpenAPIGen, provider: ModuleProvider<*>) {
+    override fun configure(
+        apiGen: OpenAPIGen,
+        provider: ModuleProvider<*>,
+    ) {
         val methods = provider.ofType<MethodProvider>()
         if (methods.size > 1) error("API cannot have two methods simultaneously: ${methods.map { it.method.value }}")
         val paths = provider.ofType<PathProvider>()
@@ -38,17 +40,26 @@ object RouteHandler : HandlerModule {
                 // Nested alias groups are numbered as one flat group, outermost alias first.
                 op.operationId = aliases.firstOrNull()?.group?.operationId(
                     operationId,
-                    aliases.fold(0) { index, alias -> index * alias.size + alias.index }
+                    aliases.fold(0) { index, alias -> index * alias.size + alias.index },
                 ) ?: operationId
             }
         }
         log.trace(
-            "Registered $path::${methods.map { it.method.value }} with OpenAPI description with ${provider.ofType<SelectedModule>().map { it.module::class.simpleName }}"
+            "Registered $path::${methods.map {
+                it.method.value
+            }} with OpenAPI description with ${provider.ofType<SelectedModule>().map {
+                it.module::class
+                    .simpleName
+            }}",
         )
     }
 
-    private fun generateOperationId(method: String, path: String): String {
-        val suffix = path.replace(Regex("\\{([^}]+)}")) { " By ${it.groupValues[1]} " }
+    private fun generateOperationId(
+        method: String,
+        path: String,
+    ): String {
+        val suffix = path
+            .replace(Regex("\\{([^}]+)}")) { " By ${it.groupValues[1]} " }
             .split(Regex("[^\\p{L}\\p{N}]+"))
             .filter(String::isNotEmpty)
             .joinToString("") { it.replaceFirstChar(Char::uppercaseChar) }

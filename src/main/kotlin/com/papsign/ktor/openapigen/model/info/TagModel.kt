@@ -5,5 +5,5 @@ import com.papsign.ktor.openapigen.model.DataModel
 data class TagModel(
     val name: String,
     val description: String? = null,
-    val externalDocs: ExternalDocumentationModel? = null
+    val externalDocs: ExternalDocumentationModel? = null,
 ) : DataModel

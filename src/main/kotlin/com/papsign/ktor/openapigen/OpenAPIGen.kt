@@ -19,7 +19,7 @@ import kotlin.reflect.full.starProjectedType
 
 class OpenAPIGen(
     config: Configuration,
-    @Deprecated("Will be replaced with less dangerous alternative when the use case has been fleshed out.") val pipeline: ApplicationCallPipeline
+    @Deprecated("Will be replaced with less dangerous alternative when the use case has been fleshed out.") val pipeline: ApplicationCallPipeline,
 ) {
     private val log = classLogger()
 
@@ -43,7 +43,9 @@ class OpenAPIGen(
         config.addModules.forEach { globalModuleProvider.registerModule(it, it::class.starProjectedType) }
     }
 
-    class Configuration(val api: OpenAPIModel) {
+    class Configuration(
+        val api: OpenAPIModel,
+    ) {
         /**
          * Document version: `3.0`, `3.1` or `3.2` selects the latest version of that family (3.0.4, 3.1.2, 3.2.1);
          * an exact supported version is kept as is. Unsupported values fail immediately. Defaults to 3.2.1.
@@ -54,19 +56,29 @@ class OpenAPIGen(
                 api.openapi = OpenAPIVersion.resolve(value)
             }
 
-        inline fun info(crossinline configure: InfoModel.() -> Unit) {
+        inline fun info(
+            crossinline configure: InfoModel.() -> Unit,
+        ) {
             api.info = InfoModel().apply(configure)
         }
 
-        inline fun InfoModel.contact(crossinline configure: ContactModel.() -> Unit) {
+        inline fun InfoModel.contact(
+            crossinline configure: ContactModel.() -> Unit,
+        ) {
             contact = ContactModel().apply(configure)
         }
 
-        inline fun server(url: String, crossinline configure: ServerModel.() -> Unit = {}) {
+        inline fun server(
+            url: String,
+            crossinline configure: ServerModel.() -> Unit = {},
+        ) {
             api.servers.add(ServerModel(url).apply(configure))
         }
 
-        inline fun externalDocs(url: String, crossinline configure: ExternalDocumentationModel.() -> Unit = {}) {
+        inline fun externalDocs(
+            url: String,
+            crossinline configure: ExternalDocumentationModel.() -> Unit = {},
+        ) {
             api.externalDocs = ExternalDocumentationModel(url).apply(configure)
         }
 
@@ -82,29 +94,42 @@ class OpenAPIGen(
         var addModules = mutableListOf<OpenAPIModule>()
         var removeModules = mutableListOf<OpenAPIModule>()
 
-        fun addModules(vararg modules: OpenAPIModule) {
+        fun addModules(
+            vararg modules: OpenAPIModule,
+        ) {
             addModules.addAll(modules)
         }
 
-        fun addModules(modules: Iterable<OpenAPIModule>) {
+        fun addModules(
+            modules: Iterable<OpenAPIModule>,
+        ) {
             addModules.addAll(modules)
         }
 
-        fun removeModules(vararg modules: OpenAPIModule) {
+        fun removeModules(
+            vararg modules: OpenAPIModule,
+        ) {
             removeModules.addAll(modules)
         }
 
-        fun removeModules(modules: Iterable<OpenAPIModule>) {
+        fun removeModules(
+            modules: Iterable<OpenAPIModule>,
+        ) {
             removeModules.addAll(modules)
         }
 
-        fun replaceModule(delete: OpenAPIModule, add: OpenAPIModule) {
+        fun replaceModule(
+            delete: OpenAPIModule,
+            add: OpenAPIModule,
+        ) {
             addModules.add(add)
             removeModules.add(delete)
         }
     }
 
-    fun getOrRegisterTag(tag: APITag): String {
+    fun getOrRegisterTag(
+        tag: APITag,
+    ): String {
         val other = tags.getOrPut(tag.name) {
             api.tags.add(tag.toTag())
             tag
@@ -116,7 +141,10 @@ class OpenAPIGen(
     companion object Plugin : BaseApplicationPlugin<ApplicationCallPipeline, Configuration, OpenAPIGen> {
         override val key = AttributeKey<OpenAPIGen>("OpenAPI Generator")
 
-        override fun install(pipeline: ApplicationCallPipeline, configure: Configuration.() -> Unit): OpenAPIGen {
+        override fun install(
+            pipeline: ApplicationCallPipeline,
+            configure: Configuration.() -> Unit,
+        ): OpenAPIGen {
             val api = OpenAPIModel()
             val cfg = Configuration(api).apply(configure)
             OpenAPIVersion.resolve(api.openapi)
@@ -135,9 +163,13 @@ class OpenAPIGen(
                 val swaggerUiResources = "/${cfg.swaggerUiPath.trim('/')}/"
                 pipeline.intercept(ApplicationCallPipeline.Call) {
                     when {
-                        call.request.path() == swaggerRoot -> call.respondRedirect("$swaggerRoot/index.html")
-                        call.request.path().startsWith(swaggerUiResources) ->
+                        call.request.path() == swaggerRoot -> {
+                            call.respondRedirect("$swaggerRoot/index.html")
+                        }
+
+                        call.request.path().startsWith(swaggerUiResources) -> {
                             ui.serve(call.request.path().removePrefix(swaggerUiResources), call)
+                        }
                     }
                 }
             }

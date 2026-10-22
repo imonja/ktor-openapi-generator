@@ -23,17 +23,21 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.jvm.jvmErasure
 import kotlin.reflect.typeOf
 
-fun <T : OpenAPIRoute<T>> T.route(path: String): T {
-    return child(ktorRoute.createRouteFromPath(path)).apply {
+fun <T : OpenAPIRoute<T>> T.route(
+    path: String,
+): T =
+    child(ktorRoute.createRouteFromPath(path)).apply {
         provider.registerModule(PathProviderModule(path))
     }
-}
 
 /**
  * Creates a new route matching the specified [path]
  */
 @KtorDsl
-inline fun <TRoute : OpenAPIRoute<TRoute>> TRoute.route(path: String, crossinline fn: TRoute.() -> Unit) {
+inline fun <TRoute : OpenAPIRoute<TRoute>> TRoute.route(
+    path: String,
+    crossinline fn: TRoute.() -> Unit,
+) {
     route(path).fn()
 }
 
@@ -42,7 +46,10 @@ inline fun <TRoute : OpenAPIRoute<TRoute>> TRoute.route(path: String, crossinlin
  * Each path will be registered as a separate route with the same handler
  */
 @KtorDsl
-inline fun <TRoute : OpenAPIRoute<TRoute>> TRoute.routes(vararg paths: String, crossinline fn: TRoute.() -> Unit) {
+inline fun <TRoute : OpenAPIRoute<TRoute>> TRoute.routes(
+    vararg paths: String,
+    crossinline fn: TRoute.() -> Unit,
+) {
     val group = PathAliasGroup()
     paths.forEachIndexed { index, path ->
         route(path).alias(group, index, paths.size).fn()
@@ -50,39 +57,50 @@ inline fun <TRoute : OpenAPIRoute<TRoute>> TRoute.routes(vararg paths: String, c
 }
 
 @PublishedApi
-internal fun <TRoute : OpenAPIRoute<TRoute>> TRoute.alias(group: PathAliasGroup, index: Int, size: Int): TRoute {
-    return apply {
+internal fun <TRoute : OpenAPIRoute<TRoute>> TRoute.alias(
+    group: PathAliasGroup,
+    index: Int,
+    size: Int,
+): TRoute =
+    apply {
         provider.registerModule(PathAliasModule(group, index, size))
     }
-}
 
-fun <TRoute : OpenAPIRoute<TRoute>> TRoute.method(method: HttpMethod): TRoute {
-    return child(ktorRoute.createChild(HttpMethodRouteSelector(method))).apply {
+fun <TRoute : OpenAPIRoute<TRoute>> TRoute.method(
+    method: HttpMethod,
+): TRoute =
+    child(ktorRoute.createChild(HttpMethodRouteSelector(method))).apply {
         provider.registerModule(HttpMethodProviderModule(method))
     }
-}
 
 /**
  * Creates a new route matching the specified [method]
  */
 @KtorDsl
-inline fun <TRoute : OpenAPIRoute<TRoute>> TRoute.method(method: HttpMethod, crossinline fn: TRoute.() -> Unit) {
+inline fun <TRoute : OpenAPIRoute<TRoute>> TRoute.method(
+    method: HttpMethod,
+    crossinline fn: TRoute.() -> Unit,
+) {
     method(method).fn()
 }
 
-fun <TRoute : OpenAPIRoute<TRoute>> TRoute.provider(vararg content: ContentTypeProvider): TRoute {
-    return child().apply {
+fun <TRoute : OpenAPIRoute<TRoute>> TRoute.provider(
+    vararg content: ContentTypeProvider,
+): TRoute =
+    child().apply {
         content.forEach {
             provider.registerModule(it)
         }
     }
-}
 
 /**
  * Creates a new route matching the specified [content]
  */
 @KtorDsl
-inline fun <TRoute : OpenAPIRoute<TRoute>> TRoute.provider(vararg content: ContentTypeProvider, crossinline fn: TRoute.() -> Unit) {
+inline fun <TRoute : OpenAPIRoute<TRoute>> TRoute.provider(
+    vararg content: ContentTypeProvider,
+    crossinline fn: TRoute.() -> Unit,
+) {
     provider(*content).fn()
 }
 
@@ -94,11 +112,12 @@ inline fun <TRoute : OpenAPIRoute<TRoute>> TRoute.provider(vararg content: Conte
  * @param tag the tag to apply
  * @return the same route that received the call to chain multiple calls
  */
-fun <TRoute : OpenAPIRoute<TRoute>> TRoute.tag(tag: APITag): TRoute {
-    return child().apply {
+fun <TRoute : OpenAPIRoute<TRoute>> TRoute.tag(
+    tag: APITag,
+): TRoute =
+    child().apply {
         provider.registerModule(TagModule(listOf(tag)))
     }
-}
 
 /**
  * This method assigns an OpenAPI [tag] too all child routes defined inside [fn].
@@ -129,14 +148,17 @@ fun <TRoute : OpenAPIRoute<TRoute>> TRoute.tag(tag: APITag): TRoute {
  * @param fn the block where the sub routes are defined
  */
 @KtorDsl
-inline fun <TRoute : OpenAPIRoute<TRoute>> TRoute.tag(tag: APITag, crossinline fn: TRoute.() -> Unit) {
+inline fun <TRoute : OpenAPIRoute<TRoute>> TRoute.tag(
+    tag: APITag,
+    crossinline fn: TRoute.() -> Unit,
+) {
     tag(tag).fn()
 }
 
 inline fun <reified TParams : Any, reified TResponse : Any, reified TRequest : Any, TRoute : OpenAPIRoute<TRoute>> TRoute.preHandle(
     exampleResponse: TResponse? = null,
     exampleRequest: TRequest? = null,
-    noinline handle: TRoute.() -> Unit
+    noinline handle: TRoute.() -> Unit,
 ) {
     preHandle<TParams, TResponse, TRequest, TRoute>(
         typeOf<TParams>(),
@@ -144,7 +166,7 @@ inline fun <reified TParams : Any, reified TResponse : Any, reified TRequest : A
         typeOf<TRequest>(),
         exampleResponse,
         exampleRequest,
-        handle
+        handle,
     )
 }
 
@@ -156,7 +178,7 @@ internal fun <TParams : Any, TResponse : Any, TRequest : Any, TRoute : OpenAPIRo
     bType: KType,
     exampleResponse: TResponse? = null,
     exampleRequest: TRequest? = null,
-    handle: TRoute.() -> Unit
+    handle: TRoute.() -> Unit,
 ) {
     val path = pType.jvmErasure.findAnnotation<Path>()
     val paths = pType.jvmErasure.findAnnotation<Paths>()
@@ -171,22 +193,23 @@ internal fun <TParams : Any, TResponse : Any, TRequest : Any, TRoute : OpenAPIRo
                     provider.registerModule(
                         RequestHandlerModule.create(
                             bType,
-                            exampleRequest
+                            exampleRequest,
                         ),
-                        RequestHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, bType)))
+                        RequestHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, bType))),
                     )
                     provider.registerModule(
                         ResponseHandlerModule.create(
                             rType,
-                            exampleResponse
+                            exampleResponse,
                         ),
-                        ResponseHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, rType)))
+                        ResponseHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, rType))),
                     )
                     provider.registerModule(PathProviderModule(pathStr))
                     handle()
                 }
             }
         }
+
         path != null -> {
             // Handle single path (existing behavior)
             val new = child(ktorRoute.createRouteFromPath(path.path))
@@ -194,21 +217,22 @@ internal fun <TParams : Any, TResponse : Any, TRequest : Any, TRoute : OpenAPIRo
                 provider.registerModule(
                     RequestHandlerModule.create(
                         bType,
-                        exampleRequest
+                        exampleRequest,
                     ),
-                    RequestHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, bType)))
+                    RequestHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, bType))),
                 )
                 provider.registerModule(
                     ResponseHandlerModule.create(
                         rType,
-                        exampleResponse
+                        exampleResponse,
                     ),
-                    ResponseHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, rType)))
+                    ResponseHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, rType))),
                 )
                 provider.registerModule(PathProviderModule(path.path))
                 handle()
             }
         }
+
         else -> {
             // No path annotation (existing behavior)
             val new = child()
@@ -216,16 +240,16 @@ internal fun <TParams : Any, TResponse : Any, TRequest : Any, TRoute : OpenAPIRo
                 provider.registerModule(
                     RequestHandlerModule.create(
                         bType,
-                        exampleRequest
+                        exampleRequest,
                     ),
-                    RequestHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, bType)))
+                    RequestHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, bType))),
                 )
                 provider.registerModule(
                     ResponseHandlerModule.create(
                         rType,
-                        exampleResponse
+                        exampleResponse,
                     ),
-                    ResponseHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, rType)))
+                    ResponseHandlerModule::class.createType(listOf(KTypeProjection(KVariance.INVARIANT, rType))),
                 )
                 handle()
             }

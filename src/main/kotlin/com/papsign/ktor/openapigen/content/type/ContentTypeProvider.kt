@@ -8,9 +8,9 @@ import io.ktor.http.ContentType
 import kotlin.reflect.KType
 
 interface ContentTypeProvider : OpenAPIModule {
-
     enum class Usage {
-        SERIALIZE, PARSE
+        SERIALIZE,
+        PARSE,
     }
 
     /**
@@ -18,5 +18,11 @@ interface ContentTypeProvider : OpenAPIModule {
      * @return null to disable module, or [Map] to register the handler on every content type
      * @throws Exception to signal a bad configuration (usually with assert)
      */
-    fun <T> getMediaType(type: KType, apiGen: OpenAPIGen, provider: ModuleProvider<*>, example: T?, usage: Usage): Map<ContentType, MediaTypeModel<T>>?
+    fun <T> getMediaType(
+        type: KType,
+        apiGen: OpenAPIGen,
+        provider: ModuleProvider<*>,
+        example: T?,
+        usage: Usage,
+    ): Map<ContentType, MediaTypeModel<T>>?
 }

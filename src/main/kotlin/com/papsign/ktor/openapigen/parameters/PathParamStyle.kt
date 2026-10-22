@@ -6,6 +6,10 @@ import com.papsign.ktor.openapigen.parameters.parsers.builders.path.label.LabelB
 import com.papsign.ktor.openapigen.parameters.parsers.builders.path.matrix.MatrixBuilderFactory
 import com.papsign.ktor.openapigen.parameters.parsers.builders.path.simple.SimpleBuilderFactory
 
-enum class PathParamStyle(override val factory: BuilderFactory<Builder<PathParamStyle>, PathParamStyle>) : ParameterStyle<PathParamStyle> {
-    simple(SimpleBuilderFactory), label(LabelBuilderFactory), matrix(MatrixBuilderFactory)
+enum class PathParamStyle(
+    override val factory: BuilderFactory<Builder<PathParamStyle>, PathParamStyle>,
+) : ParameterStyle<PathParamStyle> {
+    simple(SimpleBuilderFactory),
+    label(LabelBuilderFactory),
+    matrix(MatrixBuilderFactory),
 }
