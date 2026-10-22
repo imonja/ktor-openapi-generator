@@ -53,7 +53,7 @@ sealed class Content {
     ) : Content()
 }
 
-fun NormalOpenAPIRoute.ContentRoute() {
+fun NormalOpenAPIRoute.contentRoute() {
     route("content") {
         get<Unit, ItemsResponse>(
             info("Get items with polymorphic content", "Returns array of items with Post or Order content")
@@ -94,7 +94,7 @@ internal class PolymorphicContentOpenAPITest {
         application {
             setupBaseTestServer()
             apiRouting {
-                ContentRoute()
+                contentRoute()
             }
         }
 

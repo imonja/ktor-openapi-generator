@@ -11,8 +11,8 @@ object ExampleProcessor : SchemaProcessor<WithExample> {
         val exampleClass = if (annotation.provider == NoExampleProvider::class) {
             type.jvmErasure.companionObjectInstance as? ExampleProvider<*>
                 ?: error(
-                    "Classes annotated with ${WithExample::class.simpleName} without a specified example provider must have a companion object implementing " +
-                        "${ExampleProvider::class}"
+                    "Classes annotated with ${WithExample::class.simpleName} without a specified example provider " +
+                        "must have a companion object implementing ${ExampleProvider::class}"
                 )
         } else {
             annotation.provider.objectInstance ?: error("Classes extending ${ExampleProvider::class} must be objects")

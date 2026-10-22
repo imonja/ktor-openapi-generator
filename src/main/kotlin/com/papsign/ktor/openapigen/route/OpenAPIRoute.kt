@@ -45,8 +45,8 @@ abstract class OpenAPIRoute<T : OpenAPIRoute<T>>(val ktorRoute: Route, val provi
             it.configure(apiGen, provider)
         }
 
-        val BHandler = ValidationHandler.build(bodyType)
-        val PHandler = ValidationHandler.build(paramsType)
+        val bodyHandler = ValidationHandler.build(bodyType)
+        val paramsHandler = ValidationHandler.build(paramsType)
 
         ktorRoute.apply {
             getAcceptMap<R>(responseType).let {
@@ -66,7 +66,7 @@ abstract class OpenAPIRoute<T : OpenAPIRoute<T>>(val ktorRoute: Route, val provi
                                 )
                             }
                             @Suppress("UNCHECKED_CAST")
-                            pass(this, responder, PHandler.handle(params), Unit as B)
+                            pass(this, responder, paramsHandler.handle(params), Unit as B)
                         }
                     } else {
                         getContentTypesMap<B>(bodyType).forEach { (contentType, parsers) ->
@@ -84,7 +84,7 @@ abstract class OpenAPIRoute<T : OpenAPIRoute<T>>(val ktorRoute: Route, val provi
                                                 call.request.headers
                                             )
                                         }
-                                        pass(this, responder, PHandler.handle(params), BHandler.handle(receive))
+                                        pass(this, responder, paramsHandler.handle(params), bodyHandler.handle(receive))
                                     } finally {
                                         CallResources.release(call)
                                     }
@@ -124,11 +124,12 @@ abstract class OpenAPIRoute<T : OpenAPIRoute<T>>(val ktorRoute: Route, val provi
             parser.fn().map { Pair(it, parser) }
         }.groupBy { it.first }.mapValues { it.value.map { it.second } }.map { Pair(it.key, it.value) }.sortedBy {
             val ct = it.first
+            // Subtracting the parameter count is already an edge case; sorting by potential wildcards as well is not worth it
             when {
                 ct.contentSubtype != "*" -> 1000
                 ct.contentType != "*" -> 10000
                 else -> 100000
-            } - ct.parameters.size // edge case already, no need to sort by potential wildcards too, if you do this you are already looking for problems
+            } - ct.parameters.size
         }
     }
 }

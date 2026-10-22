@@ -16,12 +16,12 @@ import org.junit.jupiter.api.Test
 import java.io.InputStream
 import kotlin.random.Random
 
-const val contentType = "image/png"
+const val CONTENT_TYPE = "image/png"
 
 class BinaryContentTypeParserTest {
 
-    @BinaryRequest([contentType])
-    @BinaryResponse([contentType])
+    @BinaryRequest([CONTENT_TYPE])
+    @BinaryResponse([CONTENT_TYPE])
     data class Stream(val stream: InputStream)
 
     @Test
@@ -32,11 +32,11 @@ class BinaryContentTypeParserTest {
 
         client.post(route) {
             headers {
-                append(HttpHeaders.ContentType, contentType)
+                append(HttpHeaders.ContentType, CONTENT_TYPE)
             }
             setBody(bytes)
         }.let {
-            Assertions.assertEquals(ContentType.parse(contentType), it.contentType())
+            Assertions.assertEquals(ContentType.parse(CONTENT_TYPE), it.contentType())
             Assertions.assertArrayEquals(bytes, it.readRawBytes())
         }
     }
@@ -49,7 +49,7 @@ class BinaryContentTypeParserTest {
 
         client.post(route) {
             headers {
-                append(HttpHeaders.Accept, contentType)
+                append(HttpHeaders.Accept, CONTENT_TYPE)
             }
             setBody(bytes)
         }.let {
@@ -65,7 +65,7 @@ class BinaryContentTypeParserTest {
 
         client.post(route) {
             headers {
-                append(HttpHeaders.ContentType, contentType)
+                append(HttpHeaders.ContentType, CONTENT_TYPE)
                 append(HttpHeaders.Accept, ContentType.Application.Json.toString())
             }
             setBody(bytes)
@@ -83,7 +83,7 @@ class BinaryContentTypeParserTest {
         client.post(route) {
             headers {
                 append(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                append(HttpHeaders.Accept, contentType)
+                append(HttpHeaders.Accept, CONTENT_TYPE)
             }
             setBody(bytes)
         }.let {
@@ -99,8 +99,8 @@ class BinaryContentTypeParserTest {
 
         client.post(route) {
             headers {
-                append(HttpHeaders.ContentType, contentType)
-                append(HttpHeaders.Accept, contentType)
+                append(HttpHeaders.ContentType, CONTENT_TYPE)
+                append(HttpHeaders.Accept, CONTENT_TYPE)
                 setBody(bytes)
             }
             setBody(bytes)

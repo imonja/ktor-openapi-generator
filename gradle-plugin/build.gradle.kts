@@ -5,7 +5,7 @@ plugins {
     `java-gradle-plugin`
     `maven-publish`
     signing
-    id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
+    id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
     id("com.vanniktech.maven.publish") version "0.37.0"
     id("com.gradle.plugin-publish") version "1.3.0"
 }
@@ -191,6 +191,8 @@ mavenPublishing {
 }
 
 ktlint {
+    version.set("1.8.0")
+    enableExperimentalRules.set(true)
     filter {
         exclude { it.file.toString().contains("build") }
     }
