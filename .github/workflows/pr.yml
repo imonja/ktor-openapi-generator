@@ -1,9 +1,12 @@
 name: Pull Request
 
-on: pull_request
+on:
+    pull_request:
+    workflow_dispatch:
 
+# Manual runs have no pull request number, so they are grouped by ref; otherwise runs on different branches would cancel each other
 concurrency:
-    group: pr-${{ github.event.pull_request.number }}
+    group: pr-${{ github.event.pull_request.number || github.ref }}
     cancel-in-progress: true
 
 env:
@@ -17,7 +20,7 @@ jobs:
             contents: read
         steps:
             -   uses: actions/checkout@v7
-            -   uses: ./.github/actions/build-and-test
+            -   uses: ./.github/actions/ci-checks
 
     # Dependabot auto-merge is disabled: Dependabot PRs are merged manually for now.
     # To enable it, uncomment the job below and in the repository settings:

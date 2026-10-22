@@ -19,7 +19,7 @@ jobs:
             -   uses: actions/checkout@v7
                 with:
                     fetch-depth: 0
-            -   uses: ./.github/actions/build-and-test
+            -   uses: ./.github/actions/ci-checks
 
             -   uses: ./.github/actions/next-version
                 id: tag

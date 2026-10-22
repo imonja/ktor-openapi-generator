@@ -1,4 +1,4 @@
-name: Build & test
+name: CI checks
 description: >
     Sets up JDK and the Gradle cache, then runs every check that must pass before publishing:
     lint and tests of the library and the Gradle plugin, plugin validation and functional tests.
