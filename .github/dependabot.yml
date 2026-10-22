@@ -11,6 +11,16 @@ updates:
         schedule:
             interval: weekly
             day: monday
+        # Published minimum versions of the library's runtime dependencies (see build.gradle.kts): raising them would force
+        # the update onto every consumer, so they are raised manually. Tests follow the latest versions via ktor-bom/jackson-bom.
+        ignore:
+            -   dependency-name: "io.ktor:ktor-server-core"
+            -   dependency-name: "io.ktor:ktor-server-auth"
+            -   dependency-name: "io.ktor:ktor-serialization-jackson"
+            -   dependency-name: "io.ktor:ktor-server-content-negotiation"
+            -   dependency-name: "io.ktor:ktor-server-status-pages"
+            -   dependency-name: "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
+            -   dependency-name: "org.slf4j:slf4j-api"
         groups:
             gradle-minor-patch:
                 update-types:

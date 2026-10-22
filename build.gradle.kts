@@ -4,11 +4,11 @@ import com.vanniktech.maven.publish.JavadocJar
 
 
 plugins {
-    kotlin("jvm") version "2.3.0"
+    kotlin("jvm") version "2.4.21"
     id("net.nemerosa.versioning") version "3.1.0"
-    id("org.jetbrains.dokka") version "2.1.0"
+    id("org.jetbrains.dokka") version "2.2.0"
     id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
-    id("com.vanniktech.maven.publish") version "0.35.0"
+    id("com.vanniktech.maven.publish") version "0.37.0"
 }
 
 fun runCommand(command: String): String {
@@ -37,6 +37,8 @@ if (project.hasProperty("releaseVersion")) {
 
 kotlin {
     jvmToolchain(21)
+    // The published POM requires this stdlib, not the compiler version; keep it in line with apiVersion
+    coreLibrariesVersion = "2.3.0"
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
         apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_3)
@@ -48,9 +50,14 @@ repositories {
     mavenCentral()
 }
 
+// Runtime dependencies are published as the minimum versions the library needs, so consumers keep their own
+// Ktor and Jackson versions. Raise them only when the library requires it; Dependabot ignores them.
+// Tests run on the latest versions through the test BOMs below.
 val ktorVersion = "3.4.0"
+val ktorTestVersion = "3.6.0"
+val jacksonTestVersion = "2.22.4"
 val swaggerUiVersion = "5.33.2"
-val junitVersjon = "6.0.1"
+val junitVersjon = "6.1.3"
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
@@ -69,21 +76,23 @@ dependencies {
 
     implementation("org.reflections:reflections:0.10.2") // only used while initializing
 
-    // testing
-    testImplementation("io.ktor:ktor-server-netty:$ktorVersion")
-    testImplementation("io.ktor:ktor-server-core:$ktorVersion")
-    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
-    testImplementation("io.ktor:ktor-server-auth:$ktorVersion")
-    testImplementation("io.ktor:ktor-server-auth-jwt:$ktorVersion")
-    testImplementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
-    testImplementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
-    testImplementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+    // testing; the BOMs raise Ktor and Jackson on the test classpath only
+    testImplementation(platform("io.ktor:ktor-bom:$ktorTestVersion"))
+    testImplementation(platform("com.fasterxml.jackson:jackson-bom:$jacksonTestVersion"))
+    testImplementation("io.ktor:ktor-server-netty")
+    testImplementation("io.ktor:ktor-server-core")
+    testImplementation("io.ktor:ktor-server-test-host")
+    testImplementation("io.ktor:ktor-server-auth")
+    testImplementation("io.ktor:ktor-server-auth-jwt")
+    testImplementation("io.ktor:ktor-server-content-negotiation")
+    testImplementation("io.ktor:ktor-serialization-jackson")
+    testImplementation("io.ktor:ktor-client-content-negotiation")
 
     testImplementation(kotlin("test"))
     testImplementation("com.networknt:json-schema-validator:1.5.9")
     testImplementation(kotlin("stdlib-jdk8"))
 
-    testImplementation("ch.qos.logback:logback-classic:1.5.21") // logging framework for the tests
+    testImplementation("ch.qos.logback:logback-classic:1.6.5") // logging framework for the tests
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersjon") // junit testing framework
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersjon") // generated parameters for tests
