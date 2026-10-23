@@ -21,6 +21,7 @@ class KtorOpenApiPluginFunctionalTest {
         extension: String = "",
         dependencies: String = "",
         module: String = API_MODULE,
+        topLevelModule: String = "module.set(\"sample.ApiKt.api\")",
     ) {
         File(projectDir, "settings.gradle.kts").writeText("rootProject.name = \"sample\"\n")
         File(projectDir, "gradle.properties").writeText("org.gradle.jvmargs=-Xmx1g\n")
@@ -42,7 +43,7 @@ class KtorOpenApiPluginFunctionalTest {
             }
 
             ktorOpenApi {
-                module.set("sample.ApiKt.api")
+                $topLevelModule
                 $extension
             }
             """.trimIndent(),
@@ -206,6 +207,169 @@ class KtorOpenApiPluginFunctionalTest {
         assertFalse(result.output.contains("is used on the runtime classpath"), "unexpected version warning")
     }
 
+    private fun setUpSpecs(
+        specs: String = TWO_SPECS,
+        extension: String = "",
+    ) = setUpProject(
+        topLevelModule = "",
+        extension = "$extension\nspecs {\n$specs\n}",
+        module = API_MODULE + "\n\n" + ADMIN_MODULE,
+    )
+
+    private fun specFile(
+        name: String,
+    ) = File(projectDir, "src/main/resources/openapi/$name.json")
+
+    @Test
+    fun `generateOpenApiSpec writes every spec and a spec task writes only its own`() {
+        setUpSpecs()
+
+        val single = build("generateAdminOpenApiSpec")
+
+        assertEquals(TaskOutcome.SUCCESS, single.task(":generateAdminOpenApiSpec")?.outcome)
+        assertEquals(null, single.task(":generatePublicOpenApiSpec"))
+        assertTrue(File(projectDir, "docs/admin-api.json").readText().contains("\"title\": \"Admin API\""))
+        assertFalse(specFile("public").exists())
+
+        val all = build("generateOpenApiSpec")
+
+        assertEquals(TaskOutcome.SUCCESS, all.task(":generatePublicOpenApiSpec")?.outcome)
+        assertEquals(TaskOutcome.SUCCESS, all.task(":generateAdminOpenApiSpec")?.outcome)
+        assertTrue(specFile("public").readText().contains("\"title\": \"Sample API\""))
+        assertFalse(output.exists())
+    }
+
+    @Test
+    fun `check runs every spec and names the aggregate task for a stale one`() {
+        setUpSpecs()
+        build("generateOpenApiSpec")
+
+        val passed = build("check")
+
+        assertEquals(TaskOutcome.SUCCESS, passed.task(":checkPublicOpenApiSpec")?.outcome)
+        assertEquals(TaskOutcome.SUCCESS, passed.task(":checkAdminOpenApiSpec")?.outcome)
+
+        val admin = File(projectDir, "docs/admin-api.json")
+        admin.writeText(admin.readText().replace("Admin API", "Stale API"))
+        val failure = buildAndFail("checkOpenApiSpec")
+
+        assertTrue(failure.output.contains("docs/admin-api.json is out of date. Run ./gradlew :generateOpenApiSpec"), failure.output)
+    }
+
+    @Test
+    fun `specs reuse the configuration cache`() {
+        setUpSpecs()
+        build("generateOpenApiSpec")
+        build("checkOpenApiSpec")
+
+        val second = build("checkOpenApiSpec")
+
+        assertTrue(second.output.contains("Reusing configuration cache"), "configuration cache was not reused")
+        assertEquals(TaskOutcome.SUCCESS, second.task(":checkAdminOpenApiSpec")?.outcome)
+    }
+
+    @Test
+    fun `continue reports every stale spec`() {
+        setUpSpecs()
+        build("generateOpenApiSpec")
+        specFile("public").writeText("stale")
+        File(projectDir, "docs/admin-api.json").writeText("stale")
+
+        val failure = buildAndFail("checkOpenApiSpec", "--continue")
+
+        assertTrue(failure.output.contains("public.json is out of date"), failure.output)
+        assertTrue(failure.output.contains("admin-api.json is out of date"), failure.output)
+    }
+
+    @Test
+    fun `generateOnBuild regenerates every spec`() {
+        setUpSpecs(extension = "generateOnBuild.set(true)")
+
+        build("classes")
+
+        assertTrue(specFile("public").exists())
+        assertTrue(File(projectDir, "docs/admin-api.json").exists())
+    }
+
+    @Test
+    fun `version warning is logged once for several specs`() {
+        setUpSpecs()
+        File(projectDir, "build.gradle.kts").appendText(
+            "\ndependencies { implementation(\"io.github.imonja:ktor-openapi-generator:0.3.3\") }\n",
+        )
+
+        val failure = runner("generateOpenApiSpec", "--continue").buildAndFail()
+
+        assertEquals(1, Regex("0.3.3 is used on the runtime classpath").findAll(failure.output).count(), failure.output)
+    }
+
+    @Test
+    fun `module and specs cannot be combined`() {
+        setUpProject(extension = "specs { register(\"admin\") { module.set(\"sample.ApiKt.api\") } }")
+
+        val failure = buildAndFail("generateOpenApiSpec")
+
+        assertTrue(failure.output.contains("ktorOpenApi.module and ktorOpenApi.specs cannot be combined"), failure.output)
+    }
+
+    @Test
+    fun `spec without a module is reported`() {
+        setUpSpecs(specs = "register(\"admin\")")
+
+        val failure = buildAndFail("generateOpenApiSpec")
+
+        assertTrue(failure.output.contains("ktorOpenApi.specs.admin.module is not set"), failure.output)
+    }
+
+    @Test
+    fun `missing module mentions specs`() {
+        setUpProject(topLevelModule = "")
+
+        val failure = buildAndFail("generateOpenApiSpec")
+
+        assertTrue(failure.output.contains("ktorOpenApi.module is not set"), failure.output)
+        assertTrue(failure.output.contains("specs { register("), failure.output)
+    }
+
+    @Test
+    fun `specs writing to the same file are reported`() {
+        setUpSpecs(
+            specs =
+                """
+                register("public") { module.set("sample.ApiKt.api") }
+                register("admin") {
+                    module.set("sample.ApiKt.admin")
+                    outputFile.set(layout.projectDirectory.file("src/main/resources/openapi/public.json"))
+                }
+                """.trimIndent(),
+        )
+
+        val failure = buildAndFail("generateOpenApiSpec")
+
+        assertTrue(
+            failure.output.contains("ktorOpenApi specs admin and public write to the same file src/main/resources/openapi/public.json"),
+            failure.output,
+        )
+    }
+
+    @Test
+    fun `invalid spec name is rejected when registered`() {
+        setUpSpecs(specs = "register(\"mobile-auth\") { module.set(\"sample.ApiKt.api\") }")
+
+        val failure = buildAndFail("help")
+
+        assertTrue(failure.output.contains("Invalid ktorOpenApi spec name 'mobile-auth'"), failure.output)
+    }
+
+    @Test
+    fun `failed spec generation names the spec`() {
+        setUpSpecs(specs = "register(\"broken\") { module.set(\"sample.ApiKt.missing\") }")
+
+        val failure = buildAndFail("generateBrokenOpenApiSpec")
+
+        assertTrue(failure.output.contains("generation failed for spec broken (module sample.ApiKt.missing)"), failure.output)
+    }
+
     companion object {
         private val libraryRepository = File(System.getProperty("functionalTest.libraryRepository"))
         private val libraryVersion: String = System.getProperty("functionalTest.libraryVersion")
@@ -243,6 +407,33 @@ class KtorOpenApiPluginFunctionalTest {
                 }
                 apiRouting {
                     route("items") {
+                        get<Unit, List<Item>> { respond(emptyList()) }
+                    }
+                }
+            }
+            """.trimIndent()
+
+        private val TWO_SPECS =
+            """
+            register("public") { module.set("sample.ApiKt.api") }
+            register("admin") {
+                module.set("sample.ApiKt.admin")
+                outputFile.set(layout.projectDirectory.file("docs/admin-api.json"))
+            }
+            """.trimIndent()
+
+        // Appended to API_MODULE, so it reuses its imports and Item
+        private val ADMIN_MODULE =
+            """
+            fun Application.admin() {
+                install(OpenAPIGen) {
+                    info {
+                        title = "Admin API"
+                        version = "1.0.0"
+                    }
+                }
+                apiRouting {
+                    route("admin/items") {
                         get<Unit, List<Item>> { respond(emptyList()) }
                     }
                 }
