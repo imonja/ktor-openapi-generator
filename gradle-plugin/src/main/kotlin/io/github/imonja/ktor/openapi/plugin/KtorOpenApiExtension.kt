@@ -1,5 +1,7 @@
 package io.github.imonja.ktor.openapi.plugin
 
+import org.gradle.api.Action
+import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
@@ -27,4 +29,16 @@ abstract class KtorOpenApiExtension {
     abstract val systemProperties: MapProperty<String, String>
 
     abstract val jvmArgs: ListProperty<String>
+
+    /**
+     * Several OpenAPI documents, each generated from its own Ktor module. Replaces [module] and [outputFile];
+     * `generateOpenApiSpec` and `checkOpenApiSpec` then run the tasks of every spec.
+     */
+    abstract val specs: NamedDomainObjectContainer<OpenApiSpecDefinition>
+
+    fun specs(
+        action: Action<in NamedDomainObjectContainer<OpenApiSpecDefinition>>,
+    ) {
+        action.execute(specs)
+    }
 }

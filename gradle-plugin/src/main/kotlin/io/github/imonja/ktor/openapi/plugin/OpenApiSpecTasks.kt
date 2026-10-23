@@ -9,6 +9,7 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.services.ServiceReference
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Internal
@@ -36,6 +37,19 @@ abstract class AbstractOpenApiSpecTask : DefaultTask() {
     @get:Optional
     abstract val module: Property<String>
 
+    /** Name of the spec in `ktorOpenApi.specs`; absent for the tasks of `ktorOpenApi.module`. */
+    @get:Input
+    @get:Optional
+    abstract val specName: Property<String>
+
+    /** Only runs the tasks of `ktorOpenApi.specs`, which it depends on. */
+    @get:Input
+    abstract val aggregate: Property<Boolean>
+
+    @get:Input
+    @get:Optional
+    abstract val configurationError: Property<String>
+
     @get:Input
     abstract val maxHeapSize: Property<String>
 
@@ -61,19 +75,36 @@ abstract class AbstractOpenApiSpecTask : DefaultTask() {
     @get:Internal
     abstract val pluginVersion: Property<String>
 
+    @get:ServiceReference(VersionWarningService.NAME)
+    abstract val versionWarnings: Property<VersionWarningService>
+
     @get:Inject
     protected abstract val execOperations: ExecOperations
+
+    /** Fails on an inconsistent configuration; `false` when the task only aggregates the tasks of the specs. */
+    protected fun shouldGenerate(): Boolean {
+        configurationError.orNull?.let { throw GradleException(it) }
+        return !aggregate.get()
+    }
 
     protected fun generate(
         target: File,
     ) {
         if (!module.isPresent) {
             throw GradleException(
-                "ktorOpenApi.module is not set. Point it at the Ktor module that installs OpenAPIGen, e.g. com.example.OpenApiModuleKt.openApiModule",
+                specName.orNull?.let { "ktorOpenApi.specs.$it.module is not set. Point it at the Ktor module that installs OpenAPIGen" }
+                    ?: (
+                        "ktorOpenApi.module is not set. Point it at the Ktor module that installs OpenAPIGen, " +
+                            "e.g. com.example.OpenApiModuleKt.openApiModule, " +
+                            "or declare several documents in ktorOpenApi { specs { register(\"…\") { } } }"
+                    ),
             )
         }
         val libraryVersion = LibraryVersionCheck.resolvedVersion(resolvedDependencies.get())
-        LibraryVersionCheck.mismatchWarning(libraryVersion, pluginVersion.get())?.let { logger.warn("Warning: $it") }
+        LibraryVersionCheck
+            .mismatchWarning(libraryVersion, pluginVersion.get())
+            ?.takeIf { versionWarnings.get().firstTime(it) }
+            ?.let { logger.warn("Warning: $it") }
         if (!LibraryVersionCheck.runnerOnClasspath(runtimeClasspath)) {
             throw GradleException(LibraryVersionCheck.missingRunnerMessage(libraryVersion, pluginVersion.get()))
         }
@@ -92,7 +123,8 @@ abstract class AbstractOpenApiSpecTask : DefaultTask() {
             isIgnoreExitValue = true
         }
         if (result.exitValue != 0) {
-            throw GradleException("OpenAPI document generation failed for module ${module.get()}; see the error output above.")
+            val source = specName.orNull?.let { "spec $it (module ${module.get()})" } ?: "module ${module.get()}"
+            throw GradleException("OpenAPI document generation failed for $source; see the error output above.")
         }
     }
 }
@@ -101,6 +133,7 @@ abstract class AbstractOpenApiSpecTask : DefaultTask() {
 abstract class GenerateOpenApiSpecTask : AbstractOpenApiSpecTask() {
     @TaskAction
     fun run() {
+        if (!shouldGenerate()) return
         val output = outputFile.get().asFile
         generate(output)
         logger.lifecycle("OpenAPI document written to ${output.relativeToOrSelf(workingDirectory.get().asFile)}")
@@ -114,6 +147,7 @@ abstract class CheckOpenApiSpecTask : AbstractOpenApiSpecTask() {
 
     @TaskAction
     fun run() {
+        if (!shouldGenerate()) return
         val committed = outputFile.get().asFile
         val fresh = File(temporaryDir, committed.name)
         fresh.delete()

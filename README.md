@@ -210,6 +210,36 @@ Options:
 | `systemProperties`     | empty                                       | System properties of the generator JVM                        |
 | `jvmArgs`              | empty                                       | Extra arguments of the generator JVM                          |
 
+### Multiple documents
+
+A project that publishes several OpenAPI documents (for example a public and a mobile
+API) declares each one in `specs`, with its own Ktor module:
+
+```kotlin
+ktorOpenApi {
+    specs {
+        register("account") {
+            module.set("com.example.OpenApiModulesKt.accountOpenApiModule")
+            outputFile.set(layout.projectDirectory.file("src/main/resources/openapi/account-api.json"))
+        }
+        register("mobileAuth") {
+            module.set("com.example.OpenApiModulesKt.mobileAuthOpenApiModule")
+            // outputFile defaults to src/main/resources/openapi/mobileAuth.json
+        }
+    }
+}
+```
+
+Each spec gets its own `generate<Name>OpenApiSpec` and `check<Name>OpenApiSpec` tasks,
+e.g. `generateMobileAuthOpenApiSpec`. `generateOpenApiSpec` and `checkOpenApiSpec` run
+them for every spec, so CI and pre-commit hooks keep calling the same tasks. Gradle stops
+at the first stale document; add `--continue` to report all of them, or regenerate
+everything with `generateOpenApiSpec`.
+
+Spec names contain letters and digits only and start with a letter. `specs` replaces the
+top-level `module` and `outputFile`, which cannot be used together with it; the other
+options apply to every spec.
+
 The plugin adds `io.github.imonja:ktor-openapi-generator` with its own version to
 `implementation`. You can still declare the library yourself; Gradle then selects the
 highest version, and the tasks log a warning whenever the selected library version
