@@ -55,7 +55,7 @@ repositories {
 val ktorVersion = "3.4.0"
 val ktorTestVersion = "3.6.0"
 val jacksonTestVersion = "2.22.4"
-val swaggerUiVersion = "5.33.2"
+val swaggerUiVersion = "5.34.0"
 val junitVersjon = "6.1.3"
 
 dependencies {
