@@ -5,7 +5,7 @@ import com.vanniktech.maven.publish.JavadocJar
 
 plugins {
     kotlin("jvm") version "2.4.21"
-    id("org.jetbrains.dokka") version "2.2.0"
+    id("org.jetbrains.dokka") version "2.3.0"
     id("org.jlleitschuh.gradle.ktlint") version "14.2.0"
     id("com.vanniktech.maven.publish") version "0.37.0"
 }
@@ -53,9 +53,9 @@ repositories {
 // Ktor and Jackson versions. Raise them only when the library requires it; Dependabot ignores them.
 // Tests run on the latest versions through the test BOMs below.
 val ktorVersion = "3.4.0"
-val ktorTestVersion = "3.6.0"
+val ktorTestVersion = "3.6.1"
 val jacksonTestVersion = "2.22.4"
-val swaggerUiVersion = "5.33.2"
+val swaggerUiVersion = "5.34.1"
 val junitVersjon = "6.1.3"
 
 dependencies {
@@ -91,7 +91,7 @@ dependencies {
     testImplementation("com.networknt:json-schema-validator:2.0.8") // 3.x requires Jackson 3; stay on 2.x while the library uses Jackson 2
     testImplementation(kotlin("stdlib-jdk8"))
 
-    testImplementation("ch.qos.logback:logback-classic:1.6.5") // logging framework for the tests
+    testImplementation("ch.qos.logback:logback-classic:1.6.6") // logging framework for the tests
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersjon") // junit testing framework
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersjon") // generated parameters for tests
